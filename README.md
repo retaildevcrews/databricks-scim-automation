@@ -1,4 +1,4 @@
-# {{Title}}
+# DataBricks SCIM Automation
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
