@@ -1,0 +1,20 @@
+{
+    "name": "app-service-hello-world",
+    "description": "Simple Hello World Node.js sample for Azure App Service",
+    "version": "0.0.1",
+    "private": true,
+    "license": "MIT",
+    "author": "Microsoft",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "@microsoft/microsoft-graph-client": "^2.0.0",
+        "fs": "0.0.1-security",
+        "isomorphic-fetch": "^2.2.1",
+        "path": "^0.12.7"
+    },
+    "devDependencies": {
+        "@microsoft/microsoft-graph-types": "^1.14.1"
+    }
+}

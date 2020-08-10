@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>AD Sync for Databricks</title>
+    </head>
+    <body>
+        <p>Databricks: <a href="#" target="_blank" id="databricks-domain-name"></a></p>
+        <button id="get-scim-users">Get Databricks Users via SCIM</button>
+        <ul id="scim-users"></ul>
+    </body>
+    <script>
+        const databricksDomainName = 'https://adb-1514491097879978.18.azuredatabricks.net'
+        const databricksDomainNameElement = document.querySelector('a#databricks-domain-name');
+        databricksDomainNameElement.innerHTML = databricksDomainName;
+        databricksDomainNameElement.href = databricksDomainName;
+
+        const getScimUsersElement = document.querySelector('button#get-scim-users');
+        const scimUsersElement = document.querySelector('ul#scim-users');
+        getScimUsersElement.onclick = async () => {
+            // Clear displayed Databricks Users list
+            if (scimUsersElement.firstChild) {
+                scimUsersElement.removeChild(scimUsersElement.lastChild);
+            }
+            const databricksUsers = await fetch(`${document.baseURI}databricksUsers?databricksDomainName=${databricksDomainName}`).then(res => res.json());
+            // Create new Databricks Users list
+            databricksUsers.Resources.forEach(({ active, displayName, userName, entitlements, groups }) => {
+                const userInfoElement = document.createElement('li');
+                const formattedPermissions = entitlements.map(({ value }) => value).join(', ');
+                const formattedGroups = groups.map(({ display }) => display).join(', ');
+                userInfoElement.innerHTML = `${displayName} (${userName})<br />Status: ${active ? 'active' : 'inactive'}<br />Permissions: ${formattedPermissions}<br />Groups: ${formattedGroups}`;
+                scimUsersElement.appendChild(userInfoElement);
+            });
+        };
+    </script>
+</html>
