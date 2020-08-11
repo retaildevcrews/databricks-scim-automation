@@ -4,11 +4,14 @@
         <title>AD Sync for Databricks</title>
     </head>
     <body>
+        <button id="login">Login</button>
         <p>Databricks: <a href="#" target="_blank" id="databricks-domain-name"></a></p>
         <button id="get-scim-users">Get Databricks Users via SCIM</button>
         <ul id="scim-users"></ul>
     </body>
     <script>
+        const loginElement = document.getElementById('login');
+        loginElement.onclick = () => window.location.href = document.location.origin + '/login';
         const databricksDomainName = 'https://adb-1514491097879978.18.azuredatabricks.net'
         const databricksDomainNameElement = document.querySelector('a#databricks-domain-name');
         databricksDomainNameElement.innerHTML = databricksDomainName;
