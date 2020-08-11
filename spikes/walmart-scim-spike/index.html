@@ -1,37 +1,60 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <style>
+            body {
+                display: flex;
+                height: 100vh;
+            }
+            #gui, #log { width: 50vw; }
+            #log {
+                font-family: Consolas, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New;
+                color: white;
+                background-color: black;
+                padding: 14px;
+            }
+        </style>
         <title>AD Sync for Databricks</title>
     </head>
     <body>
-        <button id="login">Login</button>
-        <p>Databricks: <a href="#" target="_blank" id="databricks-domain-name"></a></p>
-        <button id="get-scim-users">Get Databricks Users via SCIM</button>
-        <ul id="scim-users"></ul>
+        <div id="gui">
+            <button id="login">Login</button>
+            <p>Databricks: <a href="#" target="_blank" id="databricks-domain-name"></a></p>
+            <button id="get-scim-users">Get Databricks Users via SCIM</button>
+        </div>
+        <div id="log"></div>
     </body>
     <script>
+        const logElement = document.getElementById('log');
+        function addToLog(content) {
+            const childElement = document.createElement('div')
+            childElement.innerHTML = content;
+            logElement.appendChild(childElement);
+        }
+
+        // Log: whether user is logged in
+        const hasAuthCode = document.location.search.split('&').some(query => query.includes('code='));
+        addToLog(hasAuthCode ? 'Logged in...' : 'Not logged in...');
+        // Login Button
         const loginElement = document.getElementById('login');
         loginElement.onclick = () => window.location.href = document.location.origin + '/login';
+        // Display Databricks Workspace
         const databricksDomainName = 'https://adb-1514491097879978.18.azuredatabricks.net'
         const databricksDomainNameElement = document.querySelector('a#databricks-domain-name');
         databricksDomainNameElement.innerHTML = databricksDomainName;
         databricksDomainNameElement.href = databricksDomainName;
-
+        // Get Databricks Workspace Users Button
         const getScimUsersElement = document.querySelector('button#get-scim-users');
-        const scimUsersElement = document.querySelector('ul#scim-users');
         getScimUsersElement.onclick = async () => {
-            // Clear displayed Databricks Users list
-            if (scimUsersElement.firstChild) {
-                scimUsersElement.removeChild(scimUsersElement.lastChild);
-            }
-            const databricksUsers = await fetch(`${document.baseURI}databricksUsers?databricksDomainName=${databricksDomainName}`).then(res => res.json());
-            // Create new Databricks Users list
+            // Log: Fetching Databricks Workspace Users
+            addToLog(`<br />Fetching databricks workspace users from ${databricksDomainName}...`);
+            const databricksUsers = await fetch(`${document.location.origin}/databricksUsers?databricksDomainName=${databricksDomainName}`).then(res => res.json());
+            // Log: Databricks workspace users
             databricksUsers.Resources.forEach(({ active, displayName, userName, entitlements, groups }) => {
-                const userInfoElement = document.createElement('li');
                 const formattedPermissions = entitlements.map(({ value }) => value).join(', ');
                 const formattedGroups = groups.map(({ display }) => display).join(', ');
-                userInfoElement.innerHTML = `${displayName} (${userName})<br />Status: ${active ? 'active' : 'inactive'}<br />Permissions: ${formattedPermissions}<br />Groups: ${formattedGroups}`;
-                scimUsersElement.appendChild(userInfoElement);
+                userInfo = `<br />${displayName} (${userName})<br />Status: ${active ? 'active' : 'inactive'}<br />Permissions: ${formattedPermissions}<br />Groups: ${formattedGroups}`;
+                addToLog(userInfo);
             });
         };
     </script>
