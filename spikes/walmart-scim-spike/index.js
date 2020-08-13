@@ -167,6 +167,28 @@ async function postDatabricksGalleryApp(req, res) {
     });
 }
 
+async function getAadGroups(authorization, query) {
+    const response = await fetch(`https://graph.microsoft.com/beta/groups?filter=displayname+eq+'${query.filterDisplayName}'`, {
+        headers: { Authorization: `Bearer ${authorization}` },
+    });
+
+    const body = await response.json();
+
+    if (response.status !== 200) {
+        return {
+            response: JSON.stringify({ message: body.error.message }),
+            status: response.status,
+            contentType: 'application/json',
+        };
+    }
+
+    return {
+        response: JSON.stringify({ groupIds: body.value.map(({ id }) => id) }),
+        status: 200,
+        contentType: 'application/json',
+    };
+}
+
 async function getRoute(req, res) {
     const { pathname, query } = url.parse(req.url, true);
     switch (pathname) {
@@ -176,6 +198,8 @@ async function getRoute(req, res) {
             return sendResponse(res, getRedirectLogin(req));
         case '/databricksUsers':
             return sendResponse(res, await getDatabricksUsers(query));
+        case '/aadGroups':
+            return sendResponse(res, await getAadGroups(req.headers.authorization, query));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
     }

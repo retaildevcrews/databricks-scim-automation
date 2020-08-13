@@ -149,9 +149,19 @@
 
         // Get AAD Group
         const getAadGroupElement = document.querySelector('#get-aad-group button');
-        getAadGroupElement.onclick = () => {
+        getAadGroupElement.onclick = async () => {
             const accessToken = document.querySelector('#get-aad-group input#access-token').value;
             const filterDisplayName = document.querySelector('#get-aad-group input#filter-display-name').value;
+            validateInputs([
+                { value: accessToken, message: '<br />Access token is required to get aad groups...' },
+                { value: filterDisplayName, message: '<br />Invalid search display name...' },
+            ]);
+            if (!accessToken || !filterDisplayName) return;
+            const response = await fetch(`${document.location.origin}/aadGroups?filterDisplayName=${encodeURIComponent(filterDisplayName)}`, {
+                method: 'GET',
+                headers: { Authorization: accessToken }
+            })
+            response.json().then(({ groupIds }) => console.log({ groupIds }));
         };
     </script>
 </html>
