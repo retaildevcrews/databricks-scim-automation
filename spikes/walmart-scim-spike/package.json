@@ -10,6 +10,7 @@
     },
     "dependencies": {
         "@microsoft/microsoft-graph-client": "^2.0.0",
+        "dotenv": "^8.2.0",
         "fs": "0.0.1-security",
         "isomorphic-fetch": "^2.2.1",
         "path": "^0.12.7"
