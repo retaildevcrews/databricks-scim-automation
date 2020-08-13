@@ -20,6 +20,7 @@
                 color: white;
                 background-color: black;
                 padding: 14px;
+                overflow-y: auto;
             }
         </style>
         <title>AD Sync for Databricks</title>
@@ -96,13 +97,22 @@
             }
         };
 
+        function validateInputs(inputs) {
+            inputs.reduce((time, { value, message }) => {
+                if (!value) {
+                    setTimeout(() => addToLog(message), time);
+                    return time + 800;
+                }
+                return time;
+            }, 800);
+        }
+
         // Get code from URL parameter
         function getCodeFromUrlParam() {
             const codeParam = document.location.search.split('&').filter(param => param.includes('code='))[0];
+            validateInputs([{ value: codeParam, message: '<br />Unable to complete request. Login required...' }]);
             if (codeParam) {
                 return codeParam.split('=')[1];
-            } else {
-                setTimeout(() => addToLog('<br />Unable to complete request. Login required...'), 800);
             }
         }
  
@@ -116,9 +126,13 @@
             // Get data required to create Databricks Gallery App
             const databricksScimId = document.querySelector('#post-databricks-gallery-app input#databricks-scim-id').value;
             const galleryAppName = document.querySelector('#post-databricks-gallery-app input#gallery-app-name').value;
-            !databricksScimId && setTimeout(() => addToLog('<br/>Invalid databricks scim id...'), 800);
-            !galleryAppName && setTimeout(() => addToLog('<br/>Invalid gallery app name...'), databricksScimId ? 800 : 1600);
-            if (!databricksScimId || !galleryAppName) { return; }
+
+            if (!databricksScimId || !galleryAppName) {
+                return validateInputs([
+                    { value: databricksScimId, message: '<br/>Invalid databricks scim id...'},
+                    { value: galleryAppName, message: '<br/>Invalid gallery app name...'},
+                ]);
+            }
             const response = await fetch(`${document.location.origin}/databricksGalleryApp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -131,6 +145,13 @@
                 }
                 return addToLog(`<br />${body.message}`);
             });
+        };
+
+        // Get AAD Group
+        const getAadGroupElement = document.querySelector('#get-aad-group button');
+        getAadGroupElement.onclick = () => {
+            const accessToken = document.querySelector('#get-aad-group input#access-token').value;
+            const filterDisplayName = document.querySelector('#get-aad-group input#filter-display-name').value;
         };
     </script>
 </html>

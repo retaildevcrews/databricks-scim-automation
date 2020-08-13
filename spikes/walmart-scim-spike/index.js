@@ -154,13 +154,13 @@ async function postDatabricksGalleryApp(req, res) {
                 });
             }
 
-            postGalleryAppResponse.json().then((response) => {
-                return sendResponse(res, {
+            postGalleryAppResponse.json().then((response) => (
+                sendResponse(res, {
                     response: JSON.stringify({ message: `Successfully created gallery app: ${body.galleryAppName}...`, access_token: authTokenResponse.access_token }),
                     status: postGalleryAppResponse.status,
                     contentType: 'application/json',
-                });
-            });
+                })
+            ));
         } catch (err) {
             return sendResponse(res, { response: err, status: 500, contentType: undefined });
         }
@@ -175,7 +175,7 @@ async function getRoute(req, res) {
         case '/login':
             return sendResponse(res, getRedirectLogin(req));
         case '/databricksUsers':
-            return sendResponse(res, payload = getDatabricksUsers(query));
+            return sendResponse(res, await getDatabricksUsers(query));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
     }
