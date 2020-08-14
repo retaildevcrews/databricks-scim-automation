@@ -183,7 +183,7 @@ async function getAadGroups(authorization, query) {
     }
 
     return {
-        response: JSON.stringify({ groupIds: body.value.map(({ id }) => id) }),
+        response: JSON.stringify({ groups: body.value.map(({ id, displayName }) => ({ id, displayName })) }),
         status: 200,
         contentType: 'application/json',
     };

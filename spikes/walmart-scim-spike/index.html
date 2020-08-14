@@ -6,7 +6,7 @@
                 display: flex;
                 height: 100vh;
             }
-            input {
+            input[type="text"] {
                 width: 100%;
             }
             .outline {
@@ -46,6 +46,12 @@
                 <label>Search Display Name: </label><input type="text" id="filter-display-name" value="Databricks-SCIM" />
                 <br /><br />
                 <button>Get AAD Groups</button>
+            </div>
+            <div id="get-app-role-assignments" class="outline">
+                <label>AAD Groups:</label>
+                <div id="aad-group-ids"></div>
+                <br />
+                <button>Get App Role Assignments</button>
             </div>
         </div>
         <div id="log"></div>
@@ -89,11 +95,11 @@
                     const formattedPermissions = entitlements.map(({ value }) => value).join(', ');
                     const formattedGroups = groups.map(({ display }) => display).join(', ');
                     userInfo = `<br />${displayName} (${userName})<br />Status: ${active ? 'active' : 'inactive'}<br />Permissions: ${formattedPermissions}<br />Groups: ${formattedGroups}`;
-                    addToLog(userInfo);
+                    addToLog(userInfo + '...');
                 });
             } catch (err) {
                 console.error(err);
-                addToLog('<br />Error while fetching databricks workspace users...');
+                addToLog('Error while fetching databricks workspace users...');
             }
         };
 
@@ -110,7 +116,7 @@
         // Get code from URL parameter
         function getCodeFromUrlParam() {
             const codeParam = document.location.search.split('&').filter(param => param.includes('code='))[0];
-            validateInputs([{ value: codeParam, message: '<br />Unable to complete request. Login required...' }]);
+            validateInputs([{ value: codeParam, message: 'Unable to complete request. Login required...' }]);
             if (codeParam) {
                 return codeParam.split('=')[1];
             }
@@ -129,8 +135,8 @@
 
             if (!databricksScimId || !galleryAppName) {
                 return validateInputs([
-                    { value: databricksScimId, message: '<br/>Invalid databricks scim id...'},
-                    { value: galleryAppName, message: '<br/>Invalid gallery app name...'},
+                    { value: databricksScimId, message: 'Invalid databricks scim id...'},
+                    { value: galleryAppName, message: 'Invalid gallery app name...'},
                 ]);
             }
             const response = await fetch(`${document.location.origin}/databricksGalleryApp`, {
@@ -143,7 +149,7 @@
                     const accessTokenElement = document.querySelector('#get-aad-group input#access-token');
                     accessTokenElement.value = body.access_token;
                 }
-                return addToLog(`<br />${body.message}`);
+                return addToLog(body.message);
             });
         };
 
@@ -153,15 +159,42 @@
             const accessToken = document.querySelector('#get-aad-group input#access-token').value;
             const filterDisplayName = document.querySelector('#get-aad-group input#filter-display-name').value;
             validateInputs([
-                { value: accessToken, message: '<br />Access token is required to get aad groups...' },
-                { value: filterDisplayName, message: '<br />Invalid search display name...' },
+                { value: accessToken, message: 'Access token is required to get aad groups...' },
+                { value: filterDisplayName, message: 'Invalid search display name...' },
             ]);
             if (!accessToken || !filterDisplayName) return;
+            addToLog(`<br />Searching for aad groups...`);
             const response = await fetch(`${document.location.origin}/aadGroups?filterDisplayName=${encodeURIComponent(filterDisplayName)}`, {
                 method: 'GET',
                 headers: { Authorization: accessToken }
             })
-            response.json().then(({ groupIds }) => console.log({ groupIds }));
+
+            if (response.status !== 200) {
+                return response.json().then(({ message }) => addToLog(message + '...'));
+            }
+            const aadGroups = await response.json().then(({ groups }) => groups);
+            addToLog(`Found ${aadGroups.length} aad group${aadGroups.length ? 's' : ''}...`);
+            const aadGroupIdsElement = document.querySelector('#get-app-role-assignments #aad-group-ids');
+            aadGroups.forEach(({ id, displayName }, index) => {
+                addToLog(`${displayName}: ${id}`);
+
+                const inputElement = document.createElement('input');
+                inputElement.type = 'radio';
+                inputElement.id = `aadGroup${index}`;
+                inputElement.name = 'aadGroupId'
+                inputElement.value = id;
+
+                const labelElement = document.createElement('label');
+                labelElement.for = `aadGroup${index}`;
+                labelElement.innerText = displayName;
+
+                aadGroupIdsElement.appendChild(document.createElement('br'));
+                aadGroupIdsElement.appendChild(inputElement);
+                aadGroupIdsElement.appendChild(labelElement);
+            });
         };
+
+        // Get App Role Assignments
+        const getAppRoleAssignments = document.querySelector('#get-app-role-assignments button');
     </script>
 </html>
