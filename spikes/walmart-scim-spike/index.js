@@ -25,11 +25,52 @@ function getInitialHtml() {
             contentType: 'text/html',
         };
     } catch (err) {
-        console.error('Error reading and sending html', err);
+        const errorMessage = 'Error reading and sending html';
+        console.error(errorMessage + ': ', err);
         return {
-            response: 'Content not found',
-            status: 404,
-            contentType: undefined,
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+}
+
+// Users from Databricks Workspace
+async function getDatabricksWorkspaceUsers(req) {
+    try {
+        const { query: { databricksDomainName } } = url.parse(req.url, true);
+        const scimApi = `${databricksDomainName}/api/2.0/preview/scim/v2`;
+        const token = 'dapi5b33859ef12f7039b937146175a9d313';
+        const response = await fetch(`${scimApi}/Users`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/scim+json',
+                'Content-Type': 'application/scim+json',
+            },
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        if (response.status === 200) {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body.Resources),
+            };
+        } else {
+            return {
+                status: response.status,
+                contentType,
+                response: body,
+            };
+        }
+    } catch(err) {
+        const errorMessage = 'Error fetching databricks workspace users';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
         }
     }
 }
@@ -45,77 +86,197 @@ function getRedirectLogin(req) {
         { key: 'scope', value: 'openid%20offline_access%20https%3A%2F%2Fgraph.microsoft.com%2F.default' },
         { key: 'state', value: 12345 },
     ];
-
     const redirectUrl = `https://login.microsoftonline.com/${azureTenantId}/oauth2/v2.0/authorize?${params.map(({ key, value }) => `${key}=${value}`).join('&')}`
-
-    return { response: redirectUrl, status: 302 };
+    return { response: redirectUrl, status: 302, contentType: undefined };
 }
 
-async function getDatabricksUsers(query) {
-    const { databricksDomainName } = query;
-    const scimApi = `${databricksDomainName}/api/2.0/preview/scim/v2`;
+async function postAccessToken(req) {
+    try {
+        const { query: { code } } = url.parse(req.url, true);
+        const formParams = [
+            { key: 'client_id', value: spClientId },
+            { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
+            { key: 'redirect_uri', value: getOriginUrl(req) },
+            { key: 'grant_type', value: 'authorization_code' },
+            { key: 'client_secret', value: clientSecret },
+            { key: 'code', value: code },
+        ].map(({ key, value }) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
 
-    // TODO: get from key vault???
-    const token = 'dapi5b33859ef12f7039b937146175a9d313';
-    const databricksUsers = await fetch(`${scimApi}/Users`, {
-        method: 'GET',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/scim+json',
-            'Content-Type': 'application/scim+json',
-        },
-    }).then(res => res.json())
-    .catch((err) => {
-        const displayErr = `Unable to fetch users from databricks: ${err}`;
-        console.error(displayErr);
-        return {
-            response: displayErr,
-            status: 500,
-            contentType: undefined,
+        // TODO: This is the token they'll have in key vault (would need refresh mechanism)
+        // TODO: May use certificate instead of token
+        const response = await fetch(`https://login.microsoftonline.com/${azureTenantId}/oauth2/v2.0/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded'},
+            body: formParams,
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        if (response.status === 200) {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body),
+            };
+        } else {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body),
+            };
         }
-    });
-    return {
-        response: JSON.stringify(databricksUsers),
-        status: 200,
-        contentType: 'application/json',
+    } catch(err) {
+        const errorMessage = 'Error fetching tokens';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+}
+
+async function postDatabricksGalleryApp(req) {
+    try {
+        const { query: { scimAppTemplateId, scimConnectorGalleryAppName } } = url.parse(req.url, true);
+        const response = await fetch(`https://graph.microsoft.com/beta/applicationTemplates/${scimAppTemplateId}/instantiate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: req.headers.authorization,
+            },
+            // Does not matter if displayName is already taken
+            body: JSON.stringify({ displayName: scimConnectorGalleryAppName }),
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        if (response.status === 201) {
+            const scimServicePrincipalObjectId = body.servicePrincipal.objectId;
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify({ scimServicePrincipalObjectId }),
+            };
+        } else {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body),
+            };
+        }
+    } catch(err) {
+        const errorMessage = 'Error creating scim gallery app';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+}
+
+async function getAadGroups(req) {
+    try {
+        const { query: { filterDisplayName } } = url.parse(req.url, true);
+        const response = await fetch(`https://graph.microsoft.com/beta/groups?filter=displayname+eq+'${filterDisplayName}'`, {
+            headers: { Authorization: `Bearer ${req.headers.authorization}` },
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        if (response.status === 200) {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body.value.map(({ id, displayName }) => ({ aadGroupId: id, displayName }))),
+            }
+        } else {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body),
+            };
+        }
+    } catch (err) {
+        const errorMessage = 'Error fetching aad groups';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
     };
 }
 
-async function getAuthTokenForGraphApi(req, code) {
-    const formParams = [
-        { key: 'client_id', value: spClientId },
-        { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
-        { key: 'redirect_uri', value: getOriginUrl(req) },
-        { key: 'grant_type', value: 'authorization_code' },
-        { key: 'client_secret', value: clientSecret },
-        { key: 'code', value: code },
-    ].map(({ key, value }) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
+// Use getServicePrincipals to get appRoleId
+// async function getAppRoleAssignments(req) {
+//     try {
+//         const { query: { aadGroupId } } = url.parse(req.url, true);
+//         const response = await fetch(`https://graph.microsoft.com/beta/groups/${aadGroupId}/appRoleAssignments`, {
+//             method: 'GET',
+//             headers: { Authorization: `Bearer ${req.headers.authorization}` },
+//         });
+//         const contentType = response.headers._headers['content-type'];
+//         const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+//         if (response.status === 200) {
+//             return {
+//                 status: response.status,
+//                 contentType,
+//                 response: JSON.stringify(body.value),
+//             }
+//         } else {
+//             return {
+//                 status: response.status,
+//                 contentType,
+//                 response: JSON.stringify(body),
+//             };
+//         }
+//     } catch (err) {
+//         const errorMessage = 'Error fetching aad groups';
+//         console.error(errorMessage + ': ', err);
+//         return {
+//             response: errorMessage,
+//             status: 500,
+//             contentType: 'text/plain',
+//         }
+//     };
+// }
 
-    // TODO: This is the token they'll have in key vault
-    const response = await fetch(`https://login.microsoftonline.com/${azureTenantId}/oauth2/v2.0/token`, {
-        // TODO: CHECK RESPONSE FOR NOT FOUND TENANT ID
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded'},
-        body: formParams,
-    })
-        .then(res => res.json())
-        .then(body => {
-            if (body.error === 'invalid_grant') {
-                throw new Error ('Unusable user code. Please login again...');
+async function getServicePrincipals(req) {
+    try {
+        const { query: { scimServicePrincipalObjectId } } = url.parse(req.url, true);
+        const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}`, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${req.headers.authorization}` },
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        console.log({ contentType, body, response });
+        if (response.status === 200) {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body.appRoles),
             }
-            return body;
-        })
-        .catch(err => ({
-            response: JSON.stringify({ message: err.message,}),
-            status: 401,
-            contentType: 'application/json',
-        }));
-    return response;
+        } else {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body),
+            };
+        }
+    } catch (err) {
+        const errorMessage = 'Error fetching service principals';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
 }
 
 function sendResponse(res, payload) {
     if (payload.status === 302 ) {
-        res.writeHead(302, { Location: payload.response });
+        res.writeHead(payload.status, { Location: payload.response });
     } else {
         res.writeHead(payload.status, { ...(payload.contentType && { 'Content-Type': payload.contentType }) })
         res.write(payload.response);
@@ -123,94 +284,34 @@ function sendResponse(res, payload) {
     res.end();
 }
 
-async function postDatabricksGalleryApp(req, res) {
-    let data = [];
-    req.on('data', buffer => {
-        data.push(buffer);
-    }).on('end', async () => {
-        try {
-            const body = JSON.parse(data);
-            const authTokenResponse = await getAuthTokenForGraphApi(req, body.code);
-            if (authTokenResponse.status === 401) {
-                return sendResponse(res, authTokenResponse);
-            }
-
-            const postGalleryAppResponse = await fetch(`https://graph.microsoft.com/beta/applicationTemplates/${body.databricksScimId}/instantiate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${authTokenResponse.access_token}`,
-                },
-                // Does not matter if displayName is already taken
-                body: JSON.stringify({ displayName: body.galleryAppName }),
-            }).catch(err => console.error({ err }));
-
-            // Checks if template ID for gallery app is not found
-            if (postGalleryAppResponse.status === 400) {
-                return sendResponse(res, {
-                    response: JSON.stringify({ message: `${postGalleryAppResponse.statusText}: Please check databricks scim id...` }),
-                    status: postGalleryAppResponse.status,
-                    contentType: 'application/json',
-                });
-            }
-
-            postGalleryAppResponse.json().then((response) => (
-                sendResponse(res, {
-                    response: JSON.stringify({ message: `Successfully created gallery app: ${body.galleryAppName}...`, access_token: authTokenResponse.access_token }),
-                    status: postGalleryAppResponse.status,
-                    contentType: 'application/json',
-                })
-            ));
-        } catch (err) {
-            return sendResponse(res, { response: err, status: 500, contentType: undefined });
-        }
-    });
-}
-
-async function getAadGroups(authorization, query) {
-    const response = await fetch(`https://graph.microsoft.com/beta/groups?filter=displayname+eq+'${query.filterDisplayName}'`, {
-        headers: { Authorization: `Bearer ${authorization}` },
-    });
-
-    const body = await response.json();
-
-    if (response.status !== 200) {
-        return {
-            response: JSON.stringify({ message: body.error.message }),
-            status: response.status,
-            contentType: 'application/json',
-        };
-    }
-
-    return {
-        response: JSON.stringify({ groups: body.value.map(({ id, displayName }) => ({ id, displayName })) }),
-        status: 200,
-        contentType: 'application/json',
-    };
-}
-
 async function getRoute(req, res) {
     const { pathname, query } = url.parse(req.url, true);
     switch (pathname) {
         case '/':
             return sendResponse(res, getInitialHtml());
+        case '/databricksWorkspaceUsers':
+            return sendResponse(res, await getDatabricksWorkspaceUsers(req));
         case '/login':
             return sendResponse(res, getRedirectLogin(req));
-        case '/databricksUsers':
-            return sendResponse(res, await getDatabricksUsers(query));
         case '/aadGroups':
-            return sendResponse(res, await getAadGroups(req.headers.authorization, query));
+            return sendResponse(res, await getAadGroups(req));
+        // case '/appRoleAssignments':
+        //     return sendResponse(res, await getAppRoleAssignments(req));
+        case '/servicePrincipals':
+            return sendResponse(res, await getServicePrincipals(req))
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
     }
 }
 
 async function postRoute(req, res) {
-    const { pathname, query } = url.parse(req.url, true);
+    const { pathname } = url.parse(req.url, true);
     // res write is completed in function
     switch (pathname) {
+        case '/accessToken':
+            return sendResponse(res, await postAccessToken(req));
         case '/databricksGalleryApp':
-            return postDatabricksGalleryApp(req, res);
+            return sendResponse(res, await postDatabricksGalleryApp(req));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
     }

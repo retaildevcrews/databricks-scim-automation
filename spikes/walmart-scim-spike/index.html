@@ -4,7 +4,7 @@
         <style>
             body {
                 display: flex;
-                height: 100vh;
+                height: calc(100vh - 16px);
             }
             input[type="text"] {
                 width: 100%;
@@ -14,44 +14,150 @@
                 padding: 14px;
                 border: solid grey 2px;
             }
-            #gui, #log { width: 50vw; }
+            #gui, #log {
+                height: 100%;
+                width: 50vw;
+                overflow-y: auto;
+            }
             #log {
+                height: calc(100% - 30px);
                 font-family: Consolas, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New;
                 color: white;
                 background-color: black;
                 padding: 14px;
-                overflow-y: auto;
             }
         </style>
         <title>AD Sync for Databricks</title>
     </head>
     <body>
         <div id="gui">
-            <button id="login">Login</button>
-            <div class="outline">
-                Databricks: <a href="#" target="_blank" id="databricks-domain-name"></a>
+            <h3>Databricks SCIM API</h3>
+            <div id="databricks-workspace" class="outline">
+                Databricks: <a href="#" target="_blank"></a>
                 <br /><br />
-                <button id="get-scim-users">Get Databricks Users via SCIM</button>
+                <button>Get Databricks Workspace Users</button>
             </div>
-            <div id="post-databricks-gallery-app" class="outline">
-                <label>Databricks SCIM ID: </label><input type="text" id="databricks-scim-id" value="9c9818d2-2900-49e8-8ba4-22688be7c675" />
+            <script>
+                // Display Databricks Workspace
+                const databricksDomainName = 'https://adb-1514491097879978.18.azuredatabricks.net';
+                const databricksDomainNameElement = document.querySelector('#databricks-workspace a');
+                databricksDomainNameElement.innerHTML = databricksDomainName;
+                databricksDomainNameElement.href = databricksDomainName;
+
+                // Get Databricks Workspace Users Button
+                async function getDatabricksWorkspaceUsers() {
+                    try {
+                        addToLog(`<br />Fetching databricks workspace users from ${databricksDomainName}...`);
+                        const response = await fetch(`${document.location.origin}/databricksWorkspaceUsers?databricksDomainName=${databricksDomainName}`);
+                        const contentType = response.headers.get('content-type');
+                        const body = contentType.includes('json') ? await response.json() : await response.text();
+                        if (response.status === 200) {
+                            // Log: Databricks workspace users
+                            body.forEach(({ active, displayName, userName, entitlements, groups }) => {
+                                const formattedPermissions = entitlements.map(({ value }) => value).join(', ');
+                                const formattedGroups = groups.map(({ display }) => display).join(', ');
+                                userInfo = `<br />${displayName} (${userName})<br />Status: ${active ? 'active' : 'inactive'}<br />Permissions: ${formattedPermissions}<br />Groups: ${formattedGroups}`;
+                                addToLog(userInfo);
+                            });
+                        } else {
+                            addToLog(`<br />${response.statusText}: ${body}`);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        addToLog('Error while fetching databricks workspace users...');
+                    }
+                }
+                const getDatabricksWorkspaceUsersElement = document.querySelector('#databricks-workspace button');
+                getDatabricksWorkspaceUsersElement.onclick = getDatabricksWorkspaceUsers;
+            </script>
+            <h3>Microsoft Graph API</h3>
+            <div id="auth" class="outline">
+                <button id="login">Login</button>
                 <br /><br />
-                <label>Gallery App Name: </label><input type="text" id="gallery-app-name" />
-                <br /><br />
-                <button>Create Databricks Gallery App</button>
+                <button id="post-access-token">Create Access Token</button>
             </div>
-            <div id="get-aad-group" class="outline">
-                <label>Access Token: </label><input type="text" id="access-token" />
+            <div id="post-scim-connector-gallery-app" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
+                <label>SCIM App Template ID: </label><input type="text" id="scim-app-template-id" value="9c9818d2-2900-49e8-8ba4-22688be7c675" />
+                <br /><br />
+                <label>SCIM Connector Gallery App Name: </label><input type="text" id="scim-connector-gallery-app-name" />
+                <br /><br />
+                <button>Create SCIM Connector Gallery App</button>
+            </div>
+            <div id="get-aad-groups" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
                 <br /><br />
                 <label>Search Display Name: </label><input type="text" id="filter-display-name" value="Databricks-SCIM" />
                 <br /><br />
                 <button>Get AAD Groups</button>
             </div>
-            <div id="get-app-role-assignments" class="outline">
+            <!--<div id="get-app-role-assignments" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
                 <label>AAD Groups:</label>
-                <div id="aad-group-ids"></div>
+                <div class="aad-group-ids"></div>
                 <br />
                 <button>Get App Role Assignments</button>
+            </div> -->
+            <div id="get-service-principals" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
+                <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <button>Get Service Principals</button>
+            </div>
+            <div id="post-group-to-scim" class="outline">
+                <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <label>App Roles:</label>
+                <div id="app-role-ids"></div>
+                <br />
+                <label>AAD Groups:</label>
+                <div class="aad-group-ids"></div>
+                <br />
+                <button>Add AAD Group to SCIM</button>
+            </div>
+            <div id="post-sync-job" class="outline">
+                <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <button>Create Sync Job</button>
+            </div>
+            <div id="post-validate-credentials" class="outline">
+                <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <label>Job ID: </label><input type="text" class="job-id"/>
+                <br /><br />
+                <label>Databricks URL: </label><input type="text" />
+                <br /><br />
+                <label>Databricks PAT: </label><input type="text" />
+                <br /><br />
+                <button>Validate Credentials</button>
+            </div>
+            <div id="put-save-credentials" class="outline">
+                <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <label>Job ID: </label><input type="text" class="job-id"/>
+                <br /><br />
+                <label>Databricks URL: </label><input type="text" class="databricks-url" />
+                <br /><br />
+                <label>Databricks PAT: </label><input type="text" class="databricks-pat" />
+                <br /><br />
+                <button>Save Credentials</button>
+            </div>
+            <div id="post-start-sync-job" class="outline">
+                <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <label>Job ID: </label><input type="text" class="job-id"/>
+                <br /><br />
+                <button>Start Sync Job</button>
+            </div>
+            <div id="get-monitor-job" class="outline">
+                <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <label>Job ID: </label><input type="text" class="job-id"/>
+                <br /><br />
+                <button>Monitor Job</button>
             </div>
         </div>
         <div id="log"></div>
@@ -62,48 +168,28 @@
             const childElement = document.createElement('div')
             childElement.innerHTML = content;
             logElement.appendChild(childElement)
+            // Scroll Log to the Bottom
+            logElement.scrollTop = logElement.scrollHeight - logElement.clientHeight;
         }
 
-        // Log: whether user is logged in
-        const hasAuthCode = document.location.search.split('&').some(param => param.includes('code='));
-        addToLog(hasAuthCode ? 'Logged in...' : 'Not logged in...');
+        // Get Code Value from URL
+        function getCodeValueFromUrl() {
+            const codeParam = document.location.search.split('&').filter(param => param.includes('code='))[0];
+            return codeParam ? codeParam.split('=')[1] : '';
+        }
 
-        // Login Button
-        const loginElement = document.querySelector('button#login');
-        loginElement.onclick = () => window.location.href = document.location.origin + '/login';
+        // Log: User Login Status
+        addToLog(getCodeValueFromUrl() ? 'Logged in...' : 'Not logged in...');
 
-        // Display Databricks Workspace
-        const databricksDomainName = 'https://adb-1514491097879978.18.azuredatabricks.net'
-        const databricksDomainNameElement = document.querySelector('a#databricks-domain-name');
-        databricksDomainNameElement.innerHTML = databricksDomainName;
-        databricksDomainNameElement.href = databricksDomainName;
+        // Login to Create Code for Access Token
+        function redirectToLogin() {
+            return window.location.href = document.location.origin + '/login';
+        }
+        const loginElement = document.querySelector('#auth button#login');
+        loginElement.onclick = redirectToLogin;
 
-        // Get Databricks Workspace Users Button
-        const getScimUsersElement = document.querySelector('button#get-scim-users');
-        getScimUsersElement.onclick = async () => {
-            addToLog(`<br />Fetching databricks workspace users from ${databricksDomainName}...`);
-            try {
-                const databricksUsers = await fetch(`${document.location.origin}/databricksUsers?databricksDomainName=${databricksDomainName}`)
-                    .then((res) => {
-                        if (res.status !== 200) {
-                            throw new Error('Unable to fetch databricks workspace users');
-                        }
-                        return res.json();
-                    });
-                // Log: Databricks workspace users
-                databricksUsers.Resources.forEach(({ active, displayName, userName, entitlements, groups }) => {
-                    const formattedPermissions = entitlements.map(({ value }) => value).join(', ');
-                    const formattedGroups = groups.map(({ display }) => display).join(', ');
-                    userInfo = `<br />${displayName} (${userName})<br />Status: ${active ? 'active' : 'inactive'}<br />Permissions: ${formattedPermissions}<br />Groups: ${formattedGroups}`;
-                    addToLog(userInfo + '...');
-                });
-            } catch (err) {
-                console.error(err);
-                addToLog('Error while fetching databricks workspace users...');
-            }
-        };
-
-        function validateInputs(inputs) {
+        // Logs Messages for Missing Values
+        function logMissingInputs(inputs) {
             inputs.reduce((time, { value, message }) => {
                 if (!value) {
                     setTimeout(() => addToLog(message), time);
@@ -113,88 +199,275 @@
             }, 800);
         }
 
-        // Get code from URL parameter
-        function getCodeFromUrlParam() {
-            const codeParam = document.location.search.split('&').filter(param => param.includes('code='))[0];
-            validateInputs([{ value: codeParam, message: 'Unable to complete request. Login required...' }]);
-            if (codeParam) {
-                return codeParam.split('=')[1];
+        // POST for Access Token
+        // postAccessToken needs code
+        async function postAccessToken() {
+            try {
+                addToLog('<br />Creating access token...');
+                const codeValue = getCodeValueFromUrl();
+                if (!codeValue) {
+                    return logMissingInputs([{ value: codeValue, message: 'Unable to complete request. Login required...' }]);
+                }
+                const response = await fetch(`${document.location.origin}/accessToken?code=${codeValue}`, { method: 'POST' });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 200) {
+                    const accessTokenElements = document.querySelectorAll('input.access-token');
+                    accessTokenElements.forEach(element => element.value = body.access_token);
+                    addToLog(`Created access token: ${body.access_token}...`);
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error_description);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while fetching access token...');
             }
         }
+        document.querySelector('#auth button#post-access-token').onclick = postAccessToken;
  
-        // Post Databricks Gallery App
-        const postDatabricksGalleryAppElement = document.querySelector('#post-databricks-gallery-app button');
-        postDatabricksGalleryAppElement.onclick = async () => {
-            addToLog('<br/>Creating databricks gallery app...')
-            // Get login code for auth token
-            const codeValue = getCodeFromUrlParam();
-            if (!codeValue) return;
-            // Get data required to create Databricks Gallery App
-            const databricksScimId = document.querySelector('#post-databricks-gallery-app input#databricks-scim-id').value;
-            const galleryAppName = document.querySelector('#post-databricks-gallery-app input#gallery-app-name').value;
-
-            if (!databricksScimId || !galleryAppName) {
-                return validateInputs([
-                    { value: databricksScimId, message: 'Invalid databricks scim id...'},
-                    { value: galleryAppName, message: 'Invalid gallery app name...'},
-                ]);
-            }
-            const response = await fetch(`${document.location.origin}/databricksGalleryApp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: codeValue, databricksScimId, galleryAppName }),
-            });
-            response.json().then((body) => {
-                if (response.status === 201) {
-                    const accessTokenElement = document.querySelector('#get-aad-group input#access-token');
-                    accessTokenElement.value = body.access_token;
+        // POST Databricks Gallery App
+        // createSCIMApp needs appName and scimAppTemplateId
+        // returns scimSPObjId for addGroupToSCIM, createSyncJob, validateCredentials, saveCredentials, startSyncJob, and monitorJob
+        async function postScimConnectorGalleryApp() {
+            try {
+                addToLog('<br/>Creating scim connector gallery app...')
+                const accessToken = document.querySelector('#post-scim-connector-gallery-app input.access-token').value;
+                const scimAppTemplateId = document.querySelector('#post-scim-connector-gallery-app input#scim-app-template-id').value;
+                const scimConnectorGalleryAppName = document.querySelector('#post-scim-connector-gallery-app input#scim-connector-gallery-app-name').value;
+                // Validate data required to create SCIM Connector Gallery App
+                if (!accessToken || !scimAppTemplateId || !scimConnectorGalleryAppName) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Invalid access token...' },
+                        { value: scimAppTemplateId, message: 'Invalid scim app template id...'},
+                        { value: scimConnectorGalleryAppName, message: 'Invalid scim connector gallery app name...'},
+                    ]);
                 }
-                return addToLog(body.message);
-            });
-        };
-
-        // Get AAD Group
-        const getAadGroupElement = document.querySelector('#get-aad-group button');
-        getAadGroupElement.onclick = async () => {
-            const accessToken = document.querySelector('#get-aad-group input#access-token').value;
-            const filterDisplayName = document.querySelector('#get-aad-group input#filter-display-name').value;
-            validateInputs([
-                { value: accessToken, message: 'Access token is required to get aad groups...' },
-                { value: filterDisplayName, message: 'Invalid search display name...' },
-            ]);
-            if (!accessToken || !filterDisplayName) return;
-            addToLog(`<br />Searching for aad groups...`);
-            const response = await fetch(`${document.location.origin}/aadGroups?filterDisplayName=${encodeURIComponent(filterDisplayName)}`, {
-                method: 'GET',
-                headers: { Authorization: accessToken }
-            })
-
-            if (response.status !== 200) {
-                return response.json().then(({ message }) => addToLog(message + '...'));
+                const response = await fetch(
+                    encodeURI(`${document.location.origin}/databricksGalleryApp?scimAppTemplateId=${scimAppTemplateId}&scimConnectorGalleryAppName=${scimConnectorGalleryAppName}`),
+                    { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`} },
+                );
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 201) {
+                    const scimServicePrincipalObjectIdElements = document.querySelectorAll('input.scim-service-principal-object-id');
+                    scimServicePrincipalObjectIdElements.forEach(element => element.value = body.scimServicePrincipalObjectId);
+                    addToLog(`Created scim connector gallery app: ${scimConnectorGalleryAppName}...`);
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.innerError.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while creating scim connector gallery app...');
             }
-            const aadGroups = await response.json().then(({ groups }) => groups);
-            addToLog(`Found ${aadGroups.length} aad group${aadGroups.length ? 's' : ''}...`);
-            const aadGroupIdsElement = document.querySelector('#get-app-role-assignments #aad-group-ids');
-            aadGroups.forEach(({ id, displayName }, index) => {
-                addToLog(`${displayName}: ${id}`);
-
-                const inputElement = document.createElement('input');
-                inputElement.type = 'radio';
-                inputElement.id = `aadGroup${index}`;
-                inputElement.name = 'aadGroupId'
-                inputElement.value = id;
-
-                const labelElement = document.createElement('label');
-                labelElement.for = `aadGroup${index}`;
-                labelElement.innerText = displayName;
-
-                aadGroupIdsElement.appendChild(document.createElement('br'));
-                aadGroupIdsElement.appendChild(inputElement);
-                aadGroupIdsElement.appendChild(labelElement);
-            });
         };
+        const postScimConnectorGalleryAppElement = document.querySelector('#post-scim-connector-gallery-app button');
+        postScimConnectorGalleryAppElement.onclick = postScimConnectorGalleryApp;
 
-        // Get App Role Assignments
-        const getAppRoleAssignments = document.querySelector('#get-app-role-assignments button');
+        // GET AAD Group
+        // findAADGroup needs aadGroupName
+        // returns groupId for getAppRoleAssignments and addGroupToSCIM
+        async function getAadGroups() {
+            try {
+                addToLog(`<br />Searching for aad groups...`);
+                const accessToken = document.querySelector('#get-aad-groups input.access-token').value;
+                const filterDisplayName = document.querySelector('#get-aad-groups input#filter-display-name').value;
+                if (!accessToken || !filterDisplayName) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token is required to get aad groups...' },
+                        { value: filterDisplayName, message: 'Invalid search display name...' },
+                    ]);
+                }
+                const response = await fetch(`${document.location.origin}/aadGroups?filterDisplayName=${encodeURIComponent(filterDisplayName)}`, {
+                    method: 'GET',
+                    headers: { Authorization: accessToken }
+                })
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 200) {
+                    const aadGroupIdsElements = document.querySelectorAll('.aad-group-ids');
+                    aadGroupIdsElements.forEach((containerElement, elementIndex) => {
+                        body.forEach(({ aadGroupId, displayName }, dataIndex) => {
+                            const inputElement = document.createElement('input');
+                            if (dataIndex === 0) {
+                                inputElement.checked = true;
+                            }
+                            inputElement.type = 'radio';
+                            inputElement.id = `aadGroup${dataIndex}`;
+                            inputElement.name = `aadGroupId${elementIndex}`
+                            inputElement.value = aadGroupId;
+                            const labelElement = document.createElement('label');
+                            labelElement.for = `aadGroup${dataIndex}`;
+                            labelElement.innerText = displayName;
+                                containerElement.appendChild(document.createElement('br'));
+                                containerElement.appendChild(inputElement);
+                                containerElement.appendChild(labelElement);
+                        });
+                    });
+                    addToLog(`Found ${body.length} aad group${body.length > 1 ? 's' : ''}...`);
+                    body.forEach(({ aadGroupId, displayName }) => addToLog(`${displayName}: ${aadGroupId}`));
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while getting aad groups...');
+            }
+        };
+        const getAadGroupsElement = document.querySelector('#get-aad-groups button');
+        getAadGroupsElement.onclick = getAadGroups;
+
+        // Using getServicePrincipals to get appRoleId instead
+        // GET App Role Assignments
+        // getAppRoleAssignments needs groupId
+        // returns appRoleId for addGroupToSCIM
+        // async function getAppRoleAssignments() {
+        //     try {
+        //         addToLog(`<br />Fetching app role assignments..`);
+        //         const accessToken = document.querySelector('#get-app-role-assignments input.access-token').value;
+        //         const checkedAadGroupIdElement =  document.querySelector('#get-app-role-assignments .aad-group-ids>input:checked');
+        //         const aadGroupId = checkedAadGroupIdElement && checkedAadGroupIdElement.value;
+        //         if (!accessToken || !aadGroupId) {
+        //             return logMissingInputs([
+        //                 { value: accessToken, message: 'Access token is required to get app role assignments...' },
+        //                 { value: aadGroupId, message: 'Invalid aad groupd id...' },
+        //             ]);
+        //         }
+        //         const response = await fetch(`${document.location.origin}/appRoleAssignments?aadGroupId=${encodeURIComponent(aadGroupId)}`, {
+        //             method: 'GET',
+        //             headers: { Authorization: accessToken }
+        //         })
+        //         const contentType = response.headers.get('content-type');
+        //         const body = contentType.includes('json') ? await response.json() : await response.text();
+        //         if (response.status === 200) {
+        //             // TODO: Need live response values to make accurate
+        //             // const appRoleIdElements = document.querySelectorAll('.app-role-id');
+        //             // appRoleIdElements.forEach((containerElement, elementIndex) => {
+        //             //     body.forEach((appRoleId, dataIndex) => {
+        //             //         const inputElement = document.createElement('input');
+        //             //         if (dataIndex === 0) {
+        //             //             inputElement.checked = true;
+        //             //         }
+        //             //         inputElement.type = 'radio';
+        //             //         inputElement.id = `appRole${dataIndex}`;
+        //             //         inputElement.name = `appRoleId${elementIndex}`
+        //             //         inputElement.value = appRoleId;
+        //             //         const labelElement = document.createElement('label');
+        //             //         labelElement.for = `appRole${dataIndex}`;
+        //             //         labelElement.innerText = displayName;
+        //             //             containerElement.appendChild(document.createElement('br'));
+        //             //             containerElement.appendChild(inputElement);
+        //             //             containerElement.appendChild(labelElement);
+        //             //     });
+        //             // });
+        //             addToLog(`Found ${body.length} app role${body.length === 1 ? '' : 's'}...`);
+        //             body.forEach((appRoleId) => addToLog(appRoleId));
+        //         } else if (response.status === 400) {
+        //             addToLog(response.statusText + ': ' + body.error.message);
+        //         } else if (response.status === 401) {
+        //             addToLog(response.statusText + ': ' + body.error.code);
+        //         } else {
+        //             addToLog(response.statusText + ': ' + body);
+        //         }
+        //     } catch (err) {
+        //         console.error(err);
+        //         addToLog('Error while getting app role assignments...');
+        //     }
+        // }
+        // const getAppRoleAssignmentsElement = document.querySelector('#get-app-role-assignments button');
+        // getAppRoleAssignmentsElement.onclick = getAppRoleAssignments;
+
+        // GET Service Principals
+        // getServicePrincipals needs scimSPObjId
+        // returns appRoleId
+        async function getServicePrincipals() {
+            try {
+                addToLog(`<br />Fetching service principals...`);
+                const accessToken = document.querySelector('#get-service-principals input.access-token').value;
+                const scimServicePrincipalObjectId = document.querySelector('#get-service-principals input.scim-service-principal-object-id').value;
+                if(!accessToken || !scimServicePrincipalObjectId) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token is required to get aad groups...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id is required to get service principals..' },
+                    ]);
+                }
+                const response = await fetch(`${document.location.origin}/servicePrincipals?scimServicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
+                    method: 'GET',
+                    headers: { Authorization: accessToken }
+                })
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 200) {
+                    const appRoleIdsElement = document.querySelector('#app-role-ids');
+                    addToLog(`Found ${body.filter(({ isEnabled }) => isEnabled).length} app role${body.length > 1 ? 's' : ''}...`);
+                    body.filter(({ isEnabled }) => isEnabled).forEach(({ displayName, id }, index) => {
+                        const inputElement = document.createElement('input');
+                        if (index === 0) {
+                            inputElement.checked = true;
+                        }
+                        inputElement.type = 'radio';
+                        inputElement.id = `appRole${index}`;
+                        inputElement.name = `appRoleId`
+                        inputElement.value = id;
+                        const labelElement = document.createElement('label');
+                        labelElement.for = `appRole${index}`;
+                        labelElement.innerText = displayName;
+                            appRoleIdsElement.appendChild(document.createElement('br'));
+                            appRoleIdsElement.appendChild(inputElement);
+                            appRoleIdsElement.appendChild(labelElement);
+                        addToLog(`${displayName}: ${id}`);
+                    });
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while getting service principals...');
+            }
+        }
+        const getServicePrincipalsElement = document.querySelector('#get-service-principals button');
+        getServicePrincipalsElement.onclick = getServicePrincipals;
+
+        // POST Group to SCIM
+        // addGroupToSCIM needs scimSPObjId, groupId, and appRoleId
+        // returns nothing needed for future requests
+        function postGroupToScim() {
+
+        }
+        const postGroupToScimElement = document.querySelector('#post-group-to-scim button');
+        postGroupToScimElement.onclick = postGroupToScim;
+        
+        // POST Sync Job
+        // createSyncJob needs scimSPObjId
+        // returns jobId for validateCredentials, saveCredentials, startSyncJob, monitorJob
+
+        // POST Validate Credentials
+        // validateCredentials needs scimSPObjId, jobId(, databricksUrl, and databricksPAT **from User)
+        // returns nothing needed for future requests
+
+        // PUT Save Credentials
+        // saveCredentials needs scimSPObjId, jobId(, databricksUrl, databricksPAT **from User)
+        // returns nothing needed for future requests
+
+        // POST Start Sync Job
+        // startSyncJob needs scimSPObjId and jobId
+        // returns nothing needed for future requests
+        
+        // GET Monitor Job
+        // monitorJob needs scimSPObjId and jobId
+        // returns logged status
     </script>
 </html>
