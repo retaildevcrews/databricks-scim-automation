@@ -105,16 +105,18 @@
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <button>Get Service Principals</button>
+                <button>Get App Roles via Service Principals</button>
             </div>
-            <div id="post-group-to-scim" class="outline">
+            <div id="post-aad-group-to-scim" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>App Roles:</label>
-                <div id="app-role-ids"></div>
-                <br />
                 <label>AAD Groups:</label>
                 <div class="aad-group-ids"></div>
+                <br />
+                <label>App Roles:</label>
+                <div id="app-role-ids"></div>
                 <br />
                 <button>Add AAD Group to SCIM</button>
             </div>
@@ -426,7 +428,7 @@
                             appRoleIdsElement.appendChild(labelElement);
                         addToLog(`${displayName}: ${id}`);
                     });
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -444,10 +446,50 @@
         // POST Group to SCIM
         // addGroupToSCIM needs scimSPObjId, groupId, and appRoleId
         // returns nothing needed for future requests
-        function postGroupToScim() {
-
+        async function postGroupToScim() {
+            try {
+                addToLog(`<br />Adding aad group to scim...`);
+                const accessToken = document.querySelector('#post-aad-group-to-scim input.access-token').value;
+                const scimServicePrincipalObjectId = document.querySelector('#post-aad-group-to-scim input.scim-service-principal-object-id').value;
+                const checkedAadGroupIdElement =  document.querySelector('#post-aad-group-to-scim .aad-group-ids>input:checked');
+                const aadGroupId = checkedAadGroupIdElement && checkedAadGroupIdElement.value;
+                const checkedAppRoleIdElement =  document.querySelector('#post-aad-group-to-scim #app-role-ids>input:checked');
+                const appRoleId = checkedAppRoleIdElement && checkedAppRoleIdElement.value;
+                if(!accessToken || !scimServicePrincipalObjectId || !aadGroupId || !appRoleId) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token is required to get aad groups...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id is required to add an aad group to scim..' },
+                        { value: aadGroupId, message: 'Aad group id is required to add an aad group to scim...'},
+                        { value: appRoleId, message: 'App role id is required to add an aad group to scim...'},
+                    ]);
+                }
+                const parameters = [
+                    { key: 'scimServicePrincipalObjectId', value: scimServicePrincipalObjectId },
+                    { key: 'aadGroupId', value: aadGroupId },
+                    { key: 'appRoleId', value: appRoleId },
+                ].map(({ key, value }) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                .join('&');
+                const response = await fetch(`${document.location.origin}/aadGroupToScim?${parameters}`, {
+                    method: 'POST',
+                    headers: { Authorization: accessToken },
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 201) {
+                    addToLog('Aad group was successfully added to scim...');
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while adding aad group to scim...');
+            }
         }
-        const postGroupToScimElement = document.querySelector('#post-group-to-scim button');
+        const postGroupToScimElement = document.querySelector('#post-aad-group-to-scim button');
         postGroupToScimElement.onclick = postGroupToScim;
         
         // POST Sync Job

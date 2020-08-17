@@ -249,7 +249,6 @@ async function getServicePrincipals(req) {
         });
         const contentType = response.headers._headers['content-type'];
         const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
-        console.log({ contentType, body, response });
         if (response.status === 200) {
             return {
                 status: response.status,
@@ -265,6 +264,43 @@ async function getServicePrincipals(req) {
         }
     } catch (err) {
         const errorMessage = 'Error fetching service principals';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+}
+
+async function postAadGroupToScim(req) {
+    try {
+        const { query, query: {
+            scimServicePrincipalObjectId,
+            aadGroupId,
+            appRoleId,
+        } } = url.parse(req.url, true);
+        const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/appRoleAssignments`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${req.headers.authorization}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                principalId: aadGroupId,
+                resourceId: scimServicePrincipalObjectId,
+                appRoleId: appRoleId,
+            }),
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        return {
+            status: response.status,
+            contentType,
+            response: JSON.stringify(body),
+        };
+    } catch (err) {
+        const errorMessage = 'Error adding aad group to scim';
         console.error(errorMessage + ': ', err);
         return {
             response: errorMessage,
@@ -312,6 +348,8 @@ async function postRoute(req, res) {
             return sendResponse(res, await postAccessToken(req));
         case '/databricksGalleryApp':
             return sendResponse(res, await postDatabricksGalleryApp(req));
+        case '/aadGroupToScim':
+            return sendResponse(res, await postAadGroupToScim(req));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
     }
