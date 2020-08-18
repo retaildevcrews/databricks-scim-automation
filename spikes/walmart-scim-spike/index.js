@@ -437,6 +437,45 @@ async function postStartSyncJob(req) {
         }
     }
 }
+
+async function getSyncJobStatus(req) {
+    try {
+        const { query: { scimServicePrincipalObjectId, syncJobId } } = url.parse(req.url, true);
+        const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/jobs/${syncJobId}`, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${req.headers.authorization}` },
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        if (response.status === 200) {
+            const { lastSuccessfulExecution, lastSuccessfulExecutionWithExports, lastExecution } = body.status;
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify({
+                    lastSuccessfulExecution,
+                    lastSuccessfulExecutionWithExports,
+                    lastExecution,
+                }),
+            };
+        } else {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body),
+            };
+        }
+    } catch (err) {
+        const errorMessage = 'Error fetching sync job status';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+}
+
 function sendResponse(res, payload) {
     if (payload.status === 302 ) {
         res.writeHead(payload.status, { Location: payload.response });
@@ -462,6 +501,8 @@ async function getRoute(req, res) {
         //     return sendResponse(res, await getAppRoleAssignments(req));
         case '/servicePrincipals':
             return sendResponse(res, await getServicePrincipals(req))
+        case '/syncJobStatus':
+            return sendResponse(res, await getSyncJobStatus(req));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: 'text/plain' });
     }

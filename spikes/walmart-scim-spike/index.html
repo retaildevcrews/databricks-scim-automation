@@ -115,7 +115,7 @@
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
                 <label>AAD Groups:</label>
-                <div class="aad-group-ids"></div>
+                <div id="aad-group-ids"></div>
                 <br />
                 <label>App Roles:</label>
                 <div id="app-role-ids"></div>
@@ -166,7 +166,7 @@
                 <br /><br />
                 <button>Start Sync Job</button>
             </div>
-            <div id="get-monitor-job" class="outline">
+            <div id="get-sync-job-status" class="outline">
                 <label>Access Token: </label><input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
@@ -231,8 +231,10 @@
                     const accessTokenElements = document.querySelectorAll('input.access-token');
                     accessTokenElements.forEach(element => element.value = body.access_token);
                     addToLog(`Created access token: ${body.access_token}...`);
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error_description);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
                 } else {
                     addToLog(response.statusText + ': ' + body);
                 }
@@ -270,7 +272,7 @@
                     const scimServicePrincipalObjectIdElements = document.querySelectorAll('input.scim-service-principal-object-id');
                     scimServicePrincipalObjectIdElements.forEach(element => element.value = body.scimServicePrincipalObjectId);
                     addToLog(`Created scim connector gallery app: ${scimConnectorGalleryAppName}...`);
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.innerError.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -306,29 +308,26 @@
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 200) {
-                    const aadGroupIdsElements = document.querySelectorAll('.aad-group-ids');
-                    aadGroupIdsElements.forEach((containerElement, elementIndex) => {
-                        containerElement.innerHTML = '';
-                        body.forEach(({ aadGroupId, displayName }, dataIndex) => {
-                            const inputElement = document.createElement('input');
-                            if (dataIndex === 0) {
-                                inputElement.checked = true;
-                            }
-                            inputElement.type = 'radio';
-                            inputElement.id = `aadGroup${dataIndex}`;
-                            inputElement.name = `aadGroupId${elementIndex}`
-                            inputElement.value = aadGroupId;
-                            const labelElement = document.createElement('label');
-                            labelElement.for = `aadGroup${dataIndex}`;
-                            labelElement.innerText = displayName;
-                                containerElement.appendChild(document.createElement('br'));
-                                containerElement.appendChild(inputElement);
-                                containerElement.appendChild(labelElement);
-                        });
+                    const aadGroupIdsElement = document.querySelector('#aad-group-ids');
+                    addToLog(`Found ${body.length} aad group${body.length === 1 ? '' : 's'}...`);
+                    body.forEach(({ aadGroupId, displayName }, index) => {
+                        const inputElement = document.createElement('input');
+                        if (index === 0) {
+                            inputElement.checked = true;
+                        }
+                        inputElement.type = 'radio';
+                        inputElement.id = `aadGroup${index}`;
+                        inputElement.name = `aadGroupId`
+                        inputElement.value = aadGroupId;
+                        const labelElement = document.createElement('label');
+                        labelElement.for = `aadGroup${index}`;
+                        labelElement.innerText = displayName;
+                        aadGroupIdsElement.appendChild(document.createElement('br'));
+                        aadGroupIdsElement.appendChild(inputElement);
+                        aadGroupIdsElement.appendChild(labelElement);
+                        addToLog(`${displayName}: ${aadGroupId}`);
                     });
-                    addToLog(`Found ${body.length} aad group${body.length > 1 ? 's' : ''}...`);
-                    body.forEach(({ aadGroupId, displayName }) => addToLog(`${displayName}: ${aadGroupId}`));
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -351,7 +350,7 @@
         //     try {
         //         addToLog(`<br />Fetching app role assignments..`);
         //         const accessToken = document.querySelector('#get-app-role-assignments input.access-token').value;
-        //         const checkedAadGroupIdElement =  document.querySelector('#get-app-role-assignments .aad-group-ids>input:checked');
+        //         const checkedAadGroupIdElement =  document.querySelector('#get-app-role-assignments #aad-group-ids>input:checked');
         //         const aadGroupId = checkedAadGroupIdElement && checkedAadGroupIdElement.value;
         //         if (!accessToken || !aadGroupId) {
         //             return logMissingInputs([
@@ -389,7 +388,7 @@
         //             // });
         //             addToLog(`Found ${body.length} app role${body.length === 1 ? '' : 's'}...`);
         //             body.forEach((appRoleId) => addToLog(appRoleId));
-        //         } else if (response.status === 400) {
+        //         } else if (response.status === 400 || response.status === 404) {
         //             addToLog(response.statusText + ': ' + body.error.message);
         //         } else if (response.status === 401) {
         //             addToLog(response.statusText + ': ' + body.error.code);
@@ -468,7 +467,7 @@
                 addToLog(`<br />Adding aad group to scim...`);
                 const accessToken = document.querySelector('#post-aad-group-to-scim input.access-token').value;
                 const scimServicePrincipalObjectId = document.querySelector('#post-aad-group-to-scim input.scim-service-principal-object-id').value;
-                const checkedAadGroupIdElement =  document.querySelector('#post-aad-group-to-scim .aad-group-ids>input:checked');
+                const checkedAadGroupIdElement =  document.querySelector('#post-aad-group-to-scim #aad-group-ids>input:checked');
                 const aadGroupId = checkedAadGroupIdElement && checkedAadGroupIdElement.value;
                 const checkedAppRoleIdElement =  document.querySelector('#post-aad-group-to-scim #app-role-ids>input:checked');
                 const appRoleId = checkedAppRoleIdElement && checkedAppRoleIdElement.value;
@@ -494,7 +493,7 @@
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 201) {
                     addToLog('Aad group was successfully added to scim...');
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -535,7 +534,7 @@
                     const syncJobIdElements = document.querySelectorAll('input.sync-job-id');
                     syncJobIdElements.forEach(element => element.value = body);
                     addToLog(`Successfully created sync job ${body}...`);
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -584,7 +583,7 @@
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 204) {
                     addToLog(`Successfully validated credentials...`);
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -633,7 +632,7 @@
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 204) {
                     addToLog(`Successfully saved credentials...`);
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -672,7 +671,7 @@
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 204) {
                     addToLog(`Successfully started sync job...`);
-                } else if (response.status === 400) {
+                } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error.message);
                 } else if (response.status === 401) {
                     addToLog(response.statusText + ': ' + body.error.code);
@@ -690,5 +689,69 @@
         // GET Monitor Job
         // monitorJob needs scimSPObjId and jobId
         // returns logged status
+        async function getSyncJobStatus() {
+            try {
+                addToLog(`<br /> Fetching status of sync job...`);
+                const accessToken = document.querySelector('#get-sync-job-status input.access-token').value;
+                const scimServicePrincipalObjectId = document.querySelector('#get-sync-job-status input.scim-service-principal-object-id').value;
+                const syncJobId = document.querySelector('#get-sync-job-status input.sync-job-id').value;
+                if(!accessToken || !scimServicePrincipalObjectId || !syncJobId) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token required to get status of sync job...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to get status of sync job...' },
+                        { value: syncJobId, message: 'Sync job id required to get status of sync job...'},
+                    ]);
+                }
+                const response = await fetch(`${document.location.origin}/syncJobStatus?scimServicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
+                    method: 'GET',
+                    headers: { Authorization: accessToken },
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 200) {
+                    addToLog(`Successfully fetched sync job status...`);
+                    const { lastSuccessfulExecution, lastSuccessfulExecutionWithExports, lastExecution } = body;
+                    if (!lastSuccessfulExecution && !lastSuccessfulExecutionWithExports && !lastExecution) {
+                        addToLog('No available last execution data...');
+                    } else {
+                        if (lastSuccessfulExecution) {
+                            const { state, timeBegan, timeEnded } = lastSuccessfulExecution;
+                            addToLog(`Last Successful Execution: {
+                                state: ${state},
+                                timeBegan: ${timeBegan},
+                                timeEnded: ${timeEnded}
+                            }`);
+                        }
+                        if (lastSuccessfulExecutionWithExports) {
+                            const { state, timeBegan, timeEnded } = lastSuccessfulExecutionWithExports;
+                            addToLog(`Last Successful Execution with Exports: {
+                                state: ${state},
+                                timeBegan: ${timeBegan},
+                                timeEnded: ${timeEnded}
+                            }`);
+                        }
+                        if (lastExecution) {
+                            const { state, timeBegan, timeEnded } = lastExecution;
+                            addToLog(`Last Execution: {
+                                state: ${state},
+                                timeBegan: ${timeBegan},
+                                timeEnded: ${timeEnded}
+                            }`);
+                        }
+                    }
+                } else if (response.status === 400 || response.status === 404) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while fetching status of sync job...');
+            }
+        }
+        const getSyncJobStatusElement = document.querySelector('#get-sync-job-status button');
+        getSyncJobStatusElement.onclick = getSyncJobStatus;
     </script>
 </html>
