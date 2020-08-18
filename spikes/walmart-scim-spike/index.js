@@ -354,11 +354,43 @@ async function postValidateCredentials(req) {
         const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
             method: 'POST',
             headers: {
-                // Authorization: `Bearer ${req.headers.authorization}`,
-                Authorization: `Bearer ddd`,
+                Authorization: `Bearer ${req.headers.authorization}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ credentials: [
+                { key: 'BaseAddress', value: databricksUrl },
+                { key: 'SecretToken', value: secretToken },
+            ]}),
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        return {
+            status: response.status,
+            contentType,
+            response: JSON.stringify(body),
+        };
+    } catch (err) {
+        const errorMessage = 'Error syncing jobs';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+}
+
+async function putSaveCredentials(req) {
+    try {
+        const { query: { scimServicePrincipalObjectId, syncJobId, databricksUrl } } = url.parse(req.url, true);
+        const secretToken = req.headers['x-secret-token'] === 'default' ? 'dapi5b0249411dde2675cb6e76d92a1b9b5d' : req.headers['x-secret-token'];
+        const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/secrets`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${req.headers.authorization}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ value: [
                 { key: 'BaseAddress', value: databricksUrl },
                 { key: 'SecretToken', value: secretToken },
             ]}),
@@ -407,13 +439,12 @@ async function getRoute(req, res) {
         case '/servicePrincipals':
             return sendResponse(res, await getServicePrincipals(req))
         default:
-            return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
+            return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: 'text/plain' });
     }
 }
 
 async function postRoute(req, res) {
     const { pathname } = url.parse(req.url, true);
-    // res write is completed in function
     switch (pathname) {
         case '/accessToken':
             return sendResponse(res, await postAccessToken(req));
@@ -426,7 +457,17 @@ async function postRoute(req, res) {
         case '/validateCredentials':
             return sendResponse(res, await postValidateCredentials(req));
         default:
-            return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
+            return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: 'text/plain' });
+    }
+}
+
+async function putRoute(req, res) {
+    const { pathname } = url.parse(req.url, true);
+    switch (pathname) {
+        case '/saveCredentials':
+            return sendResponse(res, await putSaveCredentials(req));
+        default:
+            return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: 'text/plain' })
     }
 }
 
@@ -437,10 +478,10 @@ server.on('request', async (req, res) => {
             return getRoute(req, res);
         case 'POST':
             return postRoute(req, res);
+        case 'PUT':
+            return putRoute(req, res);
         default:
-            res.writeHead(405);
-            res.write('Unsupported Method');
-            res.end();
+            sendResponse(res, { response: 'Unsupported Method', status: 405, contentType: 'text/plain' });
     }
 });
 

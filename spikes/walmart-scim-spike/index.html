@@ -106,6 +106,8 @@
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
                 <button>Get App Roles via Service Principals</button>
+                <br />
+                <em>May need to wait until service principals are created for the SCIM Connector Gallery App before getting App Roles</em>
             </div>
             <div id="post-aad-group-to-scim" class="outline">
                 <label>Access Token: </label><input type="text" class="access-token" />
@@ -149,9 +151,9 @@
                 <br /><br />
                 <label>Sync Job ID: </label><input type="text" class="sync-job-id"/>
                 <br /><br />
-                <label>Databricks URL: </label><input type="text" class="databricks-url" />
+                <label>**Databricks URL: </label><input type="text" value="https://adb-1514491097879978.18.azuredatabricks.net/api/2.0/preview/scim" class="databricks-url"/>
                 <br /><br />
-                <label>Databricks PAT: </label><input type="text" class="databricks-pat" />
+                <label>**Databricks PAT/Secret Token: </label><input type="password" value="default" class="databricks-pat" />
                 <br /><br />
                 <button>Save Credentials</button>
             </div>
@@ -306,6 +308,7 @@
                 if (response.status === 200) {
                     const aadGroupIdsElements = document.querySelectorAll('.aad-group-ids');
                     aadGroupIdsElements.forEach((containerElement, elementIndex) => {
+                        containerElement.innerHTML = '';
                         body.forEach(({ aadGroupId, displayName }, dataIndex) => {
                             const inputElement = document.createElement('input');
                             if (dataIndex === 0) {
@@ -366,6 +369,7 @@
         //             // TODO: Need live response values to make accurate
         //             // const appRoleIdElements = document.querySelectorAll('.app-role-id');
         //             // appRoleIdElements.forEach((containerElement, elementIndex) => {
+        //             //     containerElement.innerHTML = '';
         //             //     body.forEach((appRoleId, dataIndex) => {
         //             //         const inputElement = document.createElement('input');
         //             //         if (dataIndex === 0) {
@@ -422,6 +426,7 @@
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 200) {
                     const appRoleIdsElement = document.querySelector('#app-role-ids');
+                    appRoleIdsElement.innerHTML = '';
                     addToLog(`Found ${body.filter(({ isEnabled }) => isEnabled).length} app role${body.length > 1 ? 's' : ''}...`);
                     body.filter(({ isEnabled }) => isEnabled).forEach(({ displayName, id }, index) => {
                         const inputElement = document.createElement('input');
@@ -597,6 +602,51 @@
         // PUT Save Credentials
         // saveCredentials needs scimSPObjId, jobId(, databricksUrl, databricksPAT **from User)
         // returns nothing needed for future requests
+        async function putSaveCredentials() {
+            try {
+                addToLog(`<br />Saving credentials...`);
+                const accessToken = document.querySelector('#post-validate-credentials input.access-token').value;
+                const scimServicePrincipalObjectId = document.querySelector('#post-sync-job input.scim-service-principal-object-id').value;
+                const syncJobId = document.querySelector('#post-validate-credentials input.sync-job-id').value;
+                const databricksUrl = document.querySelector('#post-validate-credentials input.databricks-url').value;
+                const databricksPat = document.querySelector('#post-validate-credentials input.databricks-pat').value;
+                if(!accessToken || !scimServicePrincipalObjectId || !syncJobId || !databricksUrl || !databricksPat) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token required to save credentials...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to save credentials...' },
+                        { value: syncJobId, message: 'Sync job id required to save credentials...'},
+                        { value: databricksUrl, message: 'Databricks url required to save credentials...'},
+                        { value: databricksPat, message: 'Databricks pat required to save credentials...'},
+                    ]);
+                }
+                const parameters = [
+                    { key: 'scimServicePrincipalObjectId', value: scimServicePrincipalObjectId },
+                    { key: 'syncJobId', value: syncJobId },
+                    { key: 'databricksUrl', value: databricksUrl },
+                ].map(({ key, value }) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                .join('&');
+                const response = await fetch(`${document.location.origin}/saveCredentials?${parameters}`, {
+                    method: 'PUT',
+                    headers: { Authorization: accessToken, 'X-Secret-Token': databricksPat },
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 204) {
+                    addToLog(`Successfully saved credentials...`);
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while validating credentials...');
+            }
+        }
+        const putSaveCredentialsElement = document.querySelector('#put-save-credentials button');
+        putSaveCredentialsElement.onclick = putSaveCredentials;
 
         // POST Start Sync Job
         // startSyncJob needs scimSPObjId and jobId
