@@ -605,11 +605,11 @@
         async function putSaveCredentials() {
             try {
                 addToLog(`<br />Saving credentials...`);
-                const accessToken = document.querySelector('#post-validate-credentials input.access-token').value;
-                const scimServicePrincipalObjectId = document.querySelector('#post-sync-job input.scim-service-principal-object-id').value;
-                const syncJobId = document.querySelector('#post-validate-credentials input.sync-job-id').value;
-                const databricksUrl = document.querySelector('#post-validate-credentials input.databricks-url').value;
-                const databricksPat = document.querySelector('#post-validate-credentials input.databricks-pat').value;
+                const accessToken = document.querySelector('#put-save-credentials input.access-token').value;
+                const scimServicePrincipalObjectId = document.querySelector('#put-save-credentials input.scim-service-principal-object-id').value;
+                const syncJobId = document.querySelector('#put-save-credentials input.sync-job-id').value;
+                const databricksUrl = document.querySelector('#put-save-credentials input.databricks-url').value;
+                const databricksPat = document.querySelector('#put-save-credentials input.databricks-pat').value;
                 if(!accessToken || !scimServicePrincipalObjectId || !syncJobId || !databricksUrl || !databricksPat) {
                     return logMissingInputs([
                         { value: accessToken, message: 'Access token required to save credentials...' },
@@ -651,6 +651,41 @@
         // POST Start Sync Job
         // startSyncJob needs scimSPObjId and jobId
         // returns nothing needed for future requests
+        async function postStartSyncJob() {
+            try {
+                addToLog(`<br />Starting sync job...`);
+                const accessToken = document.querySelector('#post-start-sync-job input.access-token').value;
+                const scimServicePrincipalObjectId = document.querySelector('#post-start-sync-job input.scim-service-principal-object-id').value;
+                const syncJobId = document.querySelector('#post-start-sync-job input.sync-job-id').value;
+                if(!accessToken || !scimServicePrincipalObjectId || !syncJobId) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token required to start sync job...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to start sync job...' },
+                        { value: syncJobId, message: 'Sync job id required to start sync job...'},
+                    ]);
+                }
+                const response = await fetch(`${document.location.origin}/startSyncJob?scimServicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
+                    method: 'POST',
+                    headers: { Authorization: accessToken },
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 204) {
+                    addToLog(`Successfully started sync job...`);
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while starting sync job...');
+            }
+        }
+        const postStartSyncJobElement = document.querySelector('#post-start-sync-job button');
+        postStartSyncJobElement.onclick = postStartSyncJob;
         
         // GET Monitor Job
         // monitorJob needs scimSPObjId and jobId

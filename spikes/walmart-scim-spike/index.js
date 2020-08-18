@@ -350,7 +350,7 @@ async function postCreateSyncJob(req) {
 async function postValidateCredentials(req) {
     try {
         const { query: { scimServicePrincipalObjectId, syncJobId, databricksUrl } } = url.parse(req.url, true);
-        const secretToken = req.headers['x-secret-token'] === 'default' ? 'dapi5b0249411dde2675cb6e76d92a1b9b5d' : req.headers['x-secret-token'];
+        const secretToken = req.headers['x-secret-token'] === 'default' ? process.env.DATABRICKS_WS_TOKEN : req.headers['x-secret-token'];
         const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
             method: 'POST',
             headers: {
@@ -383,7 +383,7 @@ async function postValidateCredentials(req) {
 async function putSaveCredentials(req) {
     try {
         const { query: { scimServicePrincipalObjectId, syncJobId, databricksUrl } } = url.parse(req.url, true);
-        const secretToken = req.headers['x-secret-token'] === 'default' ? 'dapi5b0249411dde2675cb6e76d92a1b9b5d' : req.headers['x-secret-token'];
+        const secretToken = req.headers['x-secret-token'] === 'default' ? process.env.DATABRICKS_WS_TOKEN : req.headers['x-secret-token'];
         const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/secrets`, {
             method: 'PUT',
             headers: {
@@ -413,6 +413,30 @@ async function putSaveCredentials(req) {
     }
 }
 
+async function postStartSyncJob(req) {
+    try {
+        const { query: { scimServicePrincipalObjectId, syncJobId } } = url.parse(req.url, true);
+        const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/jobs/${syncJobId}/start`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${req.headers.authorization}` },
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        return {
+            status: response.status,
+            contentType,
+            response: JSON.stringify(body),
+        };
+    } catch (err) {
+        const errorMessage = 'Error syncing jobs';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+}
 function sendResponse(res, payload) {
     if (payload.status === 302 ) {
         res.writeHead(payload.status, { Location: payload.response });
@@ -456,6 +480,8 @@ async function postRoute(req, res) {
             return sendResponse(res, await postCreateSyncJob(req));
         case '/validateCredentials':
             return sendResponse(res, await postValidateCredentials(req));
+        case '/startSyncJob':
+            return sendResponse(res, await postStartSyncJob(req));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: 'text/plain' });
     }
