@@ -309,6 +309,7 @@
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 200) {
                     const aadGroupIdsElement = document.querySelector('#aad-group-ids');
+                    aadGroupIdsElement.innerHTML = '';
                     addToLog(`Found ${body.length} aad group${body.length === 1 ? '' : 's'}...`);
                     body.forEach(({ aadGroupId, displayName }, index) => {
                         const inputElement = document.createElement('input');
@@ -426,7 +427,7 @@
                 if (response.status === 200) {
                     const appRoleIdsElement = document.querySelector('#app-role-ids');
                     appRoleIdsElement.innerHTML = '';
-                    addToLog(`Found ${body.filter(({ isEnabled }) => isEnabled).length} app role${body.length > 1 ? 's' : ''}...`);
+                    addToLog(`Found ${body.filter(({ isEnabled }) => isEnabled).length} app role${body.length === 1 ? '' : 's'}...`);
                     body.filter(({ isEnabled }) => isEnabled).forEach(({ displayName, id }, index) => {
                         const inputElement = document.createElement('input');
                         if (index === 0) {
@@ -439,9 +440,9 @@
                         const labelElement = document.createElement('label');
                         labelElement.for = `appRole${index}`;
                         labelElement.innerText = displayName;
-                            appRoleIdsElement.appendChild(document.createElement('br'));
-                            appRoleIdsElement.appendChild(inputElement);
-                            appRoleIdsElement.appendChild(labelElement);
+                        appRoleIdsElement.appendChild(document.createElement('br'));
+                        appRoleIdsElement.appendChild(inputElement);
+                        appRoleIdsElement.appendChild(labelElement);
                         addToLog(`${displayName}: ${id}`);
                     });
                 } else if (response.status === 400 || response.status === 404) {
