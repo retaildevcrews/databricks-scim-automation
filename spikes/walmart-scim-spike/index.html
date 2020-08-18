@@ -121,7 +121,11 @@
                 <button>Add AAD Group to SCIM</button>
             </div>
             <div id="post-sync-job" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
+                <br /><br />
+                <label>Job Template ID: </label><input type="text" id="job-template-id" value="dataBricks" />
                 <br /><br />
                 <button>Create Sync Job</button>
             </div>
@@ -446,7 +450,7 @@
         // POST Group to SCIM
         // addGroupToSCIM needs scimSPObjId, groupId, and appRoleId
         // returns nothing needed for future requests
-        async function postGroupToScim() {
+        async function postAadGroupToScim() {
             try {
                 addToLog(`<br />Adding aad group to scim...`);
                 const accessToken = document.querySelector('#post-aad-group-to-scim input.access-token').value;
@@ -489,12 +493,47 @@
                 addToLog('Error while adding aad group to scim...');
             }
         }
-        const postGroupToScimElement = document.querySelector('#post-aad-group-to-scim button');
-        postGroupToScimElement.onclick = postGroupToScim;
+        const postAadGroupToScimElement = document.querySelector('#post-aad-group-to-scim button');
+        postAadGroupToScimElement.onclick = postAadGroupToScim;
         
         // POST Sync Job
         // createSyncJob needs scimSPObjId
         // returns jobId for validateCredentials, saveCredentials, startSyncJob, monitorJob
+        async function postSyncJob() {
+            try {
+                addToLog(`<br />Creating sync job...`);
+                const accessToken = document.querySelector('#post-sync-job input.access-token').value;
+                const jobTemplateId = document.querySelector('#post-sync-job input#job-template-id').value;
+                const scimServicePrincipalObjectId = document.querySelector('#post-sync-job input.scim-service-principal-object-id').value;
+                if(!accessToken || !jobTemplateId || !scimServicePrincipalObjectId) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token is required to get aad groups...' },
+                        { value: jobTemplateId, message: 'Job template id is required for syncing...'},
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id is required to add an aad group to scim..' },
+                    ]);
+                }
+                const response = await fetch(`${document.location.origin}/syncJob?jobTemplateId=${encodeURIComponent(jobTemplateId)}&scimServicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
+                    method: 'POST',
+                    headers: { Authorization: accessToken },
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 201) {
+                    addToLog(`Successfully created sync job ${body}...`);
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while creating sync job...');
+            }
+        }
+        const postSyncJobElement = document.querySelector('#post-sync-job button');
+        postSyncJobElement.onclick = postSyncJob;
 
         // POST Validate Credentials
         // validateCredentials needs scimSPObjId, jobId(, databricksUrl, and databricksPAT **from User)

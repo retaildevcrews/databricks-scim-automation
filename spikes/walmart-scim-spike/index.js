@@ -275,7 +275,7 @@ async function getServicePrincipals(req) {
 
 async function postAadGroupToScim(req) {
     try {
-        const { query, query: {
+        const { query: {
             scimServicePrincipalObjectId,
             aadGroupId,
             appRoleId,
@@ -308,6 +308,44 @@ async function postAadGroupToScim(req) {
             contentType: 'text/plain',
         }
     }
+}
+
+async function postSyncJob(req) {
+    try {
+        const { query: { jobTemplateId, scimServicePrincipalObjectId } } = url.parse(req.url, true);
+        const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/jobs`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${req.headers.authorization}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ templateId: jobTemplateId }),
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        if (response.status === 201) {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body.id),
+            };
+        } else {
+            return {
+                status: response.status,
+                contentType,
+                response: JSON.stringify(body),
+            };
+        }
+    } catch (err) {
+        const errorMessage = 'Error syncing jobs';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
+
 }
 
 function sendResponse(res, payload) {
@@ -350,6 +388,8 @@ async function postRoute(req, res) {
             return sendResponse(res, await postDatabricksGalleryApp(req));
         case '/aadGroupToScim':
             return sendResponse(res, await postAadGroupToScim(req));
+        case '/syncJob':
+            return sendResponse(res, await postSyncJob(req));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
     }
