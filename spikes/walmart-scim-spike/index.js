@@ -310,7 +310,7 @@ async function postAadGroupToScim(req) {
     }
 }
 
-async function postSyncJob(req) {
+async function postCreateSyncJob(req) {
     try {
         const { query: { jobTemplateId, scimServicePrincipalObjectId } } = url.parse(req.url, true);
         const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/jobs`, {
@@ -345,7 +345,40 @@ async function postSyncJob(req) {
             contentType: 'text/plain',
         }
     }
+}
 
+async function postValidateCredentials(req) {
+    try {
+        const { query: { scimServicePrincipalObjectId, syncJobId, databricksUrl } } = url.parse(req.url, true);
+        const secretToken = req.headers['x-secret-token'] === 'default' ? 'dapi5b0249411dde2675cb6e76d92a1b9b5d' : req.headers['x-secret-token'];
+        const response = await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${scimServicePrincipalObjectId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
+            method: 'POST',
+            headers: {
+                // Authorization: `Bearer ${req.headers.authorization}`,
+                Authorization: `Bearer ddd`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ credentials: [
+                { key: 'BaseAddress', value: databricksUrl },
+                { key: 'SecretToken', value: secretToken },
+            ]}),
+        });
+        const contentType = response.headers._headers['content-type'];
+        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
+        return {
+            status: response.status,
+            contentType,
+            response: JSON.stringify(body),
+        };
+    } catch (err) {
+        const errorMessage = 'Error syncing jobs';
+        console.error(errorMessage + ': ', err);
+        return {
+            response: errorMessage,
+            status: 500,
+            contentType: 'text/plain',
+        }
+    }
 }
 
 function sendResponse(res, payload) {
@@ -388,8 +421,10 @@ async function postRoute(req, res) {
             return sendResponse(res, await postDatabricksGalleryApp(req));
         case '/aadGroupToScim':
             return sendResponse(res, await postAadGroupToScim(req));
-        case '/syncJob':
-            return sendResponse(res, await postSyncJob(req));
+        case '/createSyncJob':
+            return sendResponse(res, await postCreateSyncJob(req));
+        case '/validateCredentials':
+            return sendResponse(res, await postValidateCredentials(req));
         default:
             return sendResponse(res, { response: 'Unidentified Path', status: 404, contentType: undefined });
     }

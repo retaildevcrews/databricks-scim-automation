@@ -81,14 +81,14 @@
                 <br /><br />
                 <label>SCIM App Template ID: </label><input type="text" id="scim-app-template-id" value="9c9818d2-2900-49e8-8ba4-22688be7c675" />
                 <br /><br />
-                <label>SCIM Connector Gallery App Name: </label><input type="text" id="scim-connector-gallery-app-name" />
+                <label>**SCIM Connector Gallery App Name: </label><input type="text" id="scim-connector-gallery-app-name" />
                 <br /><br />
                 <button>Create SCIM Connector Gallery App</button>
             </div>
             <div id="get-aad-groups" class="outline">
                 <label>Access Token: </label><input type="text" class="access-token" />
                 <br /><br />
-                <label>Search Display Name: </label><input type="text" id="filter-display-name" value="Databricks-SCIM" />
+                <label>**Search Display Name: </label><input type="text" id="filter-display-name" value="Databricks-SCIM" />
                 <br /><br />
                 <button>Get AAD Groups</button>
             </div>
@@ -125,25 +125,29 @@
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>Job Template ID: </label><input type="text" id="job-template-id" value="dataBricks" />
+                <label>**Job Template ID: </label><input type="text" id="job-template-id" value="dataBricks" />
                 <br /><br />
                 <button>Create Sync Job</button>
             </div>
             <div id="post-validate-credentials" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>Job ID: </label><input type="text" class="job-id"/>
+                <label>Sync Job ID: </label><input type="text" class="sync-job-id"/>
                 <br /><br />
-                <label>Databricks URL: </label><input type="text" />
+                <label>**Databricks URL: </label><input type="text" value="https://adb-1514491097879978.18.azuredatabricks.net/api/2.0/preview/scim" class="databricks-url"/>
                 <br /><br />
-                <label>Databricks PAT: </label><input type="text" />
+                <label>**Databricks PAT/Secret Token: </label><input type="password" value="default" class="databricks-pat" />
                 <br /><br />
                 <button>Validate Credentials</button>
             </div>
             <div id="put-save-credentials" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>Job ID: </label><input type="text" class="job-id"/>
+                <label>Sync Job ID: </label><input type="text" class="sync-job-id"/>
                 <br /><br />
                 <label>Databricks URL: </label><input type="text" class="databricks-url" />
                 <br /><br />
@@ -152,16 +156,20 @@
                 <button>Save Credentials</button>
             </div>
             <div id="post-start-sync-job" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>Job ID: </label><input type="text" class="job-id"/>
+                <label>Sync Job ID: </label><input type="text" class="sync-job-id"/>
                 <br /><br />
                 <button>Start Sync Job</button>
             </div>
             <div id="get-monitor-job" class="outline">
+                <label>Access Token: </label><input type="text" class="access-token" />
+                <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>Job ID: </label><input type="text" class="job-id"/>
+                <label>Sync Job ID: </label><input type="text" class="sync-job-id"/>
                 <br /><br />
                 <button>Monitor Job</button>
             </div>
@@ -212,7 +220,7 @@
                 addToLog('<br />Creating access token...');
                 const codeValue = getCodeValueFromUrl();
                 if (!codeValue) {
-                    return logMissingInputs([{ value: codeValue, message: 'Unable to complete request. Login required...' }]);
+                    return logMissingInputs([{ value: codeValue, message: 'Login required to get access token...' }]);
                 }
                 const response = await fetch(`${document.location.origin}/accessToken?code=${codeValue}`, { method: 'POST' });
                 const contentType = response.headers.get('content-type');
@@ -245,9 +253,9 @@
                 // Validate data required to create SCIM Connector Gallery App
                 if (!accessToken || !scimAppTemplateId || !scimConnectorGalleryAppName) {
                     return logMissingInputs([
-                        { value: accessToken, message: 'Invalid access token...' },
-                        { value: scimAppTemplateId, message: 'Invalid scim app template id...'},
-                        { value: scimConnectorGalleryAppName, message: 'Invalid scim connector gallery app name...'},
+                        { value: accessToken, message: 'Access token required to create scim connector gallery app...' },
+                        { value: scimAppTemplateId, message: 'Scim app template id required to create scim connector gallery app...'},
+                        { value: scimConnectorGalleryAppName, message: 'Scim connector gallery app name required to create scim connector gallery app...'},
                     ]);
                 }
                 const response = await fetch(
@@ -285,8 +293,8 @@
                 const filterDisplayName = document.querySelector('#get-aad-groups input#filter-display-name').value;
                 if (!accessToken || !filterDisplayName) {
                     return logMissingInputs([
-                        { value: accessToken, message: 'Access token is required to get aad groups...' },
-                        { value: filterDisplayName, message: 'Invalid search display name...' },
+                        { value: accessToken, message: 'Access token required to get aad groups...' },
+                        { value: filterDisplayName, message: 'Search display name required to get aad groups...' },
                     ]);
                 }
                 const response = await fetch(`${document.location.origin}/aadGroups?filterDisplayName=${encodeURIComponent(filterDisplayName)}`, {
@@ -344,8 +352,8 @@
         //         const aadGroupId = checkedAadGroupIdElement && checkedAadGroupIdElement.value;
         //         if (!accessToken || !aadGroupId) {
         //             return logMissingInputs([
-        //                 { value: accessToken, message: 'Access token is required to get app role assignments...' },
-        //                 { value: aadGroupId, message: 'Invalid aad groupd id...' },
+        //                 { value: accessToken, message: 'Access token required to get app role assignments...' },
+        //                 { value: aadGroupId, message: 'Aad group id required to get app role assignments...' },
         //             ]);
         //         }
         //         const response = await fetch(`${document.location.origin}/appRoleAssignments?aadGroupId=${encodeURIComponent(aadGroupId)}`, {
@@ -402,8 +410,8 @@
                 const scimServicePrincipalObjectId = document.querySelector('#get-service-principals input.scim-service-principal-object-id').value;
                 if(!accessToken || !scimServicePrincipalObjectId) {
                     return logMissingInputs([
-                        { value: accessToken, message: 'Access token is required to get aad groups...' },
-                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id is required to get service principals..' },
+                        { value: accessToken, message: 'Access token required to get service principals...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to get service principals...' },
                     ]);
                 }
                 const response = await fetch(`${document.location.origin}/servicePrincipals?scimServicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
@@ -461,10 +469,10 @@
                 const appRoleId = checkedAppRoleIdElement && checkedAppRoleIdElement.value;
                 if(!accessToken || !scimServicePrincipalObjectId || !aadGroupId || !appRoleId) {
                     return logMissingInputs([
-                        { value: accessToken, message: 'Access token is required to get aad groups...' },
-                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id is required to add an aad group to scim..' },
-                        { value: aadGroupId, message: 'Aad group id is required to add an aad group to scim...'},
-                        { value: appRoleId, message: 'App role id is required to add an aad group to scim...'},
+                        { value: accessToken, message: 'Access token required to add aad group to scim...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to add aad group to scim...' },
+                        { value: aadGroupId, message: 'Aad group id required to add aad group to scim...'},
+                        { value: appRoleId, message: 'App role id required to add aad group to scim...'},
                     ]);
                 }
                 const parameters = [
@@ -507,18 +515,20 @@
                 const scimServicePrincipalObjectId = document.querySelector('#post-sync-job input.scim-service-principal-object-id').value;
                 if(!accessToken || !jobTemplateId || !scimServicePrincipalObjectId) {
                     return logMissingInputs([
-                        { value: accessToken, message: 'Access token is required to get aad groups...' },
-                        { value: jobTemplateId, message: 'Job template id is required for syncing...'},
-                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id is required to add an aad group to scim..' },
+                        { value: accessToken, message: 'Access token required to create sync job...' },
+                        { value: jobTemplateId, message: 'Job template id required to create sync job...'},
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to create sync job...' },
                     ]);
                 }
-                const response = await fetch(`${document.location.origin}/syncJob?jobTemplateId=${encodeURIComponent(jobTemplateId)}&scimServicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
+                const response = await fetch(`${document.location.origin}/createSyncJob?jobTemplateId=${encodeURIComponent(jobTemplateId)}&scimServicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
                     method: 'POST',
                     headers: { Authorization: accessToken },
                 });
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 201) {
+                    const syncJobIdElements = document.querySelectorAll('input.sync-job-id');
+                    syncJobIdElements.forEach(element => element.value = body);
                     addToLog(`Successfully created sync job ${body}...`);
                 } else if (response.status === 400) {
                     addToLog(response.statusText + ': ' + body.error.message);
@@ -538,6 +548,51 @@
         // POST Validate Credentials
         // validateCredentials needs scimSPObjId, jobId(, databricksUrl, and databricksPAT **from User)
         // returns nothing needed for future requests
+        async function postValidateCredentials() {
+            try {
+                addToLog(`<br />Validating credentials...`);
+                const accessToken = document.querySelector('#post-validate-credentials input.access-token').value;
+                const scimServicePrincipalObjectId = document.querySelector('#post-sync-job input.scim-service-principal-object-id').value;
+                const syncJobId = document.querySelector('#post-validate-credentials input.sync-job-id').value;
+                const databricksUrl = document.querySelector('#post-validate-credentials input.databricks-url').value;
+                const databricksPat = document.querySelector('#post-validate-credentials input.databricks-pat').value;
+                if(!accessToken || !scimServicePrincipalObjectId || !syncJobId || !databricksUrl || !databricksPat) {
+                    return logMissingInputs([
+                        { value: accessToken, message: 'Access token required to validate credentials...' },
+                        { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to validate credentials...' },
+                        { value: syncJobId, message: 'Sync job id required to validate credentials...'},
+                        { value: databricksUrl, message: 'Databricks url required to validate credentials...'},
+                        { value: databricksPat, message: 'Databricks pat required to validate credentials...'},
+                    ]);
+                }
+                const parameters = [
+                    { key: 'scimServicePrincipalObjectId', value: scimServicePrincipalObjectId },
+                    { key: 'syncJobId', value: syncJobId },
+                    { key: 'databricksUrl', value: databricksUrl },
+                ].map(({ key, value }) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                .join('&');
+                const response = await fetch(`${document.location.origin}/validateCredentials?${parameters}`, {
+                    method: 'POST',
+                    headers: { Authorization: accessToken, 'X-Secret-Token': databricksPat },
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 204) {
+                    addToLog(`Successfully validated credentials...`);
+                } else if (response.status === 400) {
+                    addToLog(response.statusText + ': ' + body.error.message);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while validating credentials...');
+            }
+        }
+        const postValidateCredentialsElement = document.querySelector('#post-validate-credentials button');
+        postValidateCredentialsElement.onclick = postValidateCredentials;
 
         // PUT Save Credentials
         // saveCredentials needs scimSPObjId, jobId(, databricksUrl, databricksPAT **from User)
