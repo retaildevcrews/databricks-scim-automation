@@ -234,6 +234,19 @@
         }
 
         let accessTokenTimer;
+        function setAccessTokenTimer(initialExpiration) {
+            if (accessTokenTimer) {
+                clearInterval(accessTokenTimer);
+            }
+            // Display token expiration
+            const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
+            tokenExpirationElements.forEach(element => element.innerText = initialExpiration);
+            // Count down til token expires
+            accessTokenTimer = setInterval(() => {
+                const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
+                tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
+            }, 1000)
+        }
 
         // POST for Access Token
         // postAccessToken needs code
@@ -258,14 +271,7 @@
                     // Display refresh token
                     const refreshTokenElement = document.querySelector('input#refresh-token');
                     refreshTokenElement.value = body.refresh_token;
-                    // Display token expiration
-                    const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
-                    tokenExpirationElements.forEach(element => element.innerText = body.expires_in);
-                    // Count down til token expires
-                    clearInterval(accessTokenTimer);
-                    accessTokenTimer = setInterval(() => {
-                        tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
-                    }, 1000);
+                    setAccessTokenTimer(body.expires_in);
                     setTimeout(() => {
                         clearInterval(accessTokenTimer);
                         addToLog('<br />ACCESS TOKEN HAS EXPIRED...');
@@ -308,14 +314,7 @@
                     // Display refresh token
                     const refreshTokenElement = document.querySelector('input#refresh-token');
                     refreshTokenElement.value = body.refresh_token;
-                    // Display token expiration
-                    const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
-                    tokenExpirationElements.forEach(element => element.innerText = body.expires_in);
-                    // Count down til token expires
-                    clearInterval(accessTokenTimer);
-                    accessTokenTimer = setInterval(() => {
-                        tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
-                    }, 1000);
+                    setAccessTokenTimer(body.expires_in);
                     setTimeout(() => {
                         clearInterval(accessTokenTimer);
                         addToLog('<br />ACCESS TOKEN HAS EXPIRED...');
@@ -332,7 +331,6 @@
                 addToLog('Error while fetching access token...');
             }
         }
-
         document.querySelector('#refresh button#post-refresh-token').onclick = postRefreshAccessToken;
  
         // POST Databricks Gallery App
