@@ -233,25 +233,24 @@
             }, 800);
         }
 
+        let accessTokenTimer;
+
         // POST for Access Token
         // postAccessToken needs code
-        async function postAccessToken(useRefreshToken = false) {
+        async function postAccessToken() {
             try {
                 addToLog('<br />Creating access token...');
-                let codeOrRefreshToken = useRefreshToken
-                    ? document.querySelector('#refresh input#refresh-token').value
-                    : getCodeValueFromUrl();
-                if (!codeOrRefreshToken) {
+                let code = getCodeValueFromUrl();
+                if (!code) {
                     return logMissingInputs([{
-                        value: codeOrRefreshToken,
-                        message: `${useRefreshToken ? 'Refresh token' : 'Login'} required to get access token...`,
+                        value: code,
+                        message: `Login required to get access token...`,
                     }]);
                 }
-                const response = await fetch(`${document.location.origin}/accessToken?code=${codeOrRefreshToken}`, { method: 'POST' });
+                const response = await fetch(`${document.location.origin}/accessToken?code=${code}`, { method: 'POST' });
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 200) {
-                    console.log({ body });
                     // Display access token
                     const accessTokenElements = document.querySelectorAll('input.access-token');
                     accessTokenElements.forEach(element => element.value = body.access_token);
@@ -263,11 +262,11 @@
                     const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
                     tokenExpirationElements.forEach(element => element.innerText = body.expires_in);
                     // Count down til token expires
-                    const tokenExpirationTimer = setInterval(() => {
+                    accessTokenTimer = setInterval(() => {
                         tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
                     }, 1000);
                     setTimeout(() => {
-                        clearInterval(tokenExpirationTimer);
+                        clearInterval(accessTokenTimer);
                         addToLog('<br />ACCESS TOKEN HAS EXPIRED...');
                     }, body.expires_in * 1000);
                 } else if (response.status === 400 || response.status === 404) {
@@ -282,8 +281,61 @@
                 addToLog('Error while fetching access token...');
             }
         }
-        document.querySelector('#auth button#post-access-token').onclick = () => postAccessToken(false);
-        document.querySelector('#refresh button#post-refresh-token').onclick = () => postAccessToken(true);
+        document.querySelector('#auth button#post-access-token').onclick = () => {
+            if (accessTokenTimer) {clearInterval(accessTokenTimer);}
+            postAccessToken();};
+        
+        async function postRefreshAccessToken() {
+            try {
+                addToLog('<br />Refreshing access token...');
+                let refreshToken = document.querySelector('#refresh input#refresh-token').value;
+                if (!refreshToken) {
+                    return logMissingInputs([{
+                        value: refreshToken,
+                        message: `Refresh token required to get access token...`,
+                    }]);
+                }
+                const response = await fetch(`${document.location.origin}/refreshAccessToken`, {
+                    method: 'POST',
+                    headers: { Authorization: refreshToken }
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 200) {
+                    // Display access token
+                    const accessTokenElements = document.querySelectorAll('input.access-token');
+                    accessTokenElements.forEach(element => element.value = body.access_token);
+                    addToLog(`Created access token: ${body.access_token}...`);
+                    // Display refresh token
+                    const refreshTokenElement = document.querySelector('input#refresh-token');
+                    refreshTokenElement.value = body.refresh_token;
+                    // Display token expiration
+                    const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
+                    tokenExpirationElements.forEach(element => element.innerText = body.expires_in);
+                    // Count down til token expires
+                    accessTokenTimer = setInterval(() => {
+                        tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
+                    }, 1000);
+                    setTimeout(() => {
+                        clearInterval(accessTokenTimer);
+                        addToLog('<br />ACCESS TOKEN HAS EXPIRED...');
+                    }, body.expires_in * 1000);
+                } else if (response.status === 400 || response.status === 404) {
+                    addToLog(response.statusText + ': ' + body.error_description);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while fetching access token...');
+            }
+        }
+
+        document.querySelector('#refresh button#post-refresh-token').onclick = () => {
+            if (accessTokenTimer) {clearInterval(accessTokenTimer);}
+            postRefreshAccessToken();};
  
         // POST Databricks Gallery App
         // createSCIMApp needs appName and scimAppTemplateId
