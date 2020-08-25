@@ -262,6 +262,7 @@
                     const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
                     tokenExpirationElements.forEach(element => element.innerText = body.expires_in);
                     // Count down til token expires
+                    clearInterval(accessTokenTimer);
                     accessTokenTimer = setInterval(() => {
                         tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
                     }, 1000);
@@ -281,9 +282,7 @@
                 addToLog('Error while fetching access token...');
             }
         }
-        document.querySelector('#auth button#post-access-token').onclick = () => {
-            if (accessTokenTimer) {clearInterval(accessTokenTimer);}
-            postAccessToken();};
+        document.querySelector('#auth button#post-access-token').onclick = postAccessToken;
         
         async function postRefreshAccessToken() {
             try {
@@ -313,6 +312,7 @@
                     const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
                     tokenExpirationElements.forEach(element => element.innerText = body.expires_in);
                     // Count down til token expires
+                    clearInterval(accessTokenTimer);
                     accessTokenTimer = setInterval(() => {
                         tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
                     }, 1000);
@@ -333,9 +333,7 @@
             }
         }
 
-        document.querySelector('#refresh button#post-refresh-token').onclick = () => {
-            if (accessTokenTimer) {clearInterval(accessTokenTimer);}
-            postRefreshAccessToken();};
+        document.querySelector('#refresh button#post-refresh-token').onclick = postRefreshAccessToken;
  
         // POST Databricks Gallery App
         // createSCIMApp needs appName and scimAppTemplateId
