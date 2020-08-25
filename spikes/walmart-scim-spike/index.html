@@ -76,8 +76,17 @@
                 <br /><br />
                 <button id="post-access-token">Create Access Token</button>
             </div>
+            <div id="refresh" class="outline">
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
+                <br /><br />
+                <label>Refresh Token: </label><input type="text" id="refresh-token" />
+                <br /><br />
+                <button id="post-refresh-token">Refresh Token</button>
+            </div>
             <div id="post-scim-connector-gallery-app" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM App Template ID: </label><input type="text" id="scim-app-template-id" value="9c9818d2-2900-49e8-8ba4-22688be7c675" />
                 <br /><br />
@@ -86,14 +95,16 @@
                 <button>Create SCIM Connector Gallery App</button>
             </div>
             <div id="get-aad-groups" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>**Search Display Name: </label><input type="text" id="filter-display-name" value="Databricks-SCIM" />
                 <br /><br />
                 <button>Get AAD Groups</button>
             </div>
             <!--<div id="get-app-role-assignments" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>AAD Groups:</label>
                 <div class="aad-group-ids"></div>
@@ -101,7 +112,8 @@
                 <button>Get App Role Assignments</button>
             </div> -->
             <div id="get-service-principals" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -110,7 +122,8 @@
                 <em>May need to wait until service principals are created for the SCIM Connector Gallery App before getting App Roles</em>
             </div>
             <div id="post-aad-group-to-scim" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -123,7 +136,8 @@
                 <button>Add AAD Group to SCIM</button>
             </div>
             <div id="post-sync-job" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -132,7 +146,8 @@
                 <button>Create Sync Job</button>
             </div>
             <div id="post-validate-credentials" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -145,7 +160,8 @@
                 <button>Validate Credentials</button>
             </div>
             <div id="put-save-credentials" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -158,7 +174,8 @@
                 <button>Save Credentials</button>
             </div>
             <div id="post-start-sync-job" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -167,7 +184,8 @@
                 <button>Start Sync Job</button>
             </div>
             <div id="get-sync-job-status" class="outline">
-                <label>Access Token: </label><input type="text" class="access-token" />
+                <label>Access Token: </label><span class="token-expiration">0</span> seconds
+                <input type="text" class="access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -217,20 +235,41 @@
 
         // POST for Access Token
         // postAccessToken needs code
-        async function postAccessToken() {
+        async function postAccessToken(useRefreshToken = false) {
             try {
                 addToLog('<br />Creating access token...');
-                const codeValue = getCodeValueFromUrl();
-                if (!codeValue) {
-                    return logMissingInputs([{ value: codeValue, message: 'Login required to get access token...' }]);
+                let codeOrRefreshToken = useRefreshToken
+                    ? document.querySelector('#refresh input#refresh-token').value
+                    : getCodeValueFromUrl();
+                if (!codeOrRefreshToken) {
+                    return logMissingInputs([{
+                        value: codeOrRefreshToken,
+                        message: `${useRefreshToken ? 'Refresh token' : 'Login'} required to get access token...`,
+                    }]);
                 }
-                const response = await fetch(`${document.location.origin}/accessToken?code=${codeValue}`, { method: 'POST' });
+                const response = await fetch(`${document.location.origin}/accessToken?code=${codeOrRefreshToken}`, { method: 'POST' });
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
                 if (response.status === 200) {
+                    console.log({ body });
+                    // Display access token
                     const accessTokenElements = document.querySelectorAll('input.access-token');
                     accessTokenElements.forEach(element => element.value = body.access_token);
                     addToLog(`Created access token: ${body.access_token}...`);
+                    // Display refresh token
+                    const refreshTokenElement = document.querySelector('input#refresh-token');
+                    refreshTokenElement.value = body.refresh_token;
+                    // Display token expiration
+                    const tokenExpirationElements =  document.querySelectorAll('span.token-expiration');
+                    tokenExpirationElements.forEach(element => element.innerText = body.expires_in);
+                    // Count down til token expires
+                    const tokenExpirationTimer = setInterval(() => {
+                        tokenExpirationElements.forEach(element => element.innerText = element.innerText - 1);
+                    }, 1000);
+                    setTimeout(() => {
+                        clearInterval(tokenExpirationTimer);
+                        addToLog('<br />ACCESS TOKEN HAS EXPIRED...');
+                    }, body.expires_in * 1000);
                 } else if (response.status === 400 || response.status === 404) {
                     addToLog(response.statusText + ': ' + body.error_description);
                 } else if (response.status === 401) {
@@ -243,7 +282,8 @@
                 addToLog('Error while fetching access token...');
             }
         }
-        document.querySelector('#auth button#post-access-token').onclick = postAccessToken;
+        document.querySelector('#auth button#post-access-token').onclick = () => postAccessToken(false);
+        document.querySelector('#refresh button#post-refresh-token').onclick = () => postAccessToken(true);
  
         // POST Databricks Gallery App
         // createSCIMApp needs appName and scimAppTemplateId
@@ -264,7 +304,7 @@
                 }
                 const response = await fetch(
                     encodeURI(`${document.location.origin}/databricksGalleryApp?scimAppTemplateId=${scimAppTemplateId}&scimConnectorGalleryAppName=${scimConnectorGalleryAppName}`),
-                    { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`} },
+                    { method: 'POST', headers: { Authorization: accessToken } },
                 );
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();

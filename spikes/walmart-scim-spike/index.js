@@ -142,7 +142,7 @@ async function postDatabricksGalleryApp(req) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: req.headers.authorization,
+                Authorization: `Bearer ${req.headers.authorization}`,
             },
             // Does not matter if displayName is already taken
             body: JSON.stringify({ displayName: scimConnectorGalleryAppName }),
