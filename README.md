@@ -14,17 +14,63 @@ Description of the project ...
 ## Prerequisites
 
 - Azure subscription with permissions to create:
-  - Resource Groups, Service Principals, Key Vault, Cosmos DB, Azure Container Registry, Azure Monitor, App Service or AKS
-- Bash shell (tested on Mac, Ubuntu, Windows with WSL2)
-  - Will not work in Cloud Shell unless you have a remote dockerd
-- Azure CLI 2.0.72+ ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
+  - Resource Groups, Service Principals, Key Vault, Cosmos DB, Azure Container Registry, Azure Monitor, App Service
+- Bash shell (tested on Visual Studio Codespaces, Mac, Ubuntu, Windows with WSL2)
+  - Will not work with WSL1 or Cloud Shell
+- .NET Core SDK 3.1 ([download](https://dotnet.microsoft.com/download))
 - Docker CLI ([download](https://docs.docker.com/install/))
-- .NET Core SDK 3.0 ([download](https://dotnet.microsoft.com/download))
+- Azure CLI ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
 - Visual Studio Code (optional) ([download](https://code.visualstudio.com/download))
 
 ## Documentation
 
 - Table of contents is at [docs/index.md](docs/index.md)
+
+## Setup
+
+TODO: Add instructions on setting up infrastructure
+
+### Validate az CLI works
+
+> In Visual Studio Codespaces, open a terminal by pressing ctl + `
+
+```bash
+
+# make sure you are logged into Azure
+az account show
+
+# if not, log in
+az login
+
+```
+
+### Run app locally
+
+```bash
+
+# run the application
+# assumes a key vault is created with "AccessToken" secret
+# TODO: consider parameterizing
+dotnet run -p src/app/databricksscim.csproj -- --auth-type CLI --keyvault-name {insert key vault name}
+
+```
+
+### Test application
+
+Open a new terminal
+
+```bash
+
+# test the application
+
+# test using curl
+curl localhost:4120/version
+
+# test dummy endpoint
+# TODO: remove/update when graph API calls are integrated
+curl localhost:4120/api/SCIM
+
+```
 
 ## Contributing
 
