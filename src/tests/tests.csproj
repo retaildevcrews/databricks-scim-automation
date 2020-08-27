@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\app\helium.csproj" />
+    <ProjectReference Include="..\app\databricksscim.csproj" />
   </ItemGroup>
 
 </Project>

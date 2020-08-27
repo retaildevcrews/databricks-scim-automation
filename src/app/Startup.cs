@@ -40,11 +40,7 @@ namespace CSE.DatabricksSCIMAutomation
                 options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-                options.JsonSerializerOptions.Converters.Add(new TimeSpanConverter());
             });
-
-            // add healthcheck service
-            services.AddHealthChecks().AddCosmosHealthCheck(CosmosHealthCheck.ServiceId);
 
             // add App Insights if key set
             string appInsightsKey = Configuration.GetValue<string>(Constants.AppInsightsKey);
@@ -64,13 +60,13 @@ namespace CSE.DatabricksSCIMAutomation
         {
             // log http responses to the console
             // this should be first as it "wraps" all requests
-            if (App.HeliumLogLevel != LogLevel.None)
+            if (App.AppLogLevel != LogLevel.None)
             {
                 app.UseLogger(new LoggerOptions
                 {
-                    Log2xx = App.HeliumLogLevel <= LogLevel.Information,
-                    Log3xx = App.HeliumLogLevel <= LogLevel.Information,
-                    Log4xx = App.HeliumLogLevel <= LogLevel.Warning,
+                    Log2xx = App.AppLogLevel <= LogLevel.Information,
+                    Log3xx = App.AppLogLevel <= LogLevel.Information,
+                    Log4xx = App.AppLogLevel <= LogLevel.Warning,
                     Log5xx = true
                 });
             }
@@ -94,16 +90,6 @@ namespace CSE.DatabricksSCIMAutomation
 
             // map the controllers
             app.UseEndpoints(ep => { ep.MapControllers(); });
-
-            // rewrite root to /index.html
-            app.UseSwaggerRoot();
-
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), specifying the Swagger JSON endpoint.
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint(Constants.SwaggerPath, Constants.SwaggerTitle);
-                c.RoutePrefix = string.Empty;
-            });
 
             // use the robots middleware to handle /robots*.txt requests
             app.UseRobots();

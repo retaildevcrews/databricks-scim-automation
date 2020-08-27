@@ -4,7 +4,7 @@ using System.CommandLine.Parsing;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSE.Helium.Tests
+namespace CSE.DatabricksSCIMAutomation.Tests
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable")]
     public class AppTest

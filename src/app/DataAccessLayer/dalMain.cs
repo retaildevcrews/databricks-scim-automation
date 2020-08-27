@@ -128,6 +128,7 @@ namespace CSE.DatabricksSCIMAutomation.DataAccessLayer
         }
 
         /// <summary>
+        /// TODO: Will need to determine partition key for MVP2
         /// Compute the partition key based on the movieId or actorId
         /// 
         /// For this sample, the partitionkey is the id mod 10

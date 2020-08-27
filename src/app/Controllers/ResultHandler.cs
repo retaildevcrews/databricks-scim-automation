@@ -5,7 +5,7 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace CSE.Helium.Controllers
+namespace CSE.DatabricksSCIMAutomation.Controllers
 {
     public class ErrorResult
     {

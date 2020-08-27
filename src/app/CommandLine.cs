@@ -62,8 +62,8 @@ namespace CSE.DatabricksSCIMAutomation
         {
             RootCommand root = new RootCommand
             {
-                Name = "helium",
-                Description = "helium-csharp web app",
+                Name = "DatabricksSCIMAutomation",
+                Description = "Web app to automate Databricks SCIM provisioning",
                 TreatUnmatchedTokensAsErrors = true
             };
 
@@ -115,7 +115,7 @@ namespace CSE.DatabricksSCIMAutomation
                 // setup ctl c handler
                 ctCancel = SetupCtlCHandler();
 
-                HeliumLogLevel = logLevel;
+                AppLogLevel = logLevel;
 
                 // build the host
                 host = await BuildHost(kvUrl, authType).ConfigureAwait(false);
@@ -139,9 +139,6 @@ namespace CSE.DatabricksSCIMAutomation
 
                 // this doesn't return except on ctl-c
                 await w.ConfigureAwait(false);
-
-                // use this line instead if you want to re-read the Cosmos connection info on a timer
-                //await RunKeyRotationCheck(ctCancel, Constants.KeyVaultChangeCheckSeconds).ConfigureAwait(false);
 
                 // if not cancelled, app exit -1
                 return ctCancel.IsCancellationRequested ? 0 : -1;
@@ -174,11 +171,11 @@ namespace CSE.DatabricksSCIMAutomation
             Console.WriteLine($"Version            {Middleware.VersionExtensions.Version}");
             Console.WriteLine($"Keyvault           {kvUrl}");
             Console.WriteLine($"Auth Type          {authType}");
-            Console.WriteLine($"Log Level          {HeliumLogLevel}");
-            Console.WriteLine($"Cosmos Server      {config.GetValue<string>(Constants.CosmosUrl)}");
-            Console.WriteLine($"Cosmos Key         Length({config.GetValue<string>(Constants.CosmosKey).Length})");
-            Console.WriteLine($"Cosmos Database    {config.GetValue<string>(Constants.CosmosDatabase)}");
-            Console.WriteLine($"Cosmos Collection  {config.GetValue<string>(Constants.CosmosCollection)}");
+            Console.WriteLine($"Log Level          {AppLogLevel}");
+            //Console.WriteLine($"Cosmos Server      {config.GetValue<string>(Constants.CosmosUrl)}");
+            //Console.WriteLine($"Cosmos Key         Length({config.GetValue<string>(Constants.CosmosKey).Length})");
+            //Console.WriteLine($"Cosmos Database    {config.GetValue<string>(Constants.CosmosDatabase)}");
+            //Console.WriteLine($"Cosmos Collection  {config.GetValue<string>(Constants.CosmosCollection)}");
             Console.WriteLine($"App Insights Key   {(string.IsNullOrEmpty(config.GetValue<string>(Constants.AppInsightsKey)) ? "(not set" : "Length(" + config.GetValue<string>(Constants.AppInsightsKey).Length.ToString(CultureInfo.InvariantCulture))})");
 
             // always return 0 (success)

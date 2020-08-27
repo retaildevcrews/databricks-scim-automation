@@ -1,9 +1,6 @@
-using CSE.DatabricksSCIMAutomation.Model;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using System;
-using System.Globalization;
 using System.Threading.Tasks;
 
 namespace Middleware
@@ -63,12 +60,6 @@ namespace Middleware
                 return;
             }
 
-            // handle healthz composite logging
-            if (LogHealthzHandled(context, duration))
-            {
-                return;
-            }
-
             // write the results to the console
             if (ShouldLogRequest(context.Response))
             {
@@ -115,61 +106,6 @@ namespace Middleware
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Log the healthz results for degraded and unhealthy
-        /// </summary>
-        /// <param name="context">HttpContext</param>
-        /// <param name="duration">double</param>
-        /// <returns></returns>
-        private static bool LogHealthzHandled(HttpContext context, double duration)
-        {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            // check if there is a HealthCheckResult item
-            if (context.Items.Count > 0 && context.Items.ContainsKey(typeof(HealthCheckResult).ToString()))
-            {
-                var hcr = (HealthCheckResult)context.Items[typeof(HealthCheckResult).ToString()];
-
-
-                // log not healthy requests
-                if (hcr.Status != HealthStatus.Healthy)
-                {
-                    string log = string.Empty;
-
-                    // build the log message
-                    log += string.Format(CultureInfo.InvariantCulture, $"{IetfCheck.ToIetfStatus(hcr.Status)}\t{duration,6:0}\t{context.Request.Headers[ipHeader]}\t{GetPathAndQuerystring(context.Request)}\n");
-
-
-                    // add each not healthy check to the log message
-                    foreach (var d in hcr.Data.Values)
-                    {
-                        if (d is HealthzCheck h && h.Status != HealthStatus.Healthy)
-                        {
-                            log += string.Format(CultureInfo.InvariantCulture, $"{IetfCheck.ToIetfStatus(h.Status)}\t{(long)h.Duration.TotalMilliseconds,6}\t{context.Request.Headers[ipHeader]}\t{h.Endpoint}\t({h.TargetDuration.TotalMilliseconds,1:0})\n");
-                        }
-                    }
-
-                    if (hcr.Exception != null)
-                    {
-                        log += "HealthCheckException\n";
-                        log += hcr.Exception.ToString() + "\n";
-                    }
-
-                    // write the log message
-                    Console.Write(log);
-
-                    // done logging this request
-                    return true;
-                }
-            }
-
-            // keep processing
-            return false;
         }
 
         /// <summary>

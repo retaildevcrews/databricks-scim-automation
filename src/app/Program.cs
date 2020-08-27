@@ -1,4 +1,3 @@
-using CSE.DatabricksSCIMAutomation.DataAccessLayer;
 using KeyVault.Extensions;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore;
@@ -32,7 +31,7 @@ namespace CSE.DatabricksSCIMAutomation
 
         private static CancellationTokenSource ctCancel;
 
-        public static LogLevel HeliumLogLevel { get; set; } = LogLevel.Warning;
+        public static LogLevel AppLogLevel { get; set; } = LogLevel.Warning;
 
         /// <summary>
         /// Main entry point
@@ -162,7 +161,8 @@ namespace CSE.DatabricksSCIMAutomation
             }
 
             // build the config
-            // we need the key vault values for the DAL
+            // we need the key vault values for the graph API calls
+            // potentially for DAL in future
             config = BuildConfig(kvClient, kvUrl);
 
             // configure the web host builder
@@ -175,10 +175,10 @@ namespace CSE.DatabricksSCIMAutomation
                 .ConfigureServices(services =>
                 {
                     // add the data access layer via DI
-                    services.AddDal(new Uri(config.GetValue<string>(Constants.CosmosUrl)),
-                        config.GetValue<string>(Constants.CosmosKey),
-                        config.GetValue<string>(Constants.CosmosDatabase),
-                        config.GetValue<string>(Constants.CosmosCollection));
+                    //services.AddDal(new Uri(config.GetValue<string>(Constants.CosmosUrl)),
+                    //    config.GetValue<string>(Constants.CosmosKey),
+                    //    config.GetValue<string>(Constants.CosmosDatabase),
+                    //    config.GetValue<string>(Constants.CosmosCollection));
 
                     // add the KeyVaultConnection via DI
                     services.AddKeyVaultConnection(kvClient, new Uri(kvUrl));
@@ -193,9 +193,9 @@ namespace CSE.DatabricksSCIMAutomation
                 {
                     logger.ClearProviders();
                     logger.AddConsole()
-                    .AddFilter("Microsoft", HeliumLogLevel)
-                    .AddFilter("System", HeliumLogLevel)
-                    .AddFilter("Default", HeliumLogLevel);
+                    .AddFilter("Microsoft", AppLogLevel)
+                    .AddFilter("System", AppLogLevel)
+                    .AddFilter("Default", AppLogLevel);
                 });
 
             // build the host
@@ -204,18 +204,12 @@ namespace CSE.DatabricksSCIMAutomation
 
         /// <summary>
         /// Get a valid key vault client
-        /// AKS takes time to spin up the first pod identity, so
-        ///   we retry for up to 90 seconds
         /// </summary>
         /// <param name="kvUrl">URL of the key vault</param>
         /// <param name="authType">MI, CLI or VS</param>
         /// <returns></returns>
         static async Task<KeyVaultClient> GetKeyVaultClient(string kvUrl, AuthenticationType authType)
         {
-            // retry Managed Identity for 90 seconds
-            //   AKS has to spin up an MI pod which can take a while the first time on the pod
-            DateTime timeout = DateTime.Now.AddSeconds(90.0);
-
             // use MI as default
             string authString = "RunAs=App";
 
@@ -238,104 +232,27 @@ namespace CSE.DatabricksSCIMAutomation
             }
 #endif
 
-            while (true)
+            try
             {
-                try
-                {
-                    var tokenProvider = new AzureServiceTokenProvider(authString);
+                var tokenProvider = new AzureServiceTokenProvider(authString);
 
-                    // use Managed Identity (MI) for secure access to Key Vault
-                    var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(tokenProvider.KeyVaultTokenCallback));
+                // use Managed Identity (MI) for secure access to Key Vault
+                var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(tokenProvider.KeyVaultTokenCallback));
 
-                    // read a key to make sure the connection is valid 
-                    await keyVaultClient.GetSecretAsync(kvUrl, Constants.CosmosUrl).ConfigureAwait(false);
+                // read a key to make sure the connection is valid 
+                // TODO: Update with secret we know will be there for graph API calls
+                // Currently just using "AccessToken" until we learn more
+                await keyVaultClient.GetSecretAsync(kvUrl, Constants.AccessToken).ConfigureAwait(false);
 
-                    // return the client
-                    return keyVaultClient;
-                }
-                catch (Exception ex)
-                {
-                    if (DateTime.Now <= timeout && authType == AuthenticationType.MI)
-                    {
-                        // retry MI connections for pod identity
-
-#if (DEBUG)
-                        // Don't retry in debug mode
-                        Console.WriteLine($"KeyVault:Exception: Unable to connect to Key Vault using MI");
-                        return null;
-#else
-                        Console.WriteLine($"KeyVault:Retry");
-                        await Task.Delay(1000).ConfigureAwait(false);
-#endif
-                    }
-                    else
-                    {
-                        // log and fail
-
-                        Console.WriteLine($"{ex}\nKeyVault:Exception: {ex.Message}");
-                        return null;
-                    }
-                }
+                // return the client
+                return keyVaultClient;
             }
-        }
-
-        /// <summary>
-        /// Check for Cosmos key rotation
-        /// </summary>
-        /// <param name="ctCancel">CancellationTokenSource</param>
-        /// <returns>Only returns when ctl-c is pressed and cancellation token is cancelled</returns>
-        static async Task RunKeyRotationCheck(CancellationTokenSource ctCancel, int checkEverySeconds)
-        {
-            string key = config[Constants.CosmosKey];
-
-            // reload Key Vault values
-            while (!ctCancel.IsCancellationRequested)
+            catch (Exception ex)
             {
-                try
-                {
-                    await Task.Delay(checkEverySeconds * 1000, ctCancel.Token).ConfigureAwait(false);
+                // log and fail
 
-                    if (!ctCancel.IsCancellationRequested)
-                    {
-                        // reload the config from Key Vault
-                        config.Reload();
-
-                        // if the key changed
-                        if (!ctCancel.IsCancellationRequested)
-                        {
-                            // reconnect the DAL
-                            var dal = host.Services.GetService<IDAL>();
-
-                            if (dal != null)
-                            {
-                                // this will only reconnect if the variables changed
-                                await dal.Reconnect(new Uri(config[Constants.CosmosUrl]), config[Constants.CosmosKey], config[Constants.CosmosDatabase], config[Constants.CosmosCollection]).ConfigureAwait(false);
-
-                                if (key != config[Constants.CosmosKey])
-                                {
-                                    key = config[Constants.CosmosKey];
-                                    Console.WriteLine("Cosmos Key Rotated");
-
-                                    // send a NewKeyLoadedMetric to App Insights
-                                    if (!string.IsNullOrEmpty(config[Constants.AppInsightsKey]))
-                                    {
-                                        var telemetryClient = host.Services.GetService<TelemetryClient>();
-
-                                        if (telemetryClient != null)
-                                        {
-                                            telemetryClient.TrackMetric(Constants.NewKeyLoadedMetric, 1);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    // continue running with existing key
-                    Console.WriteLine($"Cosmos Key Rotate Exception - using existing connection");
-                }
+                Console.WriteLine($"{ex}\nKeyVault:Exception: {ex.Message}");
+                return null;
             }
         }
     }
