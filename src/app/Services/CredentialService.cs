@@ -37,7 +37,7 @@ namespace CSE.DatabricksSCIMAutomation.Services
 #else
                 if (credType != AuthenticationType.MI)
                 {
-                    Console.WriteLine("Release builds require MI authentication for Key Vault");
+                    //Console.WriteLine("Release builds require MI authentication for Key Vault");
                     return null;
                 }
 #endif
