@@ -156,7 +156,17 @@ namespace CSE.DatabricksSCIMAutomation
 
             ICredentialService credService = new CredentialService(authType);
 
-            kvSecretService = new KeyVaultSecretService(kvName, credService);
+            try
+            {
+                kvSecretService = new KeyVaultSecretService(kvName, credService);
+                kvSecretService.GetSecret(Constants.AccessToken);
+            }
+            catch (Exception ex)
+            {
+                // log and fail
+                Console.WriteLine($"{ex}\nKeyVault:Exception: {ex.Message}");
+                return null;
+            }
 
             // configure the web host builder
             IWebHostBuilder builder = WebHost.CreateDefaultBuilder()
