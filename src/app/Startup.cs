@@ -31,7 +31,7 @@ namespace CSE.DatabricksSCIMAutomation
         /// Service configuration
         /// </summary>
         /// <param name="services">The services in the web host</param>
-        public void ConfigureServices(IServiceCollection services)
+        public static void ConfigureServices(IServiceCollection services)
         {
             // set json serialization defaults
             services.AddControllers().AddJsonOptions(options =>
@@ -41,14 +41,6 @@ namespace CSE.DatabricksSCIMAutomation
                 options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
-
-            // add App Insights if key set
-            string appInsightsKey = Configuration.GetValue<string>(Constants.AppInsightsKey);
-
-            if (!string.IsNullOrEmpty(appInsightsKey))
-            {
-                services.AddApplicationInsightsTelemetry(appInsightsKey);
-            }
         }
 
         /// <summary>
@@ -80,10 +72,6 @@ namespace CSE.DatabricksSCIMAutomation
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
-            app.UseResponseCaching();
-
-            app.UseStaticFiles();
 
             // use routing
             app.UseRouting();

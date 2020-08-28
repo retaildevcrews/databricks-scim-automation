@@ -1,4 +1,4 @@
-using KeyVault.Extensions;
+using CSE.DatabricksSCIMAutomation.Utilities;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -118,7 +118,7 @@ namespace CSE.DatabricksSCIMAutomation
                 AppLogLevel = logLevel;
 
                 // build the host
-                host = await BuildHost(kvUrl, authType).ConfigureAwait(false);
+                host = BuildHost(keyvaultName, authType);
 
                 if (host == null)
                 {
@@ -172,12 +172,8 @@ namespace CSE.DatabricksSCIMAutomation
             Console.WriteLine($"Keyvault           {kvUrl}");
             Console.WriteLine($"Auth Type          {authType}");
             Console.WriteLine($"Log Level          {AppLogLevel}");
-            //Console.WriteLine($"Cosmos Server      {config.GetValue<string>(Constants.CosmosUrl)}");
-            //Console.WriteLine($"Cosmos Key         Length({config.GetValue<string>(Constants.CosmosKey).Length})");
-            //Console.WriteLine($"Cosmos Database    {config.GetValue<string>(Constants.CosmosDatabase)}");
-            //Console.WriteLine($"Cosmos Collection  {config.GetValue<string>(Constants.CosmosCollection)}");
-            Console.WriteLine($"App Insights Key   {(string.IsNullOrEmpty(config.GetValue<string>(Constants.AppInsightsKey)) ? "(not set" : "Length(" + config.GetValue<string>(Constants.AppInsightsKey).Length.ToString(CultureInfo.InvariantCulture))})");
-
+            //Console.WriteLine($"App Insights Key   {(string.IsNullOrEmpty(config.GetValue<string>(Constants.AppInsightsKey)) ? "(not set" : "Length(" + config.GetValue<string>(Constants.AppInsightsKey).Length.ToString(CultureInfo.InvariantCulture))})");
+            Console.WriteLine($"App Insights Key   {(string.IsNullOrEmpty(SecureStringHelper.ConvertToUnsecureString(kvSecretService.GetSecretValue(Constants.AppInsightsKey))) ? "(not set" : "Length(" + SecureStringHelper.ConvertToUnsecureString(kvSecretService.GetSecretValue(Constants.AppInsightsKey)))})");
             // always return 0 (success)
             return 0;
         }

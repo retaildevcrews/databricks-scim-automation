@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace KeyVault.Extensions
+namespace CSE.DatabricksSCIMAutomation.Utilities
 {
     /// <summary>
     /// Static helper methods for working with Key Vault

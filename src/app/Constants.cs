@@ -17,15 +17,10 @@ namespace CSE.DatabricksSCIMAutomation
         public const string AccessToken = "AccessToken";
 
         public const string AppInsightsKey = "AppInsightsKey";
-        public const string NewKeyLoadedMetric = "newKeyLoaded";
 
         // if port is changed, also update value in the Dockerfiles
         public const string Port = "4120";
 
-        public const int DefaultPageSize = 100;
-        public const int MaxPageSize = 1000;
-
-        public const int HealthzCacheDuration = 60;
         public const int GracefulShutdownTimeout = 10;
     }
     public enum AuthenticationType { MI, CLI, VS }
