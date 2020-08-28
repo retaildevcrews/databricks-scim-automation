@@ -1,4 +1,5 @@
 ﻿using CSE.DatabricksSCIMAutomation.Interfaces;
+using CSE.DatabricksSCIMAutomation.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ namespace CSE.DatabricksSCIMAutomation.Controllers
             // return 
 
             // TODO: Remove dummy behavior - currently looks for "Access token" secret and returns the value
-            var secret = keyVaultClient.GetSecretValue(Constants.AccessToken);// await keyVaultConnection.Client.GetSecretAsync(keyVaultConnection.Uri.AbsoluteUri, Constants.AccessToken).ConfigureAwait(false);
+            var secret = SecureStringHelper.ConvertToUnsecureString(keyVaultClient.GetSecretValue(Constants.AccessToken));
             return Ok(secret);
             // return await ResultHandler.Handle(dal.GetGenresAsync(), nameof(GetGenresAsync), Constants.GenresControllerException, logger).ConfigureAwait(false);
         }
