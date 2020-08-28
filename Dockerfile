@@ -63,15 +63,15 @@ WORKDIR /app
 
 ### create a user
 ### dotnet needs a home directory
-RUN addgroup -S databricksscim && \
-    adduser -S databricksscim -G databricksscim && \
-    mkdir -p /home/databricksscim && \
-    chown -R databricksscim:databricksscim /home/databricksscim
+RUN addgroup -S databricksscimautomation && \
+    adduser -S databricksscimautomation -G databricksscimautomation && \
+    mkdir -p /home/databricksscimautomation && \
+    chown -R databricksscimautomation:databricksscimautomation /home/databricksscimautomation
 
 ### run as databricksscim user
-USER databricksscim
+USER databricksscimautomation
 
 ### copy the app
 COPY --from=build /app .
 
-ENTRYPOINT [ "dotnet",  "databricksscim.dll" ]
+ENTRYPOINT [ "dotnet",  "databricksscimautomation.dll" ]
