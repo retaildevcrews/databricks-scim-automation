@@ -5,6 +5,8 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "need to catch all exceptions", Scope = "namespaceanddescendants", Target = "CSE.DatabricksSCIMAutomation.Controllers")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "need to catch all exceptions", Scope = "namespaceanddescendants", Target = "CSE.DatabricksSCIMAutomation.DataAccessLayer")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "need to catch all exceptions", Scope = "namespaceanddescendants", Target = "Middleware")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "need to catch all exceptions", Scope = "namespaceanddescendants", Target = "CSE.DatabricksSCIMAutomation.Services")]
+
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1303:Do not pass literals as localized parameters", Justification = "method name for logging", Scope = "type", Target = "CSE.DatabricksSCIMAutomation.App")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1303:Do not pass literals as localized parameters", Justification = "method name for logging", Scope = "namespaceanddescendants", Target = "CSE.DatabricksSCIMAutomation.Controllers")]

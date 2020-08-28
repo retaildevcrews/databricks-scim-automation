@@ -157,7 +157,9 @@ namespace CSE.DatabricksSCIMAutomation.DataAccessLayer
         /// <typeparam name="T">POCO type to which results are serialized and returned.</typeparam>
         /// <param name="queryDefinition">Query to be executed.</param>
         /// <returns>Enumerable list of objects of type T.</returns>
+#pragma warning disable IDE0051 // Remove unused private members
         private async Task<IEnumerable<T>> InternalCosmosDBSqlQuery<T>(QueryDefinition queryDefinition)
+#pragma warning restore IDE0051 // Remove unused private members
         {
             // run query
             var query = cosmosDetails.Container.GetItemQueryIterator<T>(queryDefinition, requestOptions: cosmosDetails.QueryRequestOptions);
@@ -172,7 +174,9 @@ namespace CSE.DatabricksSCIMAutomation.DataAccessLayer
         /// <typeparam name="T">POCO type to which results are serialized and returned.</typeparam>
         /// <param name="sql">Query to be executed.</param>
         /// <returns>Enumerable list of objects of type T.</returns>
+#pragma warning disable IDE0051 // Remove unused private members
         private async Task<IEnumerable<T>> InternalCosmosDBSqlQuery<T>(string sql)
+#pragma warning restore IDE0051 // Remove unused private members
         {
             // run query
             var query = cosmosDetails.Container.GetItemQueryIterator<T>(sql, requestOptions: cosmosDetails.QueryRequestOptions);

@@ -1,11 +1,10 @@
-using KeyVault.Extensions;
-using Microsoft.ApplicationInsights;
+using Azure.Security.KeyVault.Secrets;
+using CSE.DatabricksSCIMAutomation.Services;
+using CSE.DatabricksSCIMAutomation.Interfaces;
 using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Azure.KeyVault;
-using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -15,6 +14,7 @@ using System.CommandLine.Parsing;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using CSE.DatabricksSCIMAutomation.Utilities;
 
 namespace CSE.DatabricksSCIMAutomation
 {
@@ -28,6 +28,7 @@ namespace CSE.DatabricksSCIMAutomation
 
         // Key Vault configuration
         private static IConfigurationRoot config = null;
+        private static ISecretClient kvSecretService;
 
         private static CancellationTokenSource ctCancel;
 
@@ -96,13 +97,17 @@ namespace CSE.DatabricksSCIMAutomation
 
             if (logger != null)
             {
-                // get the IConfigurationRoot from DI
-                var cfg = host.Services.GetService<IConfigurationRoot>();
-
-                // log a not using app insights warning
-                if (string.IsNullOrEmpty(cfg.GetValue<string>(Constants.AppInsightsKey)))
+                if (kvSecretService != null)
                 {
-                    logger.LogWarning("App Insights Key not set");
+                    try
+                    {
+                        kvSecretService.GetSecretValue(Constants.AppInsightsKey);
+                    }
+                    catch (Exception)
+                    {
+                        // log a not using app insights warning
+                        logger.LogWarning("App Insights Key not set");
+                    }
                 }
 
                 logger.LogInformation("Web Server Started");
@@ -113,22 +118,16 @@ namespace CSE.DatabricksSCIMAutomation
 
         /// <summary>
         /// Builds the config for the web server
-        /// 
-        /// Uses Key Vault via Managed Identity (MI)
         /// </summary>
-        /// <param name="kvClient">Key Vault Client</param>
-        /// <param name="kvUrl">Key Vault URL</param>
         /// <returns>Root Configuration</returns>
-        static IConfigurationRoot BuildConfig(KeyVaultClient kvClient, string kvUrl)
+        static IConfigurationRoot BuildConfig()
         {
             try
             {
                 // standard config builder
                 var cfgBuilder = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json", optional: false)
-                    // use Azure Key Vault
-                    .AddAzureKeyVault(kvUrl, kvClient, new DefaultKeyVaultSecretManager());
+                    .AddJsonFile("appsettings.json", optional: false);
 
                 // build the config
                 return cfgBuilder.Build();
@@ -150,20 +149,14 @@ namespace CSE.DatabricksSCIMAutomation
         /// <param name="kvUrl">URL of the Key Vault</param>
         /// <param name="authType">MI, CLI, VS</param>
         /// <returns>Web Host ready to run</returns>
-        static async Task<IWebHost> BuildHost(string kvUrl, AuthenticationType authType)
+        static IWebHost BuildHost(string kvName, AuthenticationType authType)
         {
-            // create the Key Vault Client
-            var kvClient = await GetKeyVaultClient(kvUrl, authType).ConfigureAwait(false);
-
-            if (kvClient == null)
-            {
-                return null;
-            }
-
             // build the config
-            // we need the key vault values for the graph API calls
-            // potentially for DAL in future
-            config = BuildConfig(kvClient, kvUrl);
+            config = BuildConfig();
+
+            ICredentialService credService = new CredentialService(authType);
+
+            kvSecretService = new KeyVaultSecretService(kvName, credService);
 
             // configure the web host builder
             IWebHostBuilder builder = WebHost.CreateDefaultBuilder()
@@ -174,19 +167,16 @@ namespace CSE.DatabricksSCIMAutomation
                 .UseShutdownTimeout(TimeSpan.FromSeconds(Constants.GracefulShutdownTimeout))
                 .ConfigureServices(services =>
                 {
-                    // add the data access layer via DI
-                    //services.AddDal(new Uri(config.GetValue<string>(Constants.CosmosUrl)),
-                    //    config.GetValue<string>(Constants.CosmosKey),
-                    //    config.GetValue<string>(Constants.CosmosDatabase),
-                    //    config.GetValue<string>(Constants.CosmosCollection));
-
-                    // add the KeyVaultConnection via DI
-                    services.AddKeyVaultConnection(kvClient, new Uri(kvUrl));
-
-                    // add IConfigurationRoot
-                    services.AddSingleton<IConfigurationRoot>(config);
-
-                    services.AddResponseCaching();
+                    services.AddSingleton<ISecretClient>(kvSecretService);
+                    try{
+                        services.AddApplicationInsightsTelemetry(SecureStringHelper.ConvertToUnsecureString(kvSecretService.GetSecretValue(Constants.AppInsightsKey)));
+                    }
+                    catch (Exception)
+                    {
+                        // TODO: log warning? would be dupe
+                        // Maybe create helper extension to clean up this function
+                    }
+                    
                 })
                 // configure logger based on command line
                 .ConfigureLogging(logger =>
@@ -202,58 +192,5 @@ namespace CSE.DatabricksSCIMAutomation
             return builder.Build();
         }
 
-        /// <summary>
-        /// Get a valid key vault client
-        /// </summary>
-        /// <param name="kvUrl">URL of the key vault</param>
-        /// <param name="authType">MI, CLI or VS</param>
-        /// <returns></returns>
-        static async Task<KeyVaultClient> GetKeyVaultClient(string kvUrl, AuthenticationType authType)
-        {
-            // use MI as default
-            string authString = "RunAs=App";
-
-#if (DEBUG)
-            // Only support CLI and VS credentials in debug mode
-            switch (authType)
-            {
-                case AuthenticationType.CLI:
-                    authString = "RunAs=Developer; DeveloperTool=AzureCli";
-                    break;
-                case AuthenticationType.VS:
-                    authString = "RunAs=Developer; DeveloperTool=VisualStudio";
-                    break;
-            }
-#else
-            if (authType != AuthenticationType.MI)
-            {
-                Console.WriteLine("Release builds require MI authentication for Key Vault");
-                return null;
-            }
-#endif
-
-            try
-            {
-                var tokenProvider = new AzureServiceTokenProvider(authString);
-
-                // use Managed Identity (MI) for secure access to Key Vault
-                var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(tokenProvider.KeyVaultTokenCallback));
-
-                // read a key to make sure the connection is valid 
-                // TODO: Update with secret we know will be there for graph API calls
-                // Currently just using "AccessToken" until we learn more
-                await keyVaultClient.GetSecretAsync(kvUrl, Constants.AccessToken).ConfigureAwait(false);
-
-                // return the client
-                return keyVaultClient;
-            }
-            catch (Exception ex)
-            {
-                // log and fail
-
-                Console.WriteLine($"{ex}\nKeyVault:Exception: {ex.Message}");
-                return null;
-            }
-        }
     }
 }
