@@ -1,13 +1,22 @@
 name: Docker CI
 
 on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+    branches:
+      - main
+
+    paths-ignore:
+    - 'docs/**'
+    - '**.md'
+
   push:
     branches:
-      - master
+      - main
 
-    paths:
-      - 'src/**'
-      - 'Dockerfile*'
+    paths-ignore:
+    - 'docs/**'
+    - '**.md'
 
     tags:
       - v*
@@ -17,46 +26,99 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      # copy the config value to environment variables
+      # do not copy the actual secrets
+
+      ACR_REPO: ${{ secrets.ACR_REPO }}
+      # ACR_IMAGE: ${{ secrets.ACR_IMAGE }}
+      ACR_REG: ${{ secrets.ACR_REG }}
+
+      # These are used in if: conditions
+      AZURE_SET: false
+      ACR_SET: false
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
-    - name: Login to registry
+    - name: Set conditions
       run: |
-        # Login to registry
+        # check that all Azure secrets are set!
+        if [[ "${{ secrets.SERVICE_PRINCIPAL_SECRET }}" != "" && "${{ secrets.TENANT }}" != "" && "${{ secrets.SERVICE_PRINCIPAL }}" != "" ]];
+        then
+          echo "::set-env name=AZURE_SET::true"
+          echo "Setting Azure to true"
+        fi
+        
+        # check that all ACR secrets are set
+        if [[ "${{ secrets.ACR_REG }}" != "" && "${{ secrets.ACR_REPO }}" != "" ]];
+        then
+          echo "::set-env name=ACR_SET::true"
+          echo "Setting ACR to true"
+        fi
+    - name: PR Closed
+      if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' && ! github.event.pull_request.merged }}
 
-        # You must add the following secrets to github
-        #    DOCKER_USER  - your dockerhub user name
-        #    DOCKER_PAT   - the personal access token for dockerhub
-        #    DOCKER_REPO  - the docker repository name in the form: organization/repository
-
-        ## login to dockerhub
-        echo "${{ secrets.DOCKER_PAT }}" | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
-
-    - name: Build Container
-      run: docker build . --file Dockerfile --tag image
-
-    - name: Docker Push
       run: |
-        # Tag and push the docker image
+        # handle PR Closed event by building / pushing main branch
+        
+        # checkout parent branch (usually "main")
+        git config pull.ff only
+        git fetch --all
+        git checkout ${{ github.base_ref }}
+        git pull
+    - name: PR Merged
+      if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged }}
 
-        IMAGE_ID=${{ secrets.DOCKER_REPO }}
-
-        # Strip git ref prefix from version
-        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
-        # Only tag and push when a new tag is created
+      run: |
+        # Do not build on PR Merged
+        
+        # Skip remaining steps
+        echo "::set-env name=AZURE_SET::false"
+        echo "::set-env name=ACR_SET::false"
+    - name: Validate Azure Access
+      if: ${{ env.AZURE_SET == 'true' }}
+      run: |
+        # login to Azure
+        az login --service-principal -u ${{ secrets.SERVICE_PRINCIPAL }} --tenant ${{ secrets.TENANT }} -p ${{ secrets.SERVICE_PRINCIPAL_SECRET }}
+    - name: Docker Pull Test
+      if: ${{ env.AZURE_SET == 'true' ||  env.ACR_SET == 'true' }}
+      run: |
+        # Pull the latest image if needed
+        # This doesn't have to be a separate step, but makes the output easier to read and debug
+        docker pull mcr.microsoft.com/dotnet/core/sdk:3.1
+    - name: Docker Pull Release
+      if: ${{ env.ACR_SET == 'true' }}
+      run: |
+        # Pull the latest image if needed
+        docker pull mcr.microsoft.com/dotnet/core/aspnet:3.1-alpine
+    - name: Docker Build Release
+      if: ${{ env.ACR_SET == 'true' }}
+      run: |
+        # build release image
+        docker build . -t scimapp
+    - name: ACR Push
+      if: ${{ env.ACR_SET == 'true' && env.AZURE_SET == 'true' }}
+      run: |
+        # login to acr
+        az acr login -n $ACR_REG
+        # build the complete image name
+        ACR_IMAGE=$ACR_REG.azurecr.io/$ACR_REPO
+        # build release image
+        docker tag scimapp $ACR_IMAGE:beta
+        # Tag image based on repo tag if a github label
         if [[ "${{ github.ref }}" == "refs/tags/"* ]]
         then
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+        
           # Strip "v" prefix from tag name
           VERSION=$(echo $VERSION | sed -e 's/^v//')
-  
-          docker tag image $IMAGE_ID:$VERSION
-          docker tag image $IMAGE_ID:stable
-  
-          docker push $IMAGE_ID
-
-          echo "Image pushed"
-        else
-          echo "Image only pushed on tags"
+          
+          # tag the image with :version and :stable
+          docker tag scimapp $ACR_IMAGE:$VERSION
+          docker tag scimapp $ACR_IMAGE:stable
         fi
+        
+        # push the repo
+        docker push $ACR_IMAGE
