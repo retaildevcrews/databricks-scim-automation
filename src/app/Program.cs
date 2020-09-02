@@ -7,11 +7,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MIC = Microsoft.Identity.Client;
+using Microsoft.Identity.Json.Linq;
 using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using CSE.DatabricksSCIMAutomation.Utilities;
@@ -143,12 +146,58 @@ namespace CSE.DatabricksSCIMAutomation
             return null;
         }
 
+        static async void GetATokenForGraph(string kvName, AuthenticationType authType)
+        {
+            ICredentialService credService = new CredentialService(authType);
+            kvSecretService = new KeyVaultSecretService(kvName, credService);
+            string loginUsername = kvSecretService.GetSecret(Constants.LoginUsername).Value;
+            SecureString loginPasswordSecret = kvSecretService.GetSecretValue(Constants.LoginPassword);
+
+            string tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+            Uri authority = new Uri($"https://login.microsoftonline.com/{tenantId}");
+            string[] scopes = new string[] { "user.read" };
+
+            string clientId = Environment.GetEnvironmentVariable("CLIENT_ID"); // DAEMON APPLICATION
+            MIC.IPublicClientApplication app;
+            app = MIC.PublicClientApplicationBuilder
+                .Create(clientId)
+                .WithAuthority(authority)
+                .Build();
+
+            // var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
+            var accounts = await app.GetAccountsAsync();
+            MIC.AuthenticationResult result = null;
+            // if (accounts.GetEnumerator().Current != null)
+            if (accounts.Any())
+            {
+                // result = await app.AcquireTokenSilent(scopes, accounts.GetEnumerator().Current)
+                result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault())
+                    .ExecuteAsync();
+                    // .ConfigureAwait(false);
+            }
+            else
+            {
+                try
+                {
+                    result = await app.AcquireTokenByUsernamePassword(scopes, loginUsername, loginPasswordSecret)
+                        .ExecuteAsync()
+                        .ConfigureAwait(false);
+                }
+                catch(MIC.MsalException e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+            Console.WriteLine(result.AccessToken);
+        }
+
         /// <summary>
         /// Build the web host
         /// </summary>
         /// <param name="kvUrl">URL of the Key Vault</param>
         /// <param name="authType">MI, CLI, VS</param>
         /// <returns>Web Host ready to run</returns>
+        // static IWebHost BuildHost(string kvName, AuthenticationType authType)
         static IWebHost BuildHost(string kvName, AuthenticationType authType)
         {
             // build the config
@@ -158,6 +207,7 @@ namespace CSE.DatabricksSCIMAutomation
 
             try
             {
+                GetATokenForGraph(kvName, authType);
                 kvSecretService = new KeyVaultSecretService(kvName, credService);
                 kvSecretService.GetSecret(Constants.AccessToken);
             }

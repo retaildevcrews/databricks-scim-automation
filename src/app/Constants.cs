@@ -15,6 +15,8 @@ namespace CSE.DatabricksSCIMAutomation
         public const string CosmosUrl = "CosmosUrl";
 
         public const string AccessToken = "AccessToken";
+        public const string LoginUsername = "LoginUsername";
+        public const string LoginPassword = "LoginPassword";
 
         public const string AppInsightsKey = "AppInsightsKey";
 
