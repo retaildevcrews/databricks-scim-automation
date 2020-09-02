@@ -118,7 +118,7 @@ namespace CSE.DatabricksSCIMAutomation
                 AppLogLevel = logLevel;
 
                 // build the host
-                host = BuildHost(keyvaultName, authType);
+                host = await BuildHost(keyvaultName, authType).ConfigureAwait(false);
 
                 if (host == null)
                 {

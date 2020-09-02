@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MIC = Microsoft.Identity.Client;
-using Microsoft.Identity.Json.Linq;
+// using Microsoft.Identity.Json.Linq;
 using System;
 using System.CommandLine;
 using System.CommandLine.Invocation;
@@ -146,7 +146,7 @@ namespace CSE.DatabricksSCIMAutomation
             return null;
         }
 
-        static async void GetATokenForGraph(string kvName, AuthenticationType authType)
+        static async Task<string> GetATokenForGraph(string kvName, AuthenticationType authType)
         {
             ICredentialService credService = new CredentialService(authType);
             kvSecretService = new KeyVaultSecretService(kvName, credService);
@@ -164,16 +164,16 @@ namespace CSE.DatabricksSCIMAutomation
                 .WithAuthority(authority)
                 .Build();
 
-            // var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
-            var accounts = await app.GetAccountsAsync();
+            var accounts = await app.GetAccountsAsync().ConfigureAwait(false);
+            // var accounts = await app.GetAccountsAsync();
             MIC.AuthenticationResult result = null;
-            // if (accounts.GetEnumerator().Current != null)
-            if (accounts.Any())
+            if (accounts.GetEnumerator().Current != null)
+            // if (accounts.Any())
             {
-                // result = await app.AcquireTokenSilent(scopes, accounts.GetEnumerator().Current)
-                result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault())
-                    .ExecuteAsync();
-                    // .ConfigureAwait(false);
+                result = await app.AcquireTokenSilent(scopes, accounts.GetEnumerator().Current)
+                // result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault())
+                    .ExecuteAsync()
+                    .ConfigureAwait(false);
             }
             else
             {
@@ -188,7 +188,7 @@ namespace CSE.DatabricksSCIMAutomation
                     Console.WriteLine(e);
                 }
             }
-            Console.WriteLine(result.AccessToken);
+            return result.AccessToken;
         }
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace CSE.DatabricksSCIMAutomation
         /// <param name="authType">MI, CLI, VS</param>
         /// <returns>Web Host ready to run</returns>
         // static IWebHost BuildHost(string kvName, AuthenticationType authType)
-        static IWebHost BuildHost(string kvName, AuthenticationType authType)
+        static async Task<IWebHost> BuildHost(string kvName, AuthenticationType authType)
         {
             // build the config
             config = BuildConfig();
@@ -207,7 +207,8 @@ namespace CSE.DatabricksSCIMAutomation
 
             try
             {
-                GetATokenForGraph(kvName, authType);
+                string accessToken = await GetATokenForGraph(kvName, authType).ConfigureAwait(false);
+                Console.WriteLine(accessToken);
                 kvSecretService = new KeyVaultSecretService(kvName, credService);
                 kvSecretService.GetSecret(Constants.AccessToken);
             }
