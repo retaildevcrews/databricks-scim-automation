@@ -1,0 +1,22 @@
+{
+    "name": "databricks-scim-automation",
+    "description": "Using the scim gallery app, sync databricks AAD groups",
+    "version": "0.0.1",
+    "private": true,
+    "license": "MIT",
+    "author": "Microsoft",
+    "scripts": {
+        "start:gui": "nodemon gui/index.js",
+        "start:cli": "node cli.js"
+    },
+    "dependencies": {
+        "@databricks-scim-automation/graph": "file:graph",
+        "express": "^4.17.1",
+        "fs": "0.0.1-security",
+        "path": "^0.12.7",
+        "url": "^0.11.0"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.4"
+    }
+}
