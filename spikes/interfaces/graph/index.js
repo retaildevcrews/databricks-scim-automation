@@ -245,18 +245,21 @@ function delay(time) {
     return new Promise(done => setTimeout(() => done(), time) );
 }
 
-const keepFetching = (fn, errorMessage, isErred, checkStatus) => async function(retries) {
+const noop = bool => () => bool;
+const keepFetching = (fn, errorMessage, hasStatusErred=noop(false), hasBodyErred=noop(false)) => async function(retries) {
     if (retries === 0) {
         throw new Error(errorMessage);
     }
     await delay(5000);
     return await fn().then(async response => {
-        const checkValue = checkStatus ? response : await response.json();
-        if (isErred(checkValue)) {
-            return await keepFetching(fn, errorMessage, isErred, checkStatus)(retries - 1);
-        } else {
-            return response;
+        if (hasStatusErred(response.status)) {
+            return await keepFetching(fn, errorMessage, hasStatusErred, hasBodyErred)(retries - 1)
         }
+        const body = await response.json();
+        if (hasBodyErred(body)) {
+            return await keepFetching(fn, errorMessage, hasStatusErred, hasBodyErred)(retries - 1)
+        }
+        return body;
     });
 };
 
@@ -318,17 +321,12 @@ async function startSyncProcess(inputParams) {
         const keepFetchingGetServicePrincipal = keepFetching(
             () => getServicePrincipal(accessToken, scimServicePrincipalObjectId),
             'Could not get app role ID from service principal!',
-            response => response.status !== 200 ,
-            true
+            (status) => (status !== 200),
+            (body) => (body.appRoles.filter(({ isEnabled, origin, displayName }) => (isEnabled && origin === 'Application' && displayName === 'User')).length === 0)
         );
         console.log("\nGetting app role ID from service principal...");
         appRoleId = await keepFetchingGetServicePrincipal(5)
-            .then((response) => {
-                if (response.status !== 200) {
-                    throw new Error('Could not get app roles from service principal!');
-                }
-                return response.json();
-            }).then((body) => (
+            .then((body) => (
                 body.appRoles.filter(({ isEnabled, origin, displayName }) => (isEnabled && origin === 'Application' && displayName === 'User'))[0].id
             ));
         console.log('Successfully retreived an app role from the service principal!');
@@ -405,6 +403,7 @@ async function startSyncProcess(inputParams) {
                 syncJobId: servicePrincipalSyncJobId,
             }),
             'Could not get a successful status for the sync job!',
+            (status) => (status !== 200),
             (body) => {
                 const { lastExecution, lastSuccessfulExecution, lastSuccessfulExecutionWithExports } = body.status;
                 lastExecution && console.log(`Last Execution (${lastExecution.state}) began at ${lastExecution.timeBegan} and ended at ${lastExecution.timeEnded}`);
@@ -412,8 +411,7 @@ async function startSyncProcess(inputParams) {
                 lastSuccessfulExecutionWithExports && console.log(`Last Successful Execution with Exports (${lastSuccessfulExecutionWithExports.state}) began at ${lastSuccessfulExecutionWithExports.timeBegan} and ended at ${lastSuccessfulExecutionWithExports.timeEnded}`);
                 const hasErred = !(lastSuccessfulExecution || lastSuccessfulExecutionWithExports || lastExecution.state === 'Succeeded');
                 return hasErred;
-            },
-            false
+            }
         )
         await keepFetchingGetServicePrincipalSyncJobStatus(10);
         return Promise.resolve('COMPLETED SYNC!');

@@ -7,8 +7,8 @@
     "author": "Microsoft",
     "scripts": {
         "start:gui": "nodemon gui/index.js",
-        "start:cli": "node cli.js",
-        "dev:cli": "nodemon cli.js"
+        "start:cli": "node cli/index.js",
+        "dev:cli": "nodemon cli/index.js"
     },
     "dependencies": {
         "@databricks-scim-automation/graph": "file:graph",
