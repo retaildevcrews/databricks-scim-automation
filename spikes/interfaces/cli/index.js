@@ -257,7 +257,8 @@ app.get('/', async (req, res) => {
         stepsStatus = log.initialTable(syncSteps);
         await Promise.mapSeries(syncSteps, ({ key, fn }) => callbacks[key](fn));
         await getServicePrincipalSyncJobStatus();
-        console.log('SYNCING STEPS COMPLETED!');
+        log.bold('SYNCING STEPS COMPLETED!');
+        console.log(logo.celebrate);
     } catch(err) {
         console.error(err)
     }
