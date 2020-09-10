@@ -223,7 +223,6 @@ async function getServicePrincipalSyncJobStatus() {
     }
     const keepGettingServicePrincipalSyncJobStatus = keepFetching(fn, failed, hasStatusErred, hasBodyErred);
     await keepGettingServicePrincipalSyncJobStatus(10, '');
-    return Promise.resolve('SYNCING STEPS COMPLETED!');
 }
 
 const callbacks = {
@@ -257,7 +256,8 @@ app.get('/', async (req, res) => {
         const syncSteps = graph.getSyncSteps();
         stepsStatus = log.initialTable(syncSteps);
         await Promise.mapSeries(syncSteps, ({ key, fn }) => callbacks[key](fn));
-        console.log(await getServicePrincipalSyncJobStatus());
+        await getServicePrincipalSyncJobStatus();
+        console.log('SYNCING STEPS COMPLETED!');
     } catch(err) {
         console.error(err)
     }
