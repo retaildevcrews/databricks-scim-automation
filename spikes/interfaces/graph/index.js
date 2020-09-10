@@ -241,183 +241,18 @@ async function getServicePrincipalSyncJobStatus(accessToken, { servicePrincipalO
     });
 }
 
-function delay(time) {
-    return new Promise(done => setTimeout(() => done(), time) );
-}
-
-const noop = bool => () => bool;
-const keepFetching = (fn, errorMessage, hasStatusErred=noop(false), hasBodyErred=noop(false)) => async function(retries) {
-    if (retries === 0) {
-        throw new Error(errorMessage);
-    }
-    await delay(5000);
-    return await fn().then(async response => {
-        if (hasStatusErred(response.status)) {
-            return await keepFetching(fn, errorMessage, hasStatusErred, hasBodyErred)(retries - 1)
-        }
-        const body = await response.json();
-        if (hasBodyErred(body)) {
-            return await keepFetching(fn, errorMessage, hasStatusErred, hasBodyErred)(retries - 1)
-        }
-        return body;
-    });
-};
-
-const responseParams = {
-    scimServicePrincipalObjectId: undefined,
-    aadGroupId: undefined,
-    appRoleId: undefined,
-    servicePrincipalSyncJobId: undefined,
-};
-
-async function startSyncProcess(inputParams) {
-    const {
-        accessToken,
-        refreshToken,
-        scimConnectorGalleryAppTemplateId,
-        scimConnectorGalleryAppName,
-        aadGroupFilterDisplayName,
-        syncJobTemplateId,
-        databricksWorkspaceUrl,
-        databricksWorkspacePat,
-    } = inputParams;
-    let {
-        scimServicePrincipalObjectId,
-        aadGroupId,
-        appRoleId,
-        servicePrincipalSyncJobId,
-    } = responseParams;
-
-    try {
-        console.log("\nCreating instance of SCIM connector app from AAD app gallery and adding to directory...");
-        scimServicePrincipalObjectId = await postScimConnectorGalleryApp(accessToken, scimConnectorGalleryAppTemplateId, scimConnectorGalleryAppName)
-            .then((response) => {
-                if (response.status !== 201) {
-                    throw new Error('Could not add instance of SCIM connector app from AAD app gallery to directory!');
-                }
-                return response.json();
-            })
-            .then((body) => {
-                console.log('Successfully created and added an instance of SCIM connector app from AAD app gallery to directory!');
-                return body.servicePrincipal.objectId;
-            });
-
-        console.log("\nGetting AAD groups...");
-        aadGroupId = await getAadGroups(accessToken, aadGroupFilterDisplayName)
-            .then((response) => {
-                if (response.status !== 200) {
-                    throw new Error('Could not get AAD groups!');
-                }
-                return response.json();
-            })
-            .then((body) => {
-                if (body.value.length === 0) {
-                    throw new Error('Did not get any AAD groups!');
-                }
-                console.log('Successfully retreived an AAD group!');
-                return body.value[0].id;
-            });
-
-        const keepFetchingGetServicePrincipal = keepFetching(
-            () => getServicePrincipal(accessToken, scimServicePrincipalObjectId),
-            'Could not get app role ID from service principal!',
-            (status) => (status !== 200),
-            (body) => (body.appRoles.filter(({ isEnabled, origin, displayName }) => (isEnabled && origin === 'Application' && displayName === 'User')).length === 0)
-        );
-        console.log("\nGetting app role ID from service principal...");
-        appRoleId = await keepFetchingGetServicePrincipal(5)
-            .then((body) => (
-                body.appRoles.filter(({ isEnabled, origin, displayName }) => (isEnabled && origin === 'Application' && displayName === 'User'))[0].id
-            ));
-        console.log('Successfully retreived an app role from the service principal!');
-
-        console.log("\nAdding AAD group to service principal...");
-        await postAddAadGroupToServicePrincipal(accessToken, {
-            resourceId: scimServicePrincipalObjectId,
-            principalId: aadGroupId,
-            appRoleId,
-        }).then((response) => {
-            if (response.status !== 201) {
-                throw new Error('Could not add AAD group to the service principal!');
-            }
-            return response.json();
-        })
-        .then((body) => {
-            console.log('Successfully added the AAD group to the service principal!');
-        });
-
-        console.log("\nCreating a provisioning job to sync the service principal...");
-        servicePrincipalSyncJobId = await postCreateServicePrincipalSyncJob(accessToken, {
-            servicePrincipalObjectId: scimServicePrincipalObjectId,
-            templateId: syncJobTemplateId,
-        }).then((response) => {
-            if (response.status !== 201) {
-                throw new Error('Could not provision a job to sync the service principal!');
-            }
-            return response.json();
-        }).then((body) => {
-            console.log('Successfully created a provisioning to job to sync the service principal!');
-            return body.id;
-        });
-
-        console.log("\nTesting the connection with the third-party application...");
-        await postValidateServicePrincipalCredentials(accessToken, {
-            servicePrincipalObjectId: scimServicePrincipalObjectId,
-            syncJobId: servicePrincipalSyncJobId,
-            databricksUrl: databricksWorkspaceUrl,
-            secretToken: databricksWorkspacePat,
-        }).then((response) => {
-            if (response.status !== 204){
-                throw new Error('Could not validate a connection with the third-party application!');
-            }
-            console.log('Successfully validated the connection to the third-party application!');
-        });
-
-        console.log("\nAuthorizing access to third-party application...");
-        await putSaveServicePrincipalCredentials(accessToken, {
-            servicePrincipalObjectId: scimServicePrincipalObjectId,
-            databricksUrl: databricksWorkspaceUrl,
-            secretToken: databricksWorkspacePat,
-        }).then(async (response) => {
-            if (response.status !== 204){
-                throw new Error('Could not validate a connection with the third-party application!');
-            }
-            console.log('Successfully authorized access connection to the third-party application!');
-        });
-
-        console.log("\nStarting the provisioning job to sync the service principal...");
-        await postStartServicePrincipalSyncJob(accessToken, {
-            servicePrincipalObjectId: scimServicePrincipalObjectId,
-            syncJobId: servicePrincipalSyncJobId,
-        }).then((response) => {
-            if (response.status !== 204) {
-                throw new Error('Could not start the provisioning job to sync the service principal!');
-            }
-            console.log('Successfully started the provisioning job to sync the service principal!');
-        });
-
-        console.log("\nGetting status of synchronizing...");
-        const keepFetchingGetServicePrincipalSyncJobStatus = keepFetching(
-            async () => await getServicePrincipalSyncJobStatus(accessToken, {
-                servicePrincipalObjectId: scimServicePrincipalObjectId,
-                syncJobId: servicePrincipalSyncJobId,
-            }),
-            'Could not get a successful status for the sync job!',
-            (status) => (status !== 200),
-            (body) => {
-                const { lastExecution, lastSuccessfulExecution, lastSuccessfulExecutionWithExports } = body.status;
-                lastExecution && console.log(`Last Execution (${lastExecution.state}) began at ${lastExecution.timeBegan} and ended at ${lastExecution.timeEnded}`);
-                lastSuccessfulExecution && console.log(`Last Successful Execution (${lastSuccessfulExecution.state}) began at ${lastSuccessfulExecution.timeBegan} and ended at ${lastSuccessfulExecution.timeEnded}`);
-                lastSuccessfulExecutionWithExports && console.log(`Last Successful Execution with Exports (${lastSuccessfulExecutionWithExports.state}) began at ${lastSuccessfulExecutionWithExports.timeBegan} and ended at ${lastSuccessfulExecutionWithExports.timeEnded}`);
-                const hasErred = !(lastSuccessfulExecution || lastSuccessfulExecutionWithExports || lastExecution.state === 'Succeeded');
-                return hasErred;
-            }
-        )
-        await keepFetchingGetServicePrincipalSyncJobStatus(10);
-        return Promise.resolve('COMPLETED SYNC!');
-    } catch(err) {
-        return Promise.reject(err);
-    }
+function getSyncSteps() {
+    return [
+        { key: 'postAccessToken', fn: postAccessToken },
+        { key: 'postScimConnectorGalleryApp', fn: postScimConnectorGalleryApp },
+        { key: 'getAadGroups', fn: getAadGroups },
+        { key: 'getServicePrincipal', fn: getServicePrincipal },
+        { key: 'postAddAadGroupToServicePrincipal', fn: postAddAadGroupToServicePrincipal },
+        { key: 'postCreateServicePrincipalSyncJob', fn: postCreateServicePrincipalSyncJob },
+        { key: 'postValidateServicePrincipalCredentials', fn: postValidateServicePrincipalCredentials },
+        { key: 'putSaveServicePrincipalCredentials', fn: putSaveServicePrincipalCredentials },
+        { key: 'postStartServicePrincipalSyncJob', fn: postStartServicePrincipalSyncJob },
+    ];
 }
 
 module.exports = {
@@ -434,5 +269,5 @@ module.exports = {
     putSaveServicePrincipalCredentials,
     postStartServicePrincipalSyncJob,
     getServicePrincipalSyncJobStatus,
-    startSyncProcess,
+    getSyncSteps,
 };
