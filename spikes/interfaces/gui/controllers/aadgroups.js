@@ -12,7 +12,7 @@ async function getAadGroups(req, res) {
     try {
         const { query: { filterDisplayName } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
-        const response = await graph.getAadGroups(accessToken, filterDisplayName);
+        const response = await graph.getAadGroups({ accessToken, filterDisplayName });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(body);

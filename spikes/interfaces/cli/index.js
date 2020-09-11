@@ -57,12 +57,12 @@ const keepFetching = (fn, failed, hasStatusErred=noop(false), hasBodyErred=noop(
     });
 };
 
-let params = {};
+let params = { host };
 let stepsStatus = [];
 
 // Creates access and refresh token by redeeming sign-in code
 async function postAccessTokenCallback(graphCall) {
-    const response = await graphCall(params.code, { host });
+    const response = await graphCall(params);
     const body = await response.json();
     if (response.status !== 200) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAccessToken', Status: 'Failed', Attempts: 1 });
@@ -78,7 +78,11 @@ async function postAccessTokenCallback(graphCall) {
 }
 
 async function postScimConnectorGalleryAppCallback(graphCall) {
-    const response = await graphCall(params.accessToken, params.scimConnectorGalleryAppTemplateId, params.scimConnectorGalleryAppName);
+    const graphParams = {
+        templateId: params.scimConnectorGalleryAppTemplateId,
+        appName: params.scimConnectorGalleryAppName,
+    }
+    const response = await graphCall({ ...params, ...graphParams });
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postScimConnectorGalleryApp',  Status: 'Failed', Attempts: 1 });
@@ -90,7 +94,8 @@ async function postScimConnectorGalleryAppCallback(graphCall) {
 }
 
 async function getAadGroupsCallback(graphCall) {
-    const response = await graphCall(params.accessToken, params.aadGroupFilterDisplayName);
+    const graphParams = { filterDisplayName: params.aadGroupFilterDisplayName };
+    const response = await graphCall({ ...params, ...graphParams });
     const body = await response.json();
     if (response.status !== 200 || body.value.length === 0) {
         stepsStatus = log.table(stepsStatus, { Action: 'getAadGroups', Status: 'Failed', Attempts: 1 });
@@ -118,8 +123,9 @@ async function getServicePrincipalCallback(graphCall) {
         if (hasErred) { stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Waiting...', Attempts: attempts }) }
         return hasErred;
     }
+    const graphParams = { objectId: params.scimServicePrincipalObjectId };
     const keepGettingServicePrincipal = keepFetching(
-        () => graphCall(params.accessToken, params.scimServicePrincipalObjectId),
+        () => graphCall({ ...params, ...graphParams }),
         failed,
         hasStatusErred,
         hasBodyErred
@@ -133,11 +139,11 @@ async function getServicePrincipalCallback(graphCall) {
 }
 
 async function postAddAadGroupToServicePrincipalCallback(graphCall) {
-    const response = await graphCall(params.accessToken, {
+    const graphParams = {
         resourceId: params.scimServicePrincipalObjectId,
         principalId: params.aadGroupId,
-        appRoleId: params.appRoleId,
-    });
+    };
+    const response = await graphCall({ ...params, ...graphParams });
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAddAadGroupToServicePrincipal', Status: 'Failed', Attempts: 1 });
@@ -148,10 +154,11 @@ async function postAddAadGroupToServicePrincipalCallback(graphCall) {
 }
 
 async function postCreateServicePrincipalSyncJobCallback(graphCall) {
-    const response = await graphCall(params.accessToken, {
+    const graphParams = {
         servicePrincipalObjectId: params.scimServicePrincipalObjectId,
         templateId: params.syncJobTemplateId,
-    });
+    };
+    const response = await graphCall({ ...params, ...graphParams });
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postCreateServicePrincipalSyncJob', Status: 'Failed', Attempts: 1 });
@@ -163,12 +170,13 @@ async function postCreateServicePrincipalSyncJobCallback(graphCall) {
 }
 
 async function postValidateServicePrincipalCredentialsCallback(graphCall) {
-    const response = await graphCall(params.accessToken, {
+    const graphParams = {
         servicePrincipalObjectId: params.scimServicePrincipalObjectId,
         syncJobId: params.servicePrincipalSyncJobId,
         databricksUrl: params.databricksWorkspaceUrl,
         secretToken: params.databricksWorkspacePat,
-    });
+    };
+    const response = await graphCall({ ...params, ...graphParams });
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postValidateServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -179,11 +187,12 @@ async function postValidateServicePrincipalCredentialsCallback(graphCall) {
 }
 
 async function putSaveServicePrincipalCredentialsCallback(graphCall) {
-    const response = await graphCall(params.accessToken, {
+    const graphParams = {
         servicePrincipalObjectId: params.scimServicePrincipalObjectId,
         databricksUrl: params.databricksWorkspaceUrl,
         secretToken: params.databricksWorkspacePat,
-    });
+    };
+    const response = await graphCall({ ...params, ...graphParams });
     if (response.status !== 204){
         stepsStatus = log.table(stepsStatus, { Action: 'putSaveServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -194,10 +203,11 @@ async function putSaveServicePrincipalCredentialsCallback(graphCall) {
 }
 
 async function postStartServicePrincipalSyncJobCallback(graphCall) {
-    const response = await graphCall(params.accessToken, {
+    const graphParams = {
         servicePrincipalObjectId: params.scimServicePrincipalObjectId,
         syncJobId: params.servicePrincipalSyncJobId,
-    });
+    };
+    const response = await graphCall({ ...params, ...graphParams });
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postStartServicePrincipalSyncJob', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -208,10 +218,11 @@ async function postStartServicePrincipalSyncJobCallback(graphCall) {
 }
 
 async function getServicePrincipalSyncJobStatus() {
-    const fn =  async () => await graph.getServicePrincipalSyncJobStatus(params.accessToken, {
+    const graphParams = {
         servicePrincipalObjectId: params.scimServicePrincipalObjectId,
         syncJobId: params.servicePrincipalSyncJobId,
-    });
+    };
+    const fn =  async () => await graph.getServicePrincipalSyncJobStatus({ ...params, ...graphParams });
     const failed = (body) => { throw new Error(`Could not get successful status from provisioning job to sync the service principal!\n${JSON.stringify(body)}`) };
     const hasStatusErred = (status) => status !== 200;
     const hasBodyErred = (body) => {

@@ -11,7 +11,7 @@ async function getServicePrincipal(req, res) {
     try {
         const { query: { servicePrincipalObjectId } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
-        const response = await graph.getServicePrincipal(accessToken, servicePrincipalObjectId);
+        const response = await graph.getServicePrincipal({ accessToken, objectId: servicePrincipalObjectId });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         // Use app roles assigned to the service principal for other calls: body.appRoles
@@ -34,7 +34,8 @@ async function postAddAadGroupToServicePrincipal(req, res) {
     try {
         const { query: { servicePrincipalObjectId, aadGroupId, appRoleId } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
-        const response = await graph.postAddAadGroupToServicePrincipal(accessToken, {
+        const response = await graph.postAddAadGroupToServicePrincipal({
+            accessToken,
             resourceId: servicePrincipalObjectId,
             principalId: aadGroupId,
             appRoleId,
@@ -60,7 +61,7 @@ async function postCreateServicePrincipalSyncJob(req, res) {
         const { query: { jobTemplateId, servicePrincipalObjectId } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
         // Use service principal's sync job ID for other calls: body.id
-        const response = await graph.postCreateServicePrincipalSyncJob(accessToken, { servicePrincipalObjectId, templateId: jobTemplateId });
+        const response = await graph.postCreateServicePrincipalSyncJob({ accessToken, servicePrincipalObjectId, templateId: jobTemplateId });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(body);
@@ -87,7 +88,7 @@ async function postValidateServicePrincipalCredentials(req, res) {
         const { query: { servicePrincipalObjectId, syncJobId, databricksUrl } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
         const secretToken = req.headers['x-secret-token'] === 'default' ? undefined : req.headers['x-secret-token'];
-        const response = await graph.postValidateServicePrincipalCredentials(accessToken, { servicePrincipalObjectId, syncJobId, databricksUrl, secretToken });
+        const response = await graph.postValidateServicePrincipalCredentials({ accessToken, servicePrincipalObjectId, syncJobId, databricksUrl, secretToken });
         res.sendStatus(response.status);
     } catch (err) {
         const errorMessage = 'Error syncing jobs';
@@ -107,7 +108,7 @@ async function putSaveServicePrincipalCredentials(req, res) {
         const { query: { servicePrincipalObjectId, databricksUrl } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
         const secretToken = req.headers['x-secret-token'] === 'default' ? undefined : req.headers['x-secret-token'];
-        const response = await graph.putSaveServicePrincipalCredentials(accessToken, { servicePrincipalObjectId, databricksUrl, secretToken });
+        const response = await graph.putSaveServicePrincipalCredentials({ accessToken, servicePrincipalObjectId, databricksUrl, secretToken });
         res.sendStatus(response.status);
     } catch (err) {
         const errorMessage = 'Error syncing jobs';
@@ -126,7 +127,7 @@ async function postStartServicePrincipalSyncJob(req, res) {
     try {
         const { query: { servicePrincipalObjectId, syncJobId } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
-        const response = await graph.postStartServicePrincipalSyncJob(accessToken, { servicePrincipalObjectId, syncJobId });
+        const response = await graph.postStartServicePrincipalSyncJob({ accessToken, servicePrincipalObjectId, syncJobId });
         res.sendStatus(response.status);
     } catch (err) {
         const errorMessage = 'Error syncing jobs';
@@ -145,7 +146,7 @@ async function getServicePrincipalSyncJobStatus(req, res) {
     try {
         const { query: { servicePrincipalObjectId, syncJobId } } = url.parse(req.url, true);
         const accessToken = req.headers.authorization;
-        const response = await graph.getServicePrincipalSyncJobStatus(accessToken, { servicePrincipalObjectId, syncJobId });
+        const response = await graph.getServicePrincipalSyncJobStatus({ accessToken, servicePrincipalObjectId, syncJobId });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(body);

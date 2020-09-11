@@ -1,12 +1,27 @@
 require('dotenv').config();
 const fetch = require('isomorphic-fetch');
 
-// From App registrations
+/**
+ * @constant
+ * @type {string} Tenant ID of App
+ */
 const tenantId = process.env.TENANT_ID;
+/**
+ * @constant
+ * @type {Object}
+ * @property {string} appService Client ID from App Registration for Delegated Token
+ * @property {string} daemon Client ID from App Registration for Application Token
+ */
 const clientIds = {
     appService: process.env.APP_SERVICE_CLIENT_ID,
     daemon: process.env.DAEMON_CLIENT_ID,
 };
+/**
+ * @constant
+ * @type {Object}
+ * @property {string} appService Client Secret from App Registration for Delegated Token
+ * @property {string} daemon Client Secret from App Registration for Application Token
+ */
 const clientSecrets = {
     appService: process.env.APP_SERVICE_CLIENT_SECRET,
     daemon: process.env.DAEMON_CLIENT_SECRET,
@@ -14,8 +29,10 @@ const clientSecrets = {
 
 /**
  * Returns url with appropriate http based on localhost
- * @param {Object.<string>}
- * @return {string}
+ * @param {Object} args
+ * @param {string|null} args.origin Indicator whether origin is usable
+ * @param {string} args.host Secure host or localhost
+ * @return {string} Origin best guess
  */
 function getOriginUrl({ origin, host }) {
     return origin || (host.includes('localhost') ? `http://${host}` : `https://${host}`);
@@ -23,9 +40,9 @@ function getOriginUrl({ origin, host }) {
 
 /**
  * Stringifies query params in an array
- * @param {Array.<string>} params
- * @param {boolean} shouldEncode
- * @return {string}
+ * @param {Array<{key: string, value: string}>} params
+ * @param {boolean} shouldEncode whether to encode key and value using encodeURIComponent
+ * @return {string} Stringified query params
  */
 function getQueryParams(params, shouldEncode = true) {
     const encode = value => shouldEncode ? encodeURIComponent(value) : value;
@@ -34,8 +51,10 @@ function getQueryParams(params, shouldEncode = true) {
 
 /**
  * Returns url for Microsoft login portal. Login must be user of Application.
- * @param {Object.<string>}
- * @return {string}
+ * @param {Object} args
+ * @param {string|null} args.origin Indicator whether origin is usable
+ * @param {string} args.host Fallback for origin creation
+ * @return {string} Url for Microsoft login portal
  */
 function getRedirectLoginUrl({ origin, host }) {
     const params = [
@@ -50,12 +69,17 @@ function getRedirectLoginUrl({ origin, host }) {
 }
 
 /**
- * Return an access token
- * @param {string} code String generated from Microsoft login portal
- * @param {Object.<string>} 
- * @return {Promise} Object containing access token, refresh token, etc.
+ * @external RequestAnAccessTokenPromise
+ * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#request-an-access-token}
+ * 
+ * Returns an access token
+ * @param {Object} args
+ * @param {string} args.code Redeemable sign-in code from Microsoft login portal
+ * @param {string|null} args.origin Indicator whether origin is usable
+ * @param {string} args.host Fallback for origin creation
+ * @return {external:RequestAnAccessTokenPromise}
  */
-async function postAccessToken(code, { origin, host }) {
+async function postAccessToken({ code, origin, host }) {
     const params = [
         { key: 'client_id', value: clientIds.appService },
         { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
@@ -72,12 +96,17 @@ async function postAccessToken(code, { origin, host }) {
 }
 
 /**
+ * @external RefreshTheAccessTokenPromise
+ * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token}
+ * 
  * Refreshes the access token
- * @param {string} refreshToken 
- * @param {Object.<string>} 
- * @return {Promise} Object containing access token, refresh token, etc.
+ * @param {Object} args
+ * @param {string} args.refreshToken The token used to refresh the access token
+ * @param {string|null} args.origin Indicator whether origin is usable
+ * @param {string} args.host Fallback for origin creation
+ * @return {external:RefreshTheAccessTokenPromise}
  */
-async function postRefreshAccessToken(refreshToken, { origin, host }) {
+async function postRefreshAccessToken({ refreshToken, origin, host }) {
     const params = [
         { key: 'client_id', value: clientIds.appService },
         { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
@@ -94,13 +123,17 @@ async function postRefreshAccessToken(refreshToken, { origin, host }) {
 }
 
 /**
+ * @external ApplicationTemplateInstantiatePromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/applicationtemplate-instantiate?view=graph-rest-beta&tabs=http}
+ * 
  * Adds an instance of an application, scim connector, from the Azure AD application gallery into directory
- * @param {string} accessToken
- * @param {string} templateId ID of a gallery app. Can be used to instantiate a non-gallery app: 8adf8e6e-67b2-4cf2-a259-e3dc5476c621
- * @param {string} appName Name of instantiated gallery app
- * @return {Promise} Contains body.servicePrincipal.objectId for subsequent calls
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.templateId ID of a gallery app. Can be used to instantiate a non-gallery app: 8adf8e6e-67b2-4cf2-a259-e3dc5476c621
+ * @param {string} args.appName Custom name of instantiated gallery app
+ * @return {external:ApplicationTemplateInstantiatePromise}
  */
-async function postScimConnectorGalleryApp(accessToken, templateId, appName) {
+async function postScimConnectorGalleryApp({ accessToken, templateId, appName }) {
     // Use service principal object ID for other calls: body.servicePrincipal.objectId
     return await fetch(`https://graph.microsoft.com/beta/applicationTemplates/${templateId}/instantiate`, {
         method: 'POST',
@@ -115,24 +148,32 @@ async function postScimConnectorGalleryApp(accessToken, templateId, appName) {
 }
 
 /**
+ * @external FilteredListOfGroupObjectsPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/group-list?view=graph-rest-beta&tabs=http} 
+ * 
  * Returns details about the AAD group
- * @param {string} accessToken 
- * @param {string} filterDisplayName Display name of AAD group
- * @return {Promise} Contains name and object ID of AAD group. Object ID used in subsequent calls, body.value[{ id }]
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.filterDisplayName Display name of AAD group to filter by
+ * @return {external:FilteredListOfGroupObjectsPromise}
  */
-async function getAadGroups(accessToken, filterDisplayName) {
+async function getAadGroups({ accessToken, filterDisplayName }) {
     return await fetch(`https://graph.microsoft.com/beta/groups?filter=displayname+eq+'${filterDisplayName}'`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
 }
 
 /**
+ * @external GetServicePrincipalPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-get?view=graph-rest-beta&tabs=http}
+ * 
  * Returns info about service principal, including app roles. May take some time to be available.
- * @param {string} accessToken 
- * @param {string} objectId Service principal ID
- * @return {Promise} Contains info about service principal. App roles used in subsequent calls, body.appRoles
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.objectId ID of the servicePrincipal
+ * @return {external:GetServicePrincipalPromise}
  */
-async function getServicePrincipal(accessToken, objectId) {
+async function getServicePrincipal({ accessToken, objectId }) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${objectId}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -140,12 +181,18 @@ async function getServicePrincipal(accessToken, objectId) {
 }
 
 /**
+ * @external GrantAnAppRoleAssignmentToAServicePrincipalPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-post-approleassignments?view=graph-rest-beta&tabs=http}
+ * 
  * Add AAD group to service principal
- * @param {string} accessToken 
- * @param {Object.<string>} 
- * @return {Promise} Contains status of adding AAD group to service principal
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.resourceId ID of the servicePrincipal (the API) which defined the app role (the application permission)
+ * @param {string} args.principalId ID of the client service principal to which the app role is being assigned to
+ * @param {string} args.appRoleId ID of the appRole (defined on the resource service principal) to assign to the client service principal
+ * @return {external:GrantAnAppRoleAssignmentToAServicePrincipalPromise}
  */
-async function postAddAadGroupToServicePrincipal(accessToken, { resourceId, principalId, appRoleId }) {
+async function postAddAadGroupToServicePrincipal({ accessToken, resourceId, principalId, appRoleId }) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${resourceId}/appRoleAssignments`, {
         method: 'POST',
         headers: {
@@ -157,12 +204,17 @@ async function postAddAadGroupToServicePrincipal(accessToken, { resourceId, prin
 }
 
 /**
+ * @external CreateSynchronizationJobPromise
+ * @see (@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-post?view=graph-rest-beta&tabs=http)
+ * 
  * Creates a provisioning job to sync the service principal
- * @param {string} accessToken 
- * @param {Object.<string>}
- * @return {Promise} Contains service principal's provisioning job ID, which is used in subsequent calls, body.id
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.servicePrincipalObjectId ID of the servicePrincipal
+ * @param {string} args.templateId One of the template IDs created for this application/service principal
+ * @return {external:CreateSynchronizationJobPromise}
  */
-async function postCreateServicePrincipalSyncJob(accessToken, { servicePrincipalObjectId, templateId }){
+async function postCreateServicePrincipalSyncJob({ accessToken, servicePrincipalObjectId, templateId }){
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalObjectId}/synchronization/jobs`, {
         method: 'POST',
         headers: {
@@ -174,12 +226,19 @@ async function postCreateServicePrincipalSyncJob(accessToken, { servicePrincipal
 }
 
 /**
+ * @external SynchronizationJobValidateCredentialsPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-validatecredentials?view=graph-rest-beta&tabs=http}
+ * 
  * Test the connection with the third-party application
- * @param {string} accessToken 
- * @param {Object.<string>} 
- * @return {Promise} Contains status of connection validation
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.servicePrincipalObjectId ID of the servicePrincipal
+ * @param {string} args.syncJobId ID of the provisioned synchronization job
+ * @param {string} args.databricksUrl Credentials to validate: Databricks workspace base address/URL
+ * @param {string|null} args.secretToken Credentials to validate: Databricks workspace personal access token
+ * @return {external:SynchronizationJobValidateCredentialsPromise}
  */
-async function postValidateServicePrincipalCredentials(accessToken, { servicePrincipalObjectId, syncJobId, databricksUrl, secretToken }) {
+async function postValidateServicePrincipalCredentials({ accessToken, servicePrincipalObjectId, syncJobId, databricksUrl, secretToken }) {
     const databricksPat = secretToken || process.env.DATABRICKS_PAT;
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalObjectId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
         method: 'POST',
@@ -195,12 +254,18 @@ async function postValidateServicePrincipalCredentials(accessToken, { servicePri
 }
 
 /**
+ * @external SaveYourCredentialsPromise
+ * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/app-provisioning/application-provisioning-configure-api#save-your-credentials}
+ * 
  * Authorize access to third-party application via databricks workspace URL and PAT
- * @param {string} accessToken 
- * @param {Object.<string>}
- * @return {Promise} Contains status of authorizing access to third-party application
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.servicePrincipalObjectId ID of service principal
+ * @param {string} args.databricksUrl Client secret used to establish trust between Azure AD and the application
+ * @param {string} args.secretToken Secret token used to establish trust between Azure AD and the application
+ * @return {external:SaveYourCredentialsPromise}
  */
-async function putSaveServicePrincipalCredentials(accessToken, { servicePrincipalObjectId, databricksUrl, secretToken}) {
+async function putSaveServicePrincipalCredentials({ accessToken, servicePrincipalObjectId, databricksUrl, secretToken}) {
     const databricksPat = secretToken || process.env.DATABRICKS_PAT;
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalObjectId}/synchronization/secrets`, {
         method: 'PUT',
@@ -216,12 +281,17 @@ async function putSaveServicePrincipalCredentials(accessToken, { servicePrincipa
 }
 
 /**
+ * @external StartSynchronizationJobPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-start?view=graph-rest-beta&tabs=http}
+ * 
  * Starts the provisioning job to sync the service principal
- * @param {string} accessToken
- * @param {Object.<string>}
- * @return {Promise} Contains status of starting the provisioning job to sync the service principal
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.servicePrincipalObjectId ID of the servicePrincipal
+ * @param {string} args.syncJobId ID of the provisioned synchronization job
+ * @return {external:StartSynchronizationJobPromise}
  */
-async function postStartServicePrincipalSyncJob(accessToken, { servicePrincipalObjectId, syncJobId }) {
+async function postStartServicePrincipalSyncJob({ accessToken, servicePrincipalObjectId, syncJobId }) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalObjectId}/synchronization/jobs/${syncJobId}/start`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -229,18 +299,27 @@ async function postStartServicePrincipalSyncJob(accessToken, { servicePrincipalO
 }
 
 /**
+ * @external GetSynchronizationJobPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-get?view=graph-rest-beta&tabs=http};
+ * 
  * Returns the progress of the current provisioning cycle and stats
- * @param {string} accessToken 
- * @param {Object.<string>}
- * @return {Promise} Contains progress of current provisioning cycle and stats
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.servicePrincipalObjectId ID of the servicePrincipal
+ * @param {string} args.syncJobId ID of the provisioned synchronization job
+ * @return {external:GetSynchronizationJobPromise}
  */
-async function getServicePrincipalSyncJobStatus(accessToken, { servicePrincipalObjectId, syncJobId }) {
+async function getServicePrincipalSyncJobStatus({ accessToken, servicePrincipalObjectId, syncJobId }) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalObjectId}/synchronization/jobs/${syncJobId}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${accessToken}` },
     });
 }
 
+/**
+ * Returns the steps of the sync process in the order they need to be executed
+ * @return {Array<Object>} The action name and function for each ordered execution step
+ */
 function getSyncSteps() {
     return [
         { key: 'postAccessToken', fn: postAccessToken },

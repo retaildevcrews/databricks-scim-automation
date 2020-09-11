@@ -11,7 +11,7 @@ async function postScimConnectorGalleryApp(req, res) {
     try {
         const accessToken = req.headers.authorization;
         const { query: { templateId, appName } } = url.parse(req.url, true);
-        const response = await graph.postScimConnectorGalleryApp(accessToken, templateId, appName);
+        const response = await graph.postScimConnectorGalleryApp({ accessToken, templateId, appName });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         // Use service principal object ID for other calls: body.servicePrincipal.objectId
