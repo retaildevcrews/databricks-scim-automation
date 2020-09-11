@@ -6,63 +6,18 @@ const graph = require('@databricks-scim-automation/graph');
 const logo = require('./logo');
 const prompts = require('./prompts');
 const log = require('./log');
+const { keepFetching } = require('./helpers');
 
 const port = process.env.PORT || 8000;
 const host = `localhost:${port}`;
 const redirectLoginUrl = graph.getRedirectLoginUrl({ host });
 const app = express();
 
-async function getUserInputs() {
-    // Required User Inputs and Default Values
-    const inputPrompts = [
-        { message: 'SCIM connector gallery app template ID', key: 'galleryAppTemplateId', defaultInput: '9c9818d2-2900-49e8-8ba4-22688be7c675' },
-        { message: 'SCIM connector gallery app display name', key: 'galleryAppName', defaultInput: undefined },
-        { message: 'filter AAD group by display name', key: 'filterAadGroupDisplayName', defaultInput: 'Databricks-SCIM' },
-        { message: 'sync job template ID', key: 'syncJobTemplateId', defaultInput: 'dataBricks' },
-        { message: `databricks workspace URL`, key: 'databricksUrl', defaultInput: process.env.DATABRICKS_URL },
-        { message: `databricks workspace PAT`, key: 'databricksPat', defaultInput: process.env.DATABRICKS_PAT },
-    ];
-    try {
-        // Get required inputs from user
-        const newInputs = await inputPrompts.reduce(async (inputs, { message, key, defaultInput}) => {
-            const aggInputs = await inputs;
-            const currInput = await prompts.userInput(message, defaultInput).catch(err => { throw new Error(err) });
-            return { ...aggInputs, [key]: currInput };  
-        }, {});
-        prompts.closeUserInput();
-        return newInputs;
-
-    } catch(err) {
-        console.error(err);
-        process.exit(0);
-    }
-}
-
-const noop = bool => () => bool;
-const delay = (time) => new Promise(done => setTimeout(() => done(), time));
-const keepFetching = (fn, failed, hasStatusErred=noop(false), hasBodyErred=noop(false)) => async function(retries, body) {
-    if (retries === 0) {
-        return failed(body);
-    }
-    await delay(5000);
-    return await fn().then(async response => {
-        const body = await response.json();
-        if (hasStatusErred(response.status)) {
-            return await keepFetching(fn, failed, hasStatusErred, hasBodyErred)(retries - 1, body);
-        }
-        if (hasBodyErred(body)) {
-            return await keepFetching(fn, failed, hasStatusErred, hasBodyErred)(retries - 1, body);
-        }
-        return body;
-    });
-};
-
 let params = { host };
 let stepsStatus = [];
 
 // Creates access and refresh token by redeeming sign-in code
-async function postAccessTokenCallback(graphCall) {
-    const response = await graphCall(params);
+async function postAccessTokenCallback(response) {
     const body = await response.json();
     if (response.status !== 200) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAccessToken', Status: 'Failed', Attempts: 1 });
@@ -77,8 +32,7 @@ async function postAccessTokenCallback(graphCall) {
     });
 }
 
-async function postScimConnectorGalleryAppCallback(graphCall) {
-    const response = await graphCall(params);
+async function postScimConnectorGalleryAppCallback(response) {
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postScimConnectorGalleryApp',  Status: 'Failed', Attempts: 1 });
@@ -89,8 +43,7 @@ async function postScimConnectorGalleryAppCallback(graphCall) {
     return Promise.resolve({ servicePrincipalId: body.servicePrincipal.objectId });
 }
 
-async function getAadGroupsCallback(graphCall) {
-    const response = await graphCall(params);
+async function getAadGroupsCallback(response) {
     const body = await response.json();
     if (response.status !== 200 || body.value.length === 0) {
         stepsStatus = log.table(stepsStatus, { Action: 'getAadGroups', Status: 'Failed', Attempts: 1 });
@@ -101,7 +54,7 @@ async function getAadGroupsCallback(graphCall) {
     return Promise.resolve({ aadGroupId: body.value[0].id });
 }
 
-async function getServicePrincipalCallback(graphCall) {
+async function getServicePrincipalCallback(response, graphCall) {
     let attempts = 0;
     const failed = (body) => {
         stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Failed', Attempts: 5 });
@@ -124,7 +77,11 @@ async function getServicePrincipalCallback(graphCall) {
         hasStatusErred,
         hasBodyErred
     );
-    const body = await keepGettingServicePrincipal(5, '');
+    let body = await response.json();
+    // Check if initial call failed
+    if (hasStatusErred(response.status) || hasBodyError(body)) {
+        body = await keepGettingServicePrincipal(4, '');
+    }
     params.appRoleId = body.appRoles.filter(({ isEnabled, origin, displayName }) => (
         isEnabled && origin === 'Application' && displayName === 'User'
     ))[0].id;
@@ -132,8 +89,7 @@ async function getServicePrincipalCallback(graphCall) {
     return Promise.resolve({ appRoleId: params.appRoleId });
 }
 
-async function postAddAadGroupToServicePrincipalCallback(graphCall) {
-    const response = await graphCall(params);
+async function postAddAadGroupToServicePrincipalCallback(response) {
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAddAadGroupToServicePrincipal', Status: 'Failed', Attempts: 1 });
@@ -143,8 +99,7 @@ async function postAddAadGroupToServicePrincipalCallback(graphCall) {
     return Promise.resolve({});
 }
 
-async function postCreateServicePrincipalSyncJobCallback(graphCall) {
-    const response = await graphCall(params);
+async function postCreateServicePrincipalSyncJobCallback(response) {
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postCreateServicePrincipalSyncJob', Status: 'Failed', Attempts: 1 });
@@ -155,8 +110,7 @@ async function postCreateServicePrincipalSyncJobCallback(graphCall) {
     return Promise.resolve({ syncJobId: body.id });
 }
 
-async function postValidateServicePrincipalCredentialsCallback(graphCall) {
-    const response = await graphCall(params);
+async function postValidateServicePrincipalCredentialsCallback(response) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postValidateServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -166,8 +120,7 @@ async function postValidateServicePrincipalCredentialsCallback(graphCall) {
     return Promise.resolve({});
 }
 
-async function putSaveServicePrincipalCredentialsCallback(graphCall) {
-    const response = await graphCall(params);
+async function putSaveServicePrincipalCredentialsCallback(response) {
     if (response.status !== 204){
         stepsStatus = log.table(stepsStatus, { Action: 'putSaveServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -177,8 +130,7 @@ async function putSaveServicePrincipalCredentialsCallback(graphCall) {
     return Promise.resolve({});
 }
 
-async function postStartServicePrincipalSyncJobCallback(graphCall) {
-    const response = await graphCall(params);
+async function postStartServicePrincipalSyncJobCallback(response) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postStartServicePrincipalSyncJob', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -203,7 +155,7 @@ async function getServicePrincipalSyncJobStatus() {
     await keepGettingServicePrincipalSyncJobStatus(10, '');
 }
 
-const callbacks = {
+const callbackPromises = {
     postAccessToken: postAccessTokenCallback,
     postScimConnectorGalleryApp: postScimConnectorGalleryAppCallback,
     getAadGroups: getAadGroupsCallback,
@@ -229,11 +181,20 @@ app.get('/', async (req, res) => {
         res.send(err.message);
     }
     try {
-        const userInputs = await getUserInputs();
+        // Required User Inputs and Default Values
+        const inputPrompts = [
+            { message: 'SCIM connector gallery app template ID', key: 'galleryAppTemplateId', defaultInput: '9c9818d2-2900-49e8-8ba4-22688be7c675' },
+            { message: 'SCIM connector gallery app display name', key: 'galleryAppName', defaultInput: undefined },
+            { message: 'filter AAD group by display name', key: 'filterAadGroupDisplayName', defaultInput: 'Databricks-SCIM' },
+            { message: 'sync job template ID', key: 'syncJobTemplateId', defaultInput: 'dataBricks' },
+            { message: `databricks workspace URL`, key: 'databricksUrl', defaultInput: process.env.DATABRICKS_URL },
+            { message: `databricks workspace PAT`, key: 'databricksPat', defaultInput: process.env.DATABRICKS_PAT },
+        ];
+        const userInputs = await prompts.getUserInputs(inputPrompts);
         params = { ...params, ...userInputs};
         const syncSteps = graph.getSyncSteps();
         stepsStatus = log.initialTable(syncSteps);
-        await Promise.mapSeries(syncSteps, ({ key, fn }) => callbacks[key](fn));
+        await Promise.mapSeries(syncSteps, ({ key, fn }) => fn(params, callbackPromises[key]));
         await getServicePrincipalSyncJobStatus();
         log.bold('SYNCING STEPS COMPLETED!');
         console.log(logo.celebrate);

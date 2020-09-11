@@ -321,20 +321,30 @@ async function getServicePrincipalSyncJobStatus({ accessToken, servicePrincipalI
 }
 
 /**
+ * Returns a promise that waits for a response and executes an existing callback promise
+ * @param {*} fn Promise function the callback waits for
+ * @return {*}
+ */
+const addCallbackPromise = (fn) => async (params, cb) => {
+    const response = await fn(params);
+    return cb ? await cb(response, fn) : response;
+}
+
+/**
  * Returns the steps of the sync process in the order they need to be executed
  * @return {Array<Object>} The action name and function for each ordered execution step
  */
 function getSyncSteps() {
     return [
-        { key: 'postAccessToken', fn: postAccessToken },
-        { key: 'postScimConnectorGalleryApp', fn: postScimConnectorGalleryApp },
-        { key: 'getAadGroups', fn: getAadGroups },
-        { key: 'getServicePrincipal', fn: getServicePrincipal },
-        { key: 'postAddAadGroupToServicePrincipal', fn: postAddAadGroupToServicePrincipal },
-        { key: 'postCreateServicePrincipalSyncJob', fn: postCreateServicePrincipalSyncJob },
-        { key: 'postValidateServicePrincipalCredentials', fn: postValidateServicePrincipalCredentials },
-        { key: 'putSaveServicePrincipalCredentials', fn: putSaveServicePrincipalCredentials },
-        { key: 'postStartServicePrincipalSyncJob', fn: postStartServicePrincipalSyncJob },
+        { key: 'postAccessToken', fn: addCallbackPromise(postAccessToken) },
+        { key: 'postScimConnectorGalleryApp', fn: addCallbackPromise(postScimConnectorGalleryApp) },
+        { key: 'getAadGroups', fn: addCallbackPromise(getAadGroups) },
+        { key: 'getServicePrincipal', fn: addCallbackPromise(getServicePrincipal) },
+        { key: 'postAddAadGroupToServicePrincipal', fn: addCallbackPromise(postAddAadGroupToServicePrincipal) },
+        { key: 'postCreateServicePrincipalSyncJob', fn: addCallbackPromise(postCreateServicePrincipalSyncJob) },
+        { key: 'postValidateServicePrincipalCredentials', fn: addCallbackPromise(postValidateServicePrincipalCredentials) },
+        { key: 'putSaveServicePrincipalCredentials', fn: addCallbackPromise(putSaveServicePrincipalCredentials) },
+        { key: 'postStartServicePrincipalSyncJob', fn: addCallbackPromise(postStartServicePrincipalSyncJob) },
     ];
 }
 

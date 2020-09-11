@@ -18,7 +18,29 @@ function userInput(message, defaultInput) {
         const answer = input || defaultInput;
         answer ? resolve(answer) : reject(`Requires user input for ${message}!`);
     }));
+}
 
+/**
+ * Prompts user in the console and waits for an answer
+ * A default value can be provided and excuted with the enter key
+ * @param {Array<{message: string, key: string, defaultInput: string|null}>} inputPrompts 
+ * @return {Object<key: string>}
+ */
+async function getUserInputs(inputPrompts) {
+    try {
+        // Get required inputs from user
+        const newInputs = await inputPrompts.reduce(async (inputs, { message, key, defaultInput}) => {
+            const aggInputs = await inputs;
+            const currInput = await userInput(message, defaultInput).catch(err => { throw new Error(err) });
+            return { ...aggInputs, [key]: currInput };  
+        }, {});
+        closeUserInput();
+        return newInputs;
+
+    } catch(err) {
+        console.error(err);
+        process.exit(0);
+    }
 }
 
 function closeUserInput() {
@@ -29,5 +51,6 @@ module.exports = {
     quit,
     signin,
     userInput,
+    getUserInputs,
     closeUserInput,
 };
