@@ -3,15 +3,15 @@ const graph = require('@databricks-scim-automation/graph');
 
 /**
  * Adds an instance of an application, scim connector, from the Azure AD application gallery into directory
- * @param {Object} req Express request (templateId, 8adf8e6e-67b2-4cf2-a259-e3dc5476c621, can be used to instantiate non-gallery app)
+ * @param {Object} req Express request (galleryAppTemplateId, 8adf8e6e-67b2-4cf2-a259-e3dc5476c621, can be used to instantiate non-gallery app)
  * @param {Object} res Express response
  * @param {void}
  */
 async function postScimConnectorGalleryApp(req, res) {
     try {
         const accessToken = req.headers.authorization;
-        const { query: { templateId, appName } } = url.parse(req.url, true);
-        const response = await graph.postScimConnectorGalleryApp({ accessToken, templateId, appName });
+        const { query: { galleryAppTemplateId, galleryAppName } } = url.parse(req.url, true);
+        const response = await graph.postScimConnectorGalleryApp({ accessToken, galleryAppTemplateId, galleryAppName });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         // Use service principal object ID for other calls: body.servicePrincipal.objectId

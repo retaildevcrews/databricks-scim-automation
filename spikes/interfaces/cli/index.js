@@ -15,12 +15,12 @@ const app = express();
 async function getUserInputs() {
     // Required User Inputs and Default Values
     const inputPrompts = [
-        { message: 'SCIM connector gallery app template ID', key: 'scimConnectorGalleryAppTemplateId', defaultInput: '9c9818d2-2900-49e8-8ba4-22688be7c675' },
-        { message: 'SCIM connector gallery app display name', key: 'scimConnectorGalleryAppName', defaultInput: undefined },
-        { message: 'filter AAD group by display name', key: 'aadGroupFilterDisplayName', defaultInput: 'Databricks-SCIM' },
+        { message: 'SCIM connector gallery app template ID', key: 'galleryAppTemplateId', defaultInput: '9c9818d2-2900-49e8-8ba4-22688be7c675' },
+        { message: 'SCIM connector gallery app display name', key: 'galleryAppName', defaultInput: undefined },
+        { message: 'filter AAD group by display name', key: 'filterAadGroupDisplayName', defaultInput: 'Databricks-SCIM' },
         { message: 'sync job template ID', key: 'syncJobTemplateId', defaultInput: 'dataBricks' },
-        { message: `databricks workspace URL`, key: 'databricksWorkspaceUrl', defaultInput: process.env.DATABRICKS_URL },
-        { message: `databricks workspace PAT`, key: 'databricksWorkspacePat', defaultInput: process.env.DATABRICKS_PAT },
+        { message: `databricks workspace URL`, key: 'databricksUrl', defaultInput: process.env.DATABRICKS_URL },
+        { message: `databricks workspace PAT`, key: 'databricksPat', defaultInput: process.env.DATABRICKS_PAT },
     ];
     try {
         // Get required inputs from user
@@ -78,24 +78,19 @@ async function postAccessTokenCallback(graphCall) {
 }
 
 async function postScimConnectorGalleryAppCallback(graphCall) {
-    const graphParams = {
-        templateId: params.scimConnectorGalleryAppTemplateId,
-        appName: params.scimConnectorGalleryAppName,
-    }
-    const response = await graphCall({ ...params, ...graphParams });
+    const response = await graphCall(params);
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postScimConnectorGalleryApp',  Status: 'Failed', Attempts: 1 });
         throw new Error(`Could not add instance of SCIM connector app from AAD app gallery to directory!\n${JSON.stringify(body)}`);
     }
-    params.scimServicePrincipalObjectId = body.servicePrincipal.objectId;
+    params.servicePrincipalId = body.servicePrincipal.objectId;
     stepsStatus = log.table(stepsStatus, { Action: 'postScimConnectorGalleryApp',  Status: 'Success', Attempts: 1 });
-    return Promise.resolve({ scimServicePrincipalObjectId: body.servicePrincipal.objectId });
+    return Promise.resolve({ servicePrincipalId: body.servicePrincipal.objectId });
 }
 
 async function getAadGroupsCallback(graphCall) {
-    const graphParams = { filterDisplayName: params.aadGroupFilterDisplayName };
-    const response = await graphCall({ ...params, ...graphParams });
+    const response = await graphCall(params);
     const body = await response.json();
     if (response.status !== 200 || body.value.length === 0) {
         stepsStatus = log.table(stepsStatus, { Action: 'getAadGroups', Status: 'Failed', Attempts: 1 });
@@ -123,9 +118,8 @@ async function getServicePrincipalCallback(graphCall) {
         if (hasErred) { stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Waiting...', Attempts: attempts }) }
         return hasErred;
     }
-    const graphParams = { objectId: params.scimServicePrincipalObjectId };
     const keepGettingServicePrincipal = keepFetching(
-        () => graphCall({ ...params, ...graphParams }),
+        () => graphCall(params),
         failed,
         hasStatusErred,
         hasBodyErred
@@ -139,11 +133,7 @@ async function getServicePrincipalCallback(graphCall) {
 }
 
 async function postAddAadGroupToServicePrincipalCallback(graphCall) {
-    const graphParams = {
-        resourceId: params.scimServicePrincipalObjectId,
-        principalId: params.aadGroupId,
-    };
-    const response = await graphCall({ ...params, ...graphParams });
+    const response = await graphCall(params);
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAddAadGroupToServicePrincipal', Status: 'Failed', Attempts: 1 });
@@ -154,29 +144,19 @@ async function postAddAadGroupToServicePrincipalCallback(graphCall) {
 }
 
 async function postCreateServicePrincipalSyncJobCallback(graphCall) {
-    const graphParams = {
-        servicePrincipalObjectId: params.scimServicePrincipalObjectId,
-        templateId: params.syncJobTemplateId,
-    };
-    const response = await graphCall({ ...params, ...graphParams });
+    const response = await graphCall(params);
     const body = await response.json();
     if (response.status !== 201) {
         stepsStatus = log.table(stepsStatus, { Action: 'postCreateServicePrincipalSyncJob', Status: 'Failed', Attempts: 1 });
         throw new Error(`Could not provision a job to sync the service principal!\n${JSON.stringify(body)}`);
     }
-    params.servicePrincipalSyncJobId = body.id;
+    params.syncJobId = body.id;
     stepsStatus = log.table(stepsStatus, { Action: 'postCreateServicePrincipalSyncJob', Status: 'Success', Attempts: 1 });
-    return Promise.resolve({ servicePrincipalSyncJobId: body.id });
+    return Promise.resolve({ syncJobId: body.id });
 }
 
 async function postValidateServicePrincipalCredentialsCallback(graphCall) {
-    const graphParams = {
-        servicePrincipalObjectId: params.scimServicePrincipalObjectId,
-        syncJobId: params.servicePrincipalSyncJobId,
-        databricksUrl: params.databricksWorkspaceUrl,
-        secretToken: params.databricksWorkspacePat,
-    };
-    const response = await graphCall({ ...params, ...graphParams });
+    const response = await graphCall(params);
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postValidateServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -187,12 +167,7 @@ async function postValidateServicePrincipalCredentialsCallback(graphCall) {
 }
 
 async function putSaveServicePrincipalCredentialsCallback(graphCall) {
-    const graphParams = {
-        servicePrincipalObjectId: params.scimServicePrincipalObjectId,
-        databricksUrl: params.databricksWorkspaceUrl,
-        secretToken: params.databricksWorkspacePat,
-    };
-    const response = await graphCall({ ...params, ...graphParams });
+    const response = await graphCall(params);
     if (response.status !== 204){
         stepsStatus = log.table(stepsStatus, { Action: 'putSaveServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -203,11 +178,7 @@ async function putSaveServicePrincipalCredentialsCallback(graphCall) {
 }
 
 async function postStartServicePrincipalSyncJobCallback(graphCall) {
-    const graphParams = {
-        servicePrincipalObjectId: params.scimServicePrincipalObjectId,
-        syncJobId: params.servicePrincipalSyncJobId,
-    };
-    const response = await graphCall({ ...params, ...graphParams });
+    const response = await graphCall(params);
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postStartServicePrincipalSyncJob', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
@@ -218,11 +189,7 @@ async function postStartServicePrincipalSyncJobCallback(graphCall) {
 }
 
 async function getServicePrincipalSyncJobStatus() {
-    const graphParams = {
-        servicePrincipalObjectId: params.scimServicePrincipalObjectId,
-        syncJobId: params.servicePrincipalSyncJobId,
-    };
-    const fn =  async () => await graph.getServicePrincipalSyncJobStatus({ ...params, ...graphParams });
+    const fn =  async () => await graph.getServicePrincipalSyncJobStatus(params);
     const failed = (body) => { throw new Error(`Could not get successful status from provisioning job to sync the service principal!\n${JSON.stringify(body)}`) };
     const hasStatusErred = (status) => status !== 200;
     const hasBodyErred = (body) => {
