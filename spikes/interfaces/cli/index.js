@@ -3,7 +3,7 @@ const express = require('express');
 const url = require('url');
 const Promise = require('bluebird');
 const graph = require('@databricks-scim-automation/graph');
-const logo = require('./logo');
+const ascii = require('./ascii');
 const prompts = require('./prompts');
 const log = require('./log');
 const { keepFetching } = require('./helpers');
@@ -13,10 +13,12 @@ const host = `localhost:${port}`;
 const redirectLoginUrl = graph.getRedirectLoginUrl({ host });
 const app = express();
 
+// Holds values required for Microsoft Graph API calls
 let params = { host };
+// Keeps track of each sync process step
 let stepsStatus = [];
 
-// Creates access and refresh token by redeeming sign-in code
+// Checks if created valid access and refresh tokens by redeeming sign-in code
 async function postAccessTokenCallback(response) {
     const body = await response.json();
     if (response.status !== 200) {
@@ -32,6 +34,7 @@ async function postAccessTokenCallback(response) {
     });
 }
 
+// Checks if created instance of SCIM connector gallery app
 async function postScimConnectorGalleryAppCallback(response) {
     const body = await response.json();
     if (response.status !== 201) {
@@ -43,6 +46,7 @@ async function postScimConnectorGalleryAppCallback(response) {
     return Promise.resolve({ servicePrincipalId: body.servicePrincipal.objectId });
 }
 
+// Checks if received usable AAD group (aadGroupId)
 async function getAadGroupsCallback(response) {
     const body = await response.json();
     if (response.status !== 200 || body.value.length === 0) {
@@ -54,6 +58,8 @@ async function getAadGroupsCallback(response) {
     return Promise.resolve({ aadGroupId: body.value[0].id });
 }
 
+// Checks if received usable service principal data (appRoleId)
+// Will keep trying until hits max number of retries
 async function getServicePrincipalCallback(response, graphCall) {
     let attempts = 0;
     const failed = (body) => {
@@ -89,6 +95,7 @@ async function getServicePrincipalCallback(response, graphCall) {
     return Promise.resolve({ appRoleId: params.appRoleId });
 }
 
+// Checks if successfully added AAD group to service principal
 async function postAddAadGroupToServicePrincipalCallback(response) {
     const body = await response.json();
     if (response.status !== 201) {
@@ -99,6 +106,7 @@ async function postAddAadGroupToServicePrincipalCallback(response) {
     return Promise.resolve({});
 }
 
+// Checks if successfully provisioned a sync job
 async function postCreateServicePrincipalSyncJobCallback(response) {
     const body = await response.json();
     if (response.status !== 201) {
@@ -110,6 +118,7 @@ async function postCreateServicePrincipalSyncJobCallback(response) {
     return Promise.resolve({ syncJobId: body.id });
 }
 
+// Checks if able to successfully validate credentials to connect with databricks workspace 
 async function postValidateServicePrincipalCredentialsCallback(response) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postValidateServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
@@ -120,6 +129,7 @@ async function postValidateServicePrincipalCredentialsCallback(response) {
     return Promise.resolve({});
 }
 
+// Checks if successfully saved credentials to connect with databricks workspace
 async function putSaveServicePrincipalCredentialsCallback(response) {
     if (response.status !== 204){
         stepsStatus = log.table(stepsStatus, { Action: 'putSaveServicePrincipalCredentials', Status: 'Failed', Attempts: 1 });
@@ -130,16 +140,18 @@ async function putSaveServicePrincipalCredentialsCallback(response) {
     return Promise.resolve({});
 }
 
+// Checks if successfully started sync job
 async function postStartServicePrincipalSyncJobCallback(response) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postStartServicePrincipalSyncJob', Status: 'Failed', Attempts: 1 });
         const body = await response.json();
-        throw new Error(`Could not start the provisioning job to sync the service principal!\n${JSON.stringify(body)}`);
+        throw new Error(`Could not start the provisioned job to sync the service principal!\n${JSON.stringify(body)}`);
     }
     stepsStatus = log.table(stepsStatus, { Action: 'postStartServicePrincipalSyncJob', Status: 'Success', Attempts: 1 });
     return Promise.resolve({});
 }
 
+// Outputs sync job status until successful or hits max number of attempts
 async function getServicePrincipalSyncJobStatus() {
     const fn =  async () => await graph.getServicePrincipalSyncJobStatus(params);
     const failed = (body) => { throw new Error(`Could not get successful status from provisioning job to sync the service principal!\n${JSON.stringify(body)}`) };
@@ -155,6 +167,7 @@ async function getServicePrincipalSyncJobStatus() {
     await keepGettingServicePrincipalSyncJobStatus(10, '');
 }
 
+// Callbacks passed into the graph.getSyncSteps() functions
 const callbackPromises = {
     postAccessToken: postAccessTokenCallback,
     postScimConnectorGalleryApp: postScimConnectorGalleryAppCallback,
@@ -171,9 +184,8 @@ app.get('/', async (req, res) => {
     try {
         // Gets sign-in code from URL
         const { query: { code } } = url.parse(req.url, true);
-        if (!code) {
-            throw new Error('Unable to get sign-in code!');
-        }
+        if (!code) { throw new Error('Unable to get sign-in code!') }
+        // Saves code
         params.code = code;
         // Notifies user
         res.send('Successfully signed in!');
@@ -190,14 +202,21 @@ app.get('/', async (req, res) => {
             { message: `databricks workspace URL`, key: 'databricksUrl', defaultInput: process.env.DATABRICKS_URL },
             { message: `databricks workspace PAT`, key: 'databricksPat', defaultInput: process.env.DATABRICKS_PAT },
         ];
+        // Prompt user for inputs
         const userInputs = await prompts.getUserInputs(inputPrompts);
+        // Save user inputs
         params = { ...params, ...userInputs};
+        // Get steps required to sync databricks workspace with aad groups
         const syncSteps = graph.getSyncSteps();
+        // Print initial sync status
         stepsStatus = log.initialTable(syncSteps);
+        // Execute the sync steps
         await Promise.mapSeries(syncSteps, ({ key, fn }) => fn(params, callbackPromises[key]));
+        // Log the sync job statuses
         await getServicePrincipalSyncJobStatus();
+        // Completed sync steps
         log.bold('SYNCING STEPS COMPLETED!');
-        console.log(logo.celebrate);
+        console.log(ascii.celebrate);
     } catch(err) {
         console.error(err)
     }
@@ -205,6 +224,7 @@ app.get('/', async (req, res) => {
 });
 
 app.listen(port);
-console.log(logo.scimSync);
+console.log(ascii.scimSync);
+// Instruct user how to quit
 prompts.quit();
 prompts.signin(redirectLoginUrl);
