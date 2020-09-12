@@ -331,20 +331,36 @@ const addCallbackPromise = (fn) => async (params, cb) => {
 }
 
 /**
+ * @constant
+ * @type {Object} sync step keys
+ */
+const syncSteps = {
+    postAccessToken: 'postAccessToken',
+    postScimConnectorGalleryApp: 'postScimConnectorGalleryApp',
+    getAadGroups: 'getAadGroups',
+    getServicePrincipal: 'getServicePrincipal',
+    postAddAadGroupToServicePrincipal: 'postAddAadGroupToServicePrincipal',
+    postCreateServicePrincipalSyncJob: 'postCreateServicePrincipalSyncJob',
+    postValidateServicePrincipalCredentials: 'postValidateServicePrincipalCredentials',
+    putSaveServicePrincipalCredentials: 'putSaveServicePrincipalCredentials',
+    postStartServicePrincipalSyncJob: 'postStartServicePrincipalSyncJob',
+};
+
+/**
  * Returns the steps of the sync process in the order they need to be executed
  * @return {Array<Object>} The action name and function for each ordered execution step
  */
 function getSyncSteps() {
     return [
-        { key: 'postAccessToken', fn: addCallbackPromise(postAccessToken) },
-        { key: 'postScimConnectorGalleryApp', fn: addCallbackPromise(postScimConnectorGalleryApp) },
-        { key: 'getAadGroups', fn: addCallbackPromise(getAadGroups) },
-        { key: 'getServicePrincipal', fn: addCallbackPromise(getServicePrincipal) },
-        { key: 'postAddAadGroupToServicePrincipal', fn: addCallbackPromise(postAddAadGroupToServicePrincipal) },
-        { key: 'postCreateServicePrincipalSyncJob', fn: addCallbackPromise(postCreateServicePrincipalSyncJob) },
-        { key: 'postValidateServicePrincipalCredentials', fn: addCallbackPromise(postValidateServicePrincipalCredentials) },
-        { key: 'putSaveServicePrincipalCredentials', fn: addCallbackPromise(putSaveServicePrincipalCredentials) },
-        { key: 'postStartServicePrincipalSyncJob', fn: addCallbackPromise(postStartServicePrincipalSyncJob) },
+        { key: syncSteps.postAccessToken, fn: addCallbackPromise(postAccessToken) },
+        { key: syncSteps.postScimConnectorGalleryApp, fn: addCallbackPromise(postScimConnectorGalleryApp) },
+        { key: syncSteps.getAadGroups, fn: addCallbackPromise(getAadGroups) },
+        { key: syncSteps.getServicePrincipal, fn: addCallbackPromise(getServicePrincipal) },
+        { key: syncSteps.postAddAadGroupToServicePrincipal, fn: addCallbackPromise(postAddAadGroupToServicePrincipal) },
+        { key: syncSteps.postCreateServicePrincipalSyncJob, fn: addCallbackPromise(postCreateServicePrincipalSyncJob) },
+        { key: syncSteps.postValidateServicePrincipalCredentials, fn: addCallbackPromise(postValidateServicePrincipalCredentials) },
+        { key: syncSteps.putSaveServicePrincipalCredentials, fn: addCallbackPromise(putSaveServicePrincipalCredentials) },
+        { key: syncSteps.postStartServicePrincipalSyncJob, fn: addCallbackPromise(postStartServicePrincipalSyncJob) },
     ];
 }
 
@@ -362,5 +378,6 @@ module.exports = {
     putSaveServicePrincipalCredentials,
     postStartServicePrincipalSyncJob,
     getServicePrincipalSyncJobStatus,
+    syncSteps,
     getSyncSteps,
 };

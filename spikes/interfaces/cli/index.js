@@ -169,15 +169,15 @@ async function getServicePrincipalSyncJobStatus() {
 
 // Callbacks passed into the graph.getSyncSteps() functions
 const callbackPromises = {
-    postAccessToken: postAccessTokenCallback,
-    postScimConnectorGalleryApp: postScimConnectorGalleryAppCallback,
-    getAadGroups: getAadGroupsCallback,
-    getServicePrincipal: getServicePrincipalCallback,
-    postAddAadGroupToServicePrincipal: postAddAadGroupToServicePrincipalCallback,
-    postCreateServicePrincipalSyncJob: postCreateServicePrincipalSyncJobCallback,
-    postValidateServicePrincipalCredentials: postValidateServicePrincipalCredentialsCallback,
-    putSaveServicePrincipalCredentials: putSaveServicePrincipalCredentialsCallback,
-    postStartServicePrincipalSyncJob: postStartServicePrincipalSyncJobCallback,
+    [graph.syncSteps.postAccessToken]: postAccessTokenCallback,
+    [graph.syncSteps.postScimConnectorGalleryApp]: postScimConnectorGalleryAppCallback,
+    [graph.syncSteps.getAadGroups]: getAadGroupsCallback,
+    [graph.syncSteps.getServicePrincipal]: getServicePrincipalCallback,
+    [graph.syncSteps.postAddAadGroupToServicePrincipal]: postAddAadGroupToServicePrincipalCallback,
+    [graph.syncSteps.postCreateServicePrincipalSyncJob]: postCreateServicePrincipalSyncJobCallback,
+    [graph.syncSteps.postValidateServicePrincipalCredentials]: postValidateServicePrincipalCredentialsCallback,
+    [graph.syncSteps.putSaveServicePrincipalCredentials]: putSaveServicePrincipalCredentialsCallback,
+    [graph.syncSteps.postStartServicePrincipalSyncJob]: postStartServicePrincipalSyncJobCallback,
 };
 
 app.get('/', async (req, res) => {
