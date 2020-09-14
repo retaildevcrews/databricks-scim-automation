@@ -11,7 +11,7 @@
         "dev:cli": "nodemon cli/index.js"
     },
     "dependencies": {
-        "@databricks-scim-automation/graph": "file:graph",
+        "@databricks-scim-automation/graph": "file:../graph",
         "bluebird": "^3.7.2",
         "dotenv": "^8.2.0",
         "express": "^4.17.1",
