@@ -13,6 +13,7 @@ This checklist is for verifing the release is ready to publish and published cor
 
 ### Validation
 - [ ] All packages up to date (or task created)
+- [ ] Remove any unused flags or conditional compilation
 - [ ] Remove unused packages
 - [ ] Code Version updated
 - [ ] Code Review completed
