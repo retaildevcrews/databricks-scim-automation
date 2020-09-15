@@ -23,7 +23,7 @@ async function postAccessToken(req, res) {
     try {
         const { query: { code } } = url.parse(req.url, true);
         const { headers: { origin, host } } = req;
-        const response = await graph.postAccessToken(code, { origin, host })
+        const response = await graph.postAccessToken({ code, origin, host })
 
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -44,7 +44,7 @@ async function postAccessToken(req, res) {
 async function postRefreshAccessToken(req, res) {
     try {
         const { headers: { authorization: refreshToken, origin, host } } = req;
-        const response = await graph.postRefreshAccessToken(refreshToken, { origin, host });
+        const response = await graph.postRefreshAccessToken({ refreshToken, origin, host });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(JSON.stringify(body));

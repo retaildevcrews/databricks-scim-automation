@@ -301,7 +301,7 @@
                     ]);
                 }
                 const response = await fetch(
-                    encodeURI(`${document.location.origin}/scimConnectorGalleryApp?templateId=${scimAppTemplateId}&appName=${scimConnectorGalleryAppName}`),
+                    encodeURI(`${document.location.origin}/scimConnectorGalleryApp?galleryAppTemplateId=${scimAppTemplateId}&galleryAppName=${scimConnectorGalleryAppName}`),
                     { method: 'POST', headers: { Authorization: accessToken } },
                 );
                 const contentType = response.headers.get('content-type');
@@ -332,14 +332,14 @@
             try {
                 addToLog(`<br />Searching for aad groups...`);
                 const accessToken = document.querySelector('#get-aad-groups input.access-token').value;
-                const filterDisplayName = document.querySelector('#get-aad-groups input#filter-display-name').value;
-                if (!accessToken || !filterDisplayName) {
+                const filterAadGroupDisplayName = document.querySelector('#get-aad-groups input#filter-display-name').value;
+                if (!accessToken || !filterAadGroupDisplayName) {
                     return logMissingInputs([
                         { value: accessToken, message: 'Access token required to get aad groups...' },
-                        { value: filterDisplayName, message: 'Search display name required to get aad groups...' },
+                        { value: filterAadGroupDisplayName, message: 'Search display name required to get aad groups...' },
                     ]);
                 }
-                const response = await fetch(`${document.location.origin}/aadGroups?filterDisplayName=${encodeURIComponent(filterDisplayName)}`, {
+                const response = await fetch(`${document.location.origin}/aadGroups?filterAadGroupDisplayName=${encodeURIComponent(filterAadGroupDisplayName)}`, {
                     method: 'GET',
                     headers: { Authorization: accessToken }
                 })
@@ -395,7 +395,7 @@
                         { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to get service principals...' },
                     ]);
                 }
-                const response = await fetch(`${document.location.origin}/servicePrincipal?servicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
+                const response = await fetch(`${document.location.origin}/servicePrincipal?servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
                     method: 'GET',
                     headers: { Authorization: accessToken }
                 })
@@ -458,7 +458,7 @@
                     ]);
                 }
                 const parameters = [
-                    { key: 'servicePrincipalObjectId', value: scimServicePrincipalObjectId },
+                    { key: 'servicePrincipalId', value: scimServicePrincipalObjectId },
                     { key: 'aadGroupId', value: aadGroupId },
                     { key: 'appRoleId', value: appRoleId },
                 ].map(({ key, value }) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
@@ -502,7 +502,7 @@
                         { value: scimServicePrincipalObjectId, message: 'Scim service principal object id required to create sync job...' },
                     ]);
                 }
-                const response = await fetch(`${document.location.origin}/createSyncJob?jobTemplateId=${encodeURIComponent(jobTemplateId)}&servicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
+                const response = await fetch(`${document.location.origin}/createSyncJob?syncJobTemplateId=${encodeURIComponent(jobTemplateId)}&servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
                     method: 'POST',
                     headers: { Authorization: accessToken },
                 });
@@ -548,14 +548,14 @@
                     ]);
                 }
                 const parameters = [
-                    { key: 'servicePrincipalObjectId', value: scimServicePrincipalObjectId },
+                    { key: 'servicePrincipalId', value: scimServicePrincipalObjectId },
                     { key: 'syncJobId', value: syncJobId },
                     { key: 'databricksUrl', value: databricksUrl },
                 ].map(({ key, value }) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
                 .join('&');
                 const response = await fetch(`${document.location.origin}/validateCredentials?${parameters}`, {
                     method: 'POST',
-                    headers: { Authorization: accessToken, 'X-Secret-Token': databricksPat },
+                    headers: { Authorization: accessToken, 'X-Databricks-Pat': databricksPat },
                 });
                 if (response.status === 204) {
                     addToLog(`Successfully validated credentials...`);
@@ -593,13 +593,13 @@
                     ]);
                 }
                 const parameters = [
-                    { key: 'servicePrincipalObjectId', value: scimServicePrincipalObjectId },
+                    { key: 'servicePrincipalId', value: scimServicePrincipalObjectId },
                     { key: 'databricksUrl', value: databricksUrl },
                 ].map(({ key, value }) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
                 .join('&');
                 const response = await fetch(`${document.location.origin}/saveCredentials?${parameters}`, {
                     method: 'PUT',
-                    headers: { Authorization: accessToken, 'X-Secret-Token': databricksPat },
+                    headers: { Authorization: accessToken, 'X-Databricks-Pat': databricksPat },
                 });
                 if (response.status === 204) {
                     addToLog(`Successfully saved credentials...`);
@@ -634,7 +634,7 @@
                         { value: syncJobId, message: 'Sync job id required to start sync job...'},
                     ]);
                 }
-                const response = await fetch(`${document.location.origin}/startSyncJob?servicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
+                const response = await fetch(`${document.location.origin}/startSyncJob?servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
                     method: 'POST',
                     headers: { Authorization: accessToken },
                 });
@@ -671,7 +671,7 @@
                         { value: syncJobId, message: 'Sync job id required to get status of sync job...'},
                     ]);
                 }
-                const response = await fetch(`${document.location.origin}/syncJobStatus?servicePrincipalObjectId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
+                const response = await fetch(`${document.location.origin}/syncJobStatus?servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
                     method: 'GET',
                     headers: { Authorization: accessToken },
                 });

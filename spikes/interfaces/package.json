@@ -7,13 +7,17 @@
     "author": "Microsoft",
     "scripts": {
         "start:gui": "nodemon gui/index.js",
-        "start:cli": "node cli.js"
+        "start:cli": "node cli/index.js",
+        "dev:cli": "nodemon cli/index.js"
     },
     "dependencies": {
-        "@databricks-scim-automation/graph": "file:graph",
+        "@databricks-scim-automation/graph": "file:../graph",
+        "bluebird": "^3.7.2",
+        "dotenv": "^8.2.0",
         "express": "^4.17.1",
         "fs": "0.0.1-security",
         "path": "^0.12.7",
+        "readline": "^1.3.0",
         "url": "^0.11.0"
     },
     "devDependencies": {
