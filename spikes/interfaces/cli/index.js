@@ -1,20 +1,14 @@
 require('dotenv').config();
-const express = require('express');
-const url = require('url');
 const Promise = require('bluebird');
 const graph = require('@databricks-scim-automation/graph');
+const signin = require('@databricks-scim-automation/signin');
 const ascii = require('./ascii');
 const prompts = require('./prompts');
 const log = require('./log');
 const { keepFetching } = require('./helpers');
 
-const port = process.env.PORT || 8000;
-const host = `localhost:${port}`;
-const redirectLoginUrl = graph.getRedirectLoginUrl({ host });
-const app = express();
-
 // Holds values required for Microsoft Graph API calls
-let params = { host };
+let params = { host: signin.host };
 // Keeps track of each sync process step
 let stepsStatus = [];
 
@@ -85,7 +79,7 @@ async function getServicePrincipalCallback(response, graphCall) {
     );
     let body = await response.json();
     // Check if initial call failed
-    if (hasStatusErred(response.status) || hasBodyError(body)) {
+    if (hasStatusErred(response.status) || hasBodyErred(body)) {
         body = await keepGettingServicePrincipal(4, '');
     }
     params.appRoleId = body.appRoles.filter(({ isEnabled, origin, displayName }) => (
@@ -180,19 +174,9 @@ const callbackPromises = {
     [graph.syncSteps.postStartServicePrincipalSyncJob]: postStartServicePrincipalSyncJobCallback,
 };
 
-app.get('/', async (req, res) => {
+async function execInputs(code) {
     try {
-        // Gets sign-in code from URL
-        const { query: { code } } = url.parse(req.url, true);
-        if (!code) { throw new Error('Unable to get sign-in code!') }
-        // Saves code
         params.code = code;
-        // Notifies user
-        res.send('Successfully signed in!');
-    } catch(err) {
-        res.send(err.message);
-    }
-    try {
         // Required User Inputs and Default Values
         const inputPrompts = [
             { message: 'SCIM connector gallery app template ID', key: 'galleryAppTemplateId', defaultInput: '9c9818d2-2900-49e8-8ba4-22688be7c675' },
@@ -221,10 +205,10 @@ app.get('/', async (req, res) => {
         console.error(err)
     }
     process.exit(0);
-});
+}
 
-app.listen(port);
+signin.startApp(execInputs);
 console.log(ascii.scimSync);
 // Instruct user how to quit
 prompts.quit();
-prompts.signin(redirectLoginUrl);
+prompts.signin(signin.redirectLoginUrl);
