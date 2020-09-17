@@ -3,7 +3,7 @@
 ## Setup App
 
 * Execute `npm install`
-* Copy `./interfaces/.env-sample` and rename `./interfaces/.env`
+* Copy `.env-sample` and rename `.env`
   * Update required variables `TENANT_ID`, `APP_SERVICE_CLIENT_ID`, `APP_SERVICE_CLIENT_SECRET`, `GALLERY_APP_TEMPLATE_ID`, and `SCIM_TEMPLATE_ID`
   * Update optional variables `PORT`
 
