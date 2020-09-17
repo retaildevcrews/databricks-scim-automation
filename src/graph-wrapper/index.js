@@ -40,13 +40,13 @@ function getOriginUrl({ origin, host }) {
 
 /**
  * Stringifies query params in an array
- * @param {Array<{key: string, value: string}>} params
+ * @param {Array<{key: string, value: string}>} queryParams
  * @param {boolean} shouldEncode whether to encode key and value using encodeURIComponent
  * @return {string} Stringified query params
  */
-function getQueryParams(params, shouldEncode = true) {
+function getQueryParams(queryParams, shouldEncode = true) {
     const encode = value => shouldEncode ? encodeURIComponent(value) : value;
-    return params.map(({ key, value }) => encode(key) + '=' + encode(value)).join('&');
+    return queryParams.map(({ key, value }) => encode(key) + '=' + encode(value)).join('&');
 }
 
 /**
@@ -57,7 +57,7 @@ function getQueryParams(params, shouldEncode = true) {
  * @return {string} Url for Microsoft login portal
  */
 function getRedirectLoginUrl({ origin, host }) {
-    const params = [
+    const queryParams = [
         { key: 'client_id', value: clientIds.appService },
         { key: 'response_type', value: 'code' },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
@@ -65,7 +65,7 @@ function getRedirectLoginUrl({ origin, host }) {
         { key: 'scope', value: 'openid%20offline_access%20https%3A%2F%2Fgraph.microsoft.com%2F.default' },
         { key: 'state', value: 12345 },
     ];
-    return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${getQueryParams(params, false)}`;
+    return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${getQueryParams(queryParams, false)}`;
 }
 
 /**
@@ -79,8 +79,9 @@ function getRedirectLoginUrl({ origin, host }) {
  * @param {string} args.host Fallback for origin creation
  * @return {external:RequestAnAccessTokenPromise}
  */
-async function postAccessToken({ code, origin, host }) {
-    const params = [
+async function postAccessToken(params) {
+    const { code, origin, host } = params;
+    const queryParams = [
         { key: 'client_id', value: clientIds.appService },
         { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
@@ -91,7 +92,7 @@ async function postAccessToken({ code, origin, host }) {
     return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded'},
-        body: getQueryParams(params),
+        body: getQueryParams(queryParams),
     });
 }
 
@@ -107,7 +108,7 @@ async function postAccessToken({ code, origin, host }) {
  * @return {external:RefreshTheAccessTokenPromise}
  */
 async function postRefreshAccessToken({ refreshToken, origin, host }) {
-    const params = [
+    const queryParams = [
         { key: 'client_id', value: clientIds.appService },
         { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
@@ -118,7 +119,7 @@ async function postRefreshAccessToken({ refreshToken, origin, host }) {
     return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: getQueryParams(params),
+        body: getQueryParams(queryParams),
     });
 }
 
@@ -173,7 +174,8 @@ async function getAadGroups({ accessToken, filterAadGroupDisplayName }) {
  * @param {string} args.servicePrincipalId ID of the servicePrincipal
  * @return {external:GetServicePrincipalPromise}
  */
-async function getServicePrincipal({ accessToken, servicePrincipalId }) {
+async function getServicePrincipal(params) {
+    const { accessToken, servicePrincipalId } = params;
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -320,50 +322,6 @@ async function getServicePrincipalSyncJobStatus({ accessToken, servicePrincipalI
     });
 }
 
-/**
- * Returns a promise that waits for a response and executes an existing callback promise
- * @param {*} fn Promise function the callback waits for
- * @return {*}
- */
-const addCallbackPromise = (fn) => async (params, cb) => {
-    const response = await fn(params);
-    return cb ? await cb(response, fn) : response;
-}
-
-/**
- * @constant
- * @type {Object} sync step keys
- */
-const syncSteps = {
-    postAccessToken: 'postAccessToken',
-    postScimConnectorGalleryApp: 'postScimConnectorGalleryApp',
-    getAadGroups: 'getAadGroups',
-    getServicePrincipal: 'getServicePrincipal',
-    postAddAadGroupToServicePrincipal: 'postAddAadGroupToServicePrincipal',
-    postCreateServicePrincipalSyncJob: 'postCreateServicePrincipalSyncJob',
-    postValidateServicePrincipalCredentials: 'postValidateServicePrincipalCredentials',
-    putSaveServicePrincipalCredentials: 'putSaveServicePrincipalCredentials',
-    postStartServicePrincipalSyncJob: 'postStartServicePrincipalSyncJob',
-};
-
-/**
- * Returns the steps of the sync process in the order they need to be executed
- * @return {Array<Object>} The action name and function for each ordered execution step
- */
-function getSyncSteps() {
-    return [
-        { key: syncSteps.postAccessToken, fn: addCallbackPromise(postAccessToken) },
-        { key: syncSteps.postScimConnectorGalleryApp, fn: addCallbackPromise(postScimConnectorGalleryApp) },
-        { key: syncSteps.getAadGroups, fn: addCallbackPromise(getAadGroups) },
-        { key: syncSteps.getServicePrincipal, fn: addCallbackPromise(getServicePrincipal) },
-        { key: syncSteps.postAddAadGroupToServicePrincipal, fn: addCallbackPromise(postAddAadGroupToServicePrincipal) },
-        { key: syncSteps.postCreateServicePrincipalSyncJob, fn: addCallbackPromise(postCreateServicePrincipalSyncJob) },
-        { key: syncSteps.postValidateServicePrincipalCredentials, fn: addCallbackPromise(postValidateServicePrincipalCredentials) },
-        { key: syncSteps.putSaveServicePrincipalCredentials, fn: addCallbackPromise(putSaveServicePrincipalCredentials) },
-        { key: syncSteps.postStartServicePrincipalSyncJob, fn: addCallbackPromise(postStartServicePrincipalSyncJob) },
-    ];
-}
-
 module.exports = {
     getOriginUrl,
     getRedirectLoginUrl,
@@ -378,6 +336,4 @@ module.exports = {
     putSaveServicePrincipalCredentials,
     postStartServicePrincipalSyncJob,
     getServicePrincipalSyncJobStatus,
-    syncSteps,
-    getSyncSteps,
 };

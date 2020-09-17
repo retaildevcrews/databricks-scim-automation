@@ -14,7 +14,7 @@
     "nodemon": "^2.0.4"
   },
   "dependencies": {
-    "@databricks-scim-automation/graph": "file:../graph",
+    "@databricks-scim-automation/graph": "file:../graph-wrapper",
     "@databricks-scim-automation/signin": "file:../signin",
     "bluebird": "^3.7.2"
   }
