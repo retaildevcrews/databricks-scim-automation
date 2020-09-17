@@ -119,5 +119,37 @@ resource "azurerm_key_vault_secret" "appinsights" {
   key_vault_id = azurerm_key_vault.kv.id
 }
 
+# Key Valut 2
+resource "azurerm_key_vault_secret" "appclientid" {
+
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform-sp
+  ]
+
+  name         = "AppClientID"
+  value        = var.APP_CLIENT_ID
+  key_vault_id = azurerm_key_vault.kv.id
+}
+
+resource "azurerm_key_vault_secret" "appclientsecret" {
+
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform-sp
+  ]
+
+  name         = "AppClientSecret"
+  value        = var.APP_CLIENT_SECRET
+  key_vault_id = azurerm_key_vault.kv.id
+}
 
 
+resource "azurerm_key_vault_secret" "tenantid" {
+
+  depends_on = [
+    azurerm_key_vault_access_policy.terraform-sp
+  ]
+
+  name         = "TenantID"
+  value        = var.TENANT_ID
+  key_vault_id = azurerm_key_vault.kv.id
+}
