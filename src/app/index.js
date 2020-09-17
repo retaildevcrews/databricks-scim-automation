@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const Promise = require('bluebird');
 const signin = require('@databricks-scim-automation/signin');
@@ -85,8 +86,8 @@ const execCsv = async (code) => {
         const tokens = await graph.postAccessToken({ code, host: signin.host }).then(syncCallbacks.postAccessToken);
         // TODO: Account for required token refreshing with graph.postRefreshAccessToken
         const sharedParams = {
-            galleryAppTemplateId: '9c9818d2-2900-49e8-8ba4-22688be7c675',
-            syncJobTemplateId: 'dataBricks',
+            galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
+            syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
             ...tokens
         };
         const syncAllStatus = await Promise.all(csv.map((csvLine) => promisfySyncCall(csvLine, sharedParams)));
