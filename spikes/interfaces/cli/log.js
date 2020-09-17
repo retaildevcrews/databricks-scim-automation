@@ -7,7 +7,7 @@ function boldFormat(message) {
 }
 
 function initialTable(syncSteps) {
-    const tableSteps = syncSteps.map(({ key }) => ({ Action: key, Status: 'Waiting...', Attempts: 0 }));
+    const tableSteps = syncSteps.map(step => ({ Action: step, Status: 'Waiting...', Attempts: 0 }));
     console.clear();
     console.table(tableSteps);
     return tableSteps;
