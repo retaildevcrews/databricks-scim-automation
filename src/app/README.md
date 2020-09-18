@@ -10,6 +10,12 @@
   * Active Directory > App Registration > {Name of App Service Client} > Authentication > Add a Platform
     * Redirect URIs: http://localhost:{1337|.env.PORT}
     * Access Tokens Selected
+* Add required API permissions 
+  * Active Directory > App Registration > {Name of App Service Client} > API Permissions
+    * `@databricks-scim-automation/graph` > getAadGroups (Required Permission): Delegated Token > Directory.Read.All Permission
+    * `@databricks-scim-automation/graph` > getServicePrincipal (Required Permission): Delegated Token > Directory.Read.All Permission
+    * `@databricks-scim-automation/graph` > postAddAadGroupToServicePrincipal (Required Permission): Delegated Token >      AppRoleAssignment.ReadWrite.All Permission
+
 
 ## Run App
 
