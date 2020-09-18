@@ -1,5 +1,5 @@
 {
-  "name": "@databricks-spike-automation/csv",
+  "name": "@databricks-scim-automation/csv",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
