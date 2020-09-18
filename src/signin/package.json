@@ -1,0 +1,16 @@
+{
+  "name": "@databricks-scim-automation/signin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@databricks-scim-automation/graph": "file:../graph-wrapper",
+    "express": "^4.17.1",
+    "url": "^0.11.0"
+  }
+}

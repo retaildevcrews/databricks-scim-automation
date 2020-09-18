@@ -1,0 +1,22 @@
+{
+  "name": "@databricks-scim-automation/csv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js ./mocks/syncs.csv"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  },
+  "dependencies": {
+    "@databricks-scim-automation/graph": "file:../graph-wrapper",
+    "@databricks-scim-automation/signin": "file:../signin",
+    "bluebird": "^3.7.2",
+    "dotenv": "^8.2.0"
+  }
+}
