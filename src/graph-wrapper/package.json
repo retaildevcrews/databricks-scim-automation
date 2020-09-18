@@ -4,12 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "preinstall": "npm install npm-force-resolutions && npx npm-force-resolutions",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^8.2.0",
-    "isomorphic-fetch": "^2.2.1"
+    "isomorphic-fetch": "^2.2.1",
+    "npm-force-resolutions": "0.0.3"
+  },
+  "resolutions": {
+    "node-fetch": ">=2.6.1"
   }
 }
