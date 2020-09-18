@@ -2,10 +2,10 @@
 
 ## Installation
 
-* Install the `graph` directory dependencies
+* Install the `graph-wrapper` directory dependencies
   * `npm install`
 * Set environmental variables
-  * Copy `./interfaces/.env-sample` and rename `./interfaces/.env`
+  * Copy `.env-sample` and rename `.env`
   * Update required variables `TENANT_ID`, `APP_SERVICE_CLIENT_ID`, `APP_SERVICE_CLIENT_SECRET`
   * Update optional variables `DATABRICKS_PAT`
 
