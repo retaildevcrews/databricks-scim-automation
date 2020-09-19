@@ -97,10 +97,8 @@ async function promisfySyncCall(csvLine, sharedParams) {
                 return new Promise.resolve(res.status);
             })
             .catch(error => {
-                console.log('In MAPSERIES Catch');
                 params = { ...params, hasFailed: true };
-                // return new Promise.resolve(error.message)
-                return new Promise.resolve(error)
+                return new Promise.resolve(error.message)
             })
     });
 }
