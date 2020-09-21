@@ -6,8 +6,7 @@ const graph = require('@databricks-scim-automation/graph');
 const keyvaultService = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
 
-const isDatabricksUrl = url => /https://*.azuredatabricks.net*/.test(url);
-const isDatabricksPat = pat => /^dapi*/.test(pat);
+const isDatabricksUrl = url => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
 function getCsvInputs(path) {
     const fileExists = fs.existsSync(path);
@@ -55,34 +54,34 @@ const graphCalls = [
         graphCall: graph.postCreateServicePrincipalSyncJob,
         callback: syncCallbacks.postCreateServicePrincipalSyncJob,
     }, {
-        graphCall: graph.postValidateServicePrincipalCredentials,
-        callback: syncCallbacks.postValidateServicePrincipalCredentials,
-    }, {
-        graphCall: graph.putSaveServicePrincipalCredentials,
-        callback: syncCallbacks.putSaveServicePrincipalCredentials,
-    }, {
-        graphCall: graph.postStartServicePrincipalSyncJob,
-        callback: syncCallbacks.postStartServicePrincipalSyncJob,
-    }, {
-        graphCall: graph.getServicePrincipalSyncJobStatus,
-        callback: syncCallbacks.keepGettingServicePrincipalSyncJobStatus,
+        graphCall: graph.postCreateDatabricksPat,
+        callback: syncCallbacks.postCreateDatabricksPat,
     },
+    //  {
+    //     graphCall: graph.postValidateServicePrincipalCredentials,
+    //     callback: syncCallbacks.postValidateServicePrincipalCredentials,
+    // }, {
+    //     graphCall: graph.putSaveServicePrincipalCredentials,
+    //     callback: syncCallbacks.putSaveServicePrincipalCredentials,
+    // }, {
+    //     graphCall: graph.postStartServicePrincipalSyncJob,
+    //     callback: syncCallbacks.postStartServicePrincipalSyncJob,
+    // }, {
+    //     graphCall: graph.getServicePrincipalSyncJobStatus,
+    //     callback: syncCallbacks.keepGettingServicePrincipalSyncJobStatus,
+    // },
 ]
 
 async function promisfySyncCall(csvLine, sharedParams) {
-    const [galleryAppName, filterAadGroupDisplayName, databricksUrl, databricksPat] = csvLine.split(',');
+    const [galleryAppName, filterAadGroupDisplayName, databricksUrl] = csvLine.split(',');
     if (!isDatabricksUrl(databricksUrl)) {
         throw new Error(`Databricks URL (${databricksUrl}) is not an accepted value`);
-    }
-    if (!isDatabricksPat(databricksPat)) {
-        throw new Error(`Databricks PAT (${databricksPat}) is not an accepted value`);
     }
 
     let params = {
         hasFailed: false,
         ...sharedParams,
-        databricksUrl,
-        databricksPat,
+        databricksUrl: databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/',
         filterAadGroupDisplayName,
         galleryAppName,
     };

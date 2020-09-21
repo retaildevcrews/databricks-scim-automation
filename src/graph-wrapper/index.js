@@ -1,5 +1,6 @@
 require('dotenv').config();
 const fetch = require('isomorphic-fetch');
+const get = require('lodash.get');
 
 /**
  * Returns url with appropriate http based on localhost
@@ -207,6 +208,33 @@ async function postCreateServicePrincipalSyncJob({ accessToken, servicePrincipal
 }
 
 /**
+ * @external CreateDatabricksPatPromise
+ * @see {@link https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/tokens}
+ * 
+ * Generate PAT for Databricks workspace
+ * @param {Object} args
+ * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.databricksUrl Credentials to validate: Databricks workspace base address/URL
+ * @param {string} args.galleryAppName Name of Gallery App Service Principal
+ * @return {external:CreateDatabricksPatPromise}
+ */
+async function postCreateDatabricksPat({ accessToken, databricksUrl, galleryAppName }) {
+    const databricksOrgId = get({ match: databricksUrl.match(/adb-\d+/) }, 'match[0]', '').split('-')[1];
+    if (!databricksOrgId) {
+        throw new Error('Unable to derive Databricks Org Id from Databricks URL');
+    } 
+    return await fetch(`${databricksUrl}api/2.0/token/create`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'X-Databricks-Org-Id': databricksOrgId,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }),
+    });
+}
+
+/**
  * @external SynchronizationJobValidateCredentialsPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-validatecredentials?view=graph-rest-beta&tabs=http}
  * 
@@ -216,11 +244,10 @@ async function postCreateServicePrincipalSyncJob({ accessToken, servicePrincipal
  * @param {string} args.servicePrincipalId ID of the servicePrincipal
  * @param {string} args.syncJobId ID of the provisioned synchronization job
  * @param {string} args.databricksUrl Credentials to validate: Databricks workspace base address/URL
- * @param {string|null} args.databricksPat Credentials to validate: Databricks workspace personal access token
+ * @param {string} args.databricksPat Credentials to validate: Databricks workspace personal access token
  * @return {external:SynchronizationJobValidateCredentialsPromise}
  */
 async function postValidateServicePrincipalCredentials({ accessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat }) {
-    const secretToken = databricksPat || process.env.DATABRICKS_PAT;
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
         method: 'POST',
         headers: {
@@ -228,8 +255,8 @@ async function postValidateServicePrincipalCredentials({ accessToken, servicePri
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ credentials: [
-            { key: 'BaseAddress', value: databricksUrl },
-            { key: 'SecretToken', value: secretToken },
+            { key: 'BaseAddress', value: databricksUrl + 'api/2.0/preview/scim'},
+            { key: 'SecretToken', value: databricksPat },
         ]}),
     });
 }
@@ -247,7 +274,6 @@ async function postValidateServicePrincipalCredentials({ accessToken, servicePri
  * @return {external:SaveYourCredentialsPromise}
  */
 async function putSaveServicePrincipalCredentials({ accessToken, servicePrincipalId, databricksUrl, databricksPat}) {
-    const secretToken = databricksPat || process.env.DATABRICKS_PAT;
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/secrets`, {
         method: 'PUT',
         headers: {
@@ -255,8 +281,8 @@ async function putSaveServicePrincipalCredentials({ accessToken, servicePrincipa
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ value: [
-            { key: 'BaseAddress', value: databricksUrl },
-            { key: 'SecretToken', value: secretToken },
+            { key: 'BaseAddress', value: databricksUrl + 'api/2.0/preview/scim' },
+            { key: 'SecretToken', value: databricksPat },
         ]}),
     });
 }
@@ -307,6 +333,7 @@ module.exports = {
     getServicePrincipal,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
+    postCreateDatabricksPat,
     postValidateServicePrincipalCredentials,
     putSaveServicePrincipalCredentials,
     postStartServicePrincipalSyncJob,

@@ -118,6 +118,19 @@ async function postCreateServicePrincipalSyncJob(response) {
     });
 }
 
+// Checks if able to successfully created Databricks PAT
+async function postCreateDatabricksPat(response) {
+    //await handleResponseErrors(response, 204);
+    console.log({status: response.status, response});
+    const body = await response.json();
+    console.log({body});
+    return Promise.resolve({
+        status: 'SUCCESS',
+        //params: { databricksPat: body.token_value },
+        params: {  },
+    });
+}
+
 // Checks if able to successfully validate credentials to connect with databricks workspace 
 async function postValidateServicePrincipalCredentials(response) {
     await handleResponseErrors(response, 204);
@@ -180,6 +193,7 @@ module.exports = {
     keepGettingServicePrincipal,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
+    postCreateDatabricksPat,
     postValidateServicePrincipalCredentials,
     putSaveServicePrincipalCredentials,
     postStartServicePrincipalSyncJob,
