@@ -6,6 +6,7 @@
     "license": "MIT",
     "author": "Microsoft",
     "scripts": {
+        "preinstall": "npm install npm-force-resolutions && npx npm-force-resolutions",
         "start": "nodemon index.js"
     },
     "dependencies": {
@@ -17,6 +18,10 @@
     },
     "devDependencies": {
         "@microsoft/microsoft-graph-types": "^1.14.1",
-        "nodemon": "^2.0.4"
+        "nodemon": "^2.0.4",
+        "npm-force-resolutions": "0.0.3"
+    },
+    "resolutions": {
+        "node-fetch": ">=2.6.1"
     }
 }
