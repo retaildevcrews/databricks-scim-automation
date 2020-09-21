@@ -51,4 +51,13 @@ variable "DB_CREATION_DONE" {
   type        = bool
 }
 
+# Key Valut App Client ID
+variable "APP_CLIENT_ID" {
+  description = "Client ID for App"
+  type        = string
+}
 
+variable "APP_CLIENT_SECRET" {
+  description = "Client Secret for App"
+  type        = string
+}

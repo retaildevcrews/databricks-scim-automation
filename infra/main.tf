@@ -55,4 +55,8 @@ module "web" {
   COSMOS_DB           = var.COSMOS_DB
   COSMOS_COL          = var.COSMOS_COL
   COSMOS_URL          = "https://${var.NAME}.documents.azure.com:443/"
+
+  # Key Valut App Client ID
+  APP_CLIENT_ID       = var.TF_CLIENT_ID
+  APP_CLIENT_SECRET   = var.TF_CLIENT_SECRET
 }
