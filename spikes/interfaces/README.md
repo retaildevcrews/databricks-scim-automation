@@ -2,9 +2,6 @@
 
 ## GUI
 
-* Install the `graph` directory dependencies
-  * `cd ../graph`
-  * `npm install`
 * Install the interface dependencies
   * `cd ./interfaces`
   * `npm install`
@@ -20,9 +17,6 @@
 
 ### Set up CLI
 
-* Install the `graph` directory dependencies
-  * `cd ../graph`
-  * `npm install`
 * Install the interface dependencies
   * `cd ./interfaces`
   * `npm install`
