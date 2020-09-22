@@ -20,6 +20,15 @@ const postAccessToken = async (response) => {
     });
 }
 
+// Checks if created valid databricks access and refresh tokens by redeeming sign-in code
+const postDatabricksAccessToken = async (response) => {
+    const body = await handleResponseErrors(response, 200);
+    return Promise.resolve({
+        databricksAccessToken: body.access_token,
+        databricksRefreshToken: body.refresh_token,
+    });
+}
+
 // Checks if created instance of SCIM connector gallery app
 async function postScimConnectorGalleryApp(response) {
     const body = await handleResponseErrors(response, 201);
@@ -188,6 +197,7 @@ const  keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
 
 module.exports = {
     postAccessToken,
+    postDatabricksAccessToken,
     postScimConnectorGalleryApp,
     getAadGroups,
     keepGettingServicePrincipal,

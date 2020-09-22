@@ -72,6 +72,34 @@ async function postAccessToken(params) {
 }
 
 /**
+ * @external RequestDatabricksAccessTokenPromise
+ * @see {@link https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/aad/service-prin-aad-token#--get-an-azure-active-directory-access-token}
+ * 
+ * Returns Databricks access token
+ * @param {Object} args
+ * @param {string} args.code Redeemable sign-in code from Microsoft login portal
+ * @param {string|null} args.origin Indicator whether origin is usable
+ * @param {string} args.host Fallback for origin creation
+ * @return {external:RequestDatabricksAccessTokenPromise}
+ */
+async function postDatabricksAccessToken(params) {
+    const { code, origin, host } = params;
+    const queryParams = [
+        { key: 'client_id', value: clientIds.appService },
+        { key: 'scope', value: '2ff814a6-3304-4ab8-85cb-cd0e6f879c1d/user_impersonation' },
+        { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
+        { key: 'grant_type', value: 'authorization_code' },
+        { key: 'client_secret', value: clientSecrets.appService },
+        { key: 'code', value: code },
+    ];
+    return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: getQueryParams(queryParams),
+    });
+}
+
+/**
  * @external RefreshTheAccessTokenPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token}
  * 
@@ -213,24 +241,25 @@ async function postCreateServicePrincipalSyncJob({ accessToken, servicePrincipal
  * 
  * Generate PAT for Databricks workspace
  * @param {Object} args
- * @param {string} args.accessToken Token used to authenticate request
+ * @param {string} args.databricksAccessToken Token used to authenticate request
  * @param {string} args.databricksUrl Credentials to validate: Databricks workspace base address/URL
  * @param {string} args.galleryAppName Name of Gallery App Service Principal
  * @return {external:CreateDatabricksPatPromise}
  */
-async function postCreateDatabricksPat({ accessToken, databricksUrl, galleryAppName }) {
+async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, galleryAppName }) {
     const databricksOrgId = get({ match: databricksUrl.match(/adb-\d+/) }, 'match[0]', '').split('-')[1];
     if (!databricksOrgId) {
         throw new Error('Unable to derive Databricks Org Id from Databricks URL');
     } 
     return await fetch(`${databricksUrl}api/2.0/token/create`, {
+        agent: false,
         method: 'POST',
         headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${databricksAccessToken}`,
             'X-Databricks-Org-Id': databricksOrgId,
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }),
+        body:  { lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }
     });
 }
 
@@ -327,6 +356,7 @@ module.exports = {
     getOriginUrl,
     getRedirectLoginUrl,
     postAccessToken,
+    postDatabricksAccessToken,
     postRefreshAccessToken,
     postScimConnectorGalleryApp,
     getAadGroups,

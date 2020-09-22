@@ -56,20 +56,19 @@ const graphCalls = [
     }, {
         graphCall: graph.postCreateDatabricksPat,
         callback: syncCallbacks.postCreateDatabricksPat,
+    }, {
+        graphCall: graph.postValidateServicePrincipalCredentials,
+        callback: syncCallbacks.postValidateServicePrincipalCredentials,
+    }, {
+        graphCall: graph.putSaveServicePrincipalCredentials,
+        callback: syncCallbacks.putSaveServicePrincipalCredentials,
+    }, {
+        graphCall: graph.postStartServicePrincipalSyncJob,
+        callback: syncCallbacks.postStartServicePrincipalSyncJob,
+    }, {
+        graphCall: graph.getServicePrincipalSyncJobStatus,
+        callback: syncCallbacks.keepGettingServicePrincipalSyncJobStatus,
     },
-    //  {
-    //     graphCall: graph.postValidateServicePrincipalCredentials,
-    //     callback: syncCallbacks.postValidateServicePrincipalCredentials,
-    // }, {
-    //     graphCall: graph.putSaveServicePrincipalCredentials,
-    //     callback: syncCallbacks.putSaveServicePrincipalCredentials,
-    // }, {
-    //     graphCall: graph.postStartServicePrincipalSyncJob,
-    //     callback: syncCallbacks.postStartServicePrincipalSyncJob,
-    // }, {
-    //     graphCall: graph.getServicePrincipalSyncJobStatus,
-    //     callback: syncCallbacks.keepGettingServicePrincipalSyncJobStatus,
-    // },
 ]
 
 async function promisfySyncCall(csvLine, sharedParams) {
@@ -127,12 +126,15 @@ const startSync = (secrets, { csvPath, csvHeader, csvRows }) => async (code) => 
             clientId,
             clientSecret,
         }).then(syncCallbacks.postAccessToken);
+        // const tokens = await graph.postAccessToken({ code, host: signin.host }).then(syncCallbacks.postAccessToken);
+        // const databricksTokens = await graph.postDatabricksAccessToken({ code, host: signin.host }).then(syncCallbacks.postDatabricksAccessToken);
         // TODO: Account for required token refreshing with graph.postRefreshAccessToken
 
         const sharedParams = {
             galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
-            ...tokens
+            ...tokens,
+            ...databricksTokens
         };
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
