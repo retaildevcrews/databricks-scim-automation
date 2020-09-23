@@ -73,3 +73,24 @@ To view(or use) the KV sercrets with a different User/service-principal, the tar
   - Select Principal (add user or a Service Principal)
   - Click "Add"
 - After adding, make sure to save the Access Policy
+
+### From the Azure CLI
+#### Note the ID of the User/Service Principal/App/Group ID
+Usually you can goto Azure Portal and take a note of your target object's (user/sp/app) ID.
+You can also get it from Azure CLI. Below execute one of them depending on your target
+```bash
+# If trying to add a specific user
+az ad user show --id "EMAIL_ADDRESS_FOR_USER" --query '[displayName, objectId]'
+
+# Or service principal
+az ad sp show --id "APP_ID_OR_ANY_IDENTIFIER" --query '[displayName, objectId]'
+
+# Or an app
+az ad app show --id "APP_ID_OR_ANY_IDENTIFIER" --query '[displayName, objectId]'
+```
+
+#### Now add that user/sp/app to your keyvaults access policy
+```bash
+az keyvault set-policy --name KV_NAME_FROM_TERRAFORM --object-id ID_FROM_PREV_STEP --secret-permissions get set list
+# For more list of permissions goto: https://docs.microsoft.com/en-us/cli/azure/keyvault?view=azure-cli-latest#az-keyvault-set-policy
+```
