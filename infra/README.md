@@ -65,19 +65,19 @@ By default a Service Principal by terraform is created for terraform usage. And 
 To view(or use) the KV sercrets with a different User/service-principal, the target User/SP needs to be added to the Access Policy of that Key Vault. It can be done via Azure cli or from the azure portal
 
 ### From the Azure Portal
-- Goto the respective key vault
+- Goto the respective key vault created by Terraform
 - Goto "Access Policies"
 - Click on "+ Add Access Policy"
   - Under "Configure From template (optional)" Select "Secret Management"
-  - Under "Secret Permissions" select all of the management operations (e.g. Get, List, Set, Delete etc)
-  - Select Principal (add user or a Service Principal)
+  - Under "Secret Permissions" select required management operations (e.g. Get, List, Set, Delete etc)
+  - Select Principal (add user, Service Principal, group or app)
   - Click "Add"
 - After adding, make sure to save the Access Policy
 
 ### From the Azure CLI
-#### Note the ID of the User/Service Principal/App/Group ID
+#### Note the User/Service Principal/App/Group ID
 Usually you can goto Azure Portal and take a note of your target object's (user/sp/app) ID.
-You can also get it from Azure CLI. Below execute one of them depending on your target
+Or you can also get it from Azure CLI. Shown below, execute one of them depending on your target
 ```bash
 # If trying to add a specific user
 az ad user show --id "EMAIL_ADDRESS_FOR_USER" --query '[displayName, objectId]'
