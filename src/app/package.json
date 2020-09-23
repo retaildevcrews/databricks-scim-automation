@@ -21,6 +21,9 @@
     "nodemon": "^2.0.4"
   },
   "dependencies": {
+    "@azure/identity": "^1.1.0",
+    "@azure/keyvault-secrets": "^4.1.0",
+    "@azure/ms-rest-nodeauth": "^3.0.5",
     "@databricks-scim-automation/graph": "file:../graph-wrapper",
     "@databricks-scim-automation/signin": "file:../signin",
     "bluebird": "^3.7.2",
