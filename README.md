@@ -21,6 +21,7 @@ Description of the project ...
 - Docker CLI ([download](https://docs.docker.com/install/))
 - Azure CLI ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
 - Visual Studio Code (optional) ([download](https://code.visualstudio.com/download))
+- VS Code ESLint Extension (optional) ([download](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint))
 
 ## Documentation
 
