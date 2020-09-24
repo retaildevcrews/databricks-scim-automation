@@ -5,6 +5,8 @@ const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
 const keyvaultService = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
+var graphTokens = '';
+var databricksTokens = '';
 
 const isDatabricksUrl = url => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
@@ -133,7 +135,7 @@ const startSync = (secrets, { csvPath, csvHeader, csvRows }) => async (code) => 
         const sharedParams = {
             galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
-            ...tokens,
+            ...graphTokens,
             ...databricksTokens
         };
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));

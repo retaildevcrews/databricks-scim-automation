@@ -74,7 +74,7 @@ async function postAccessToken(params) {
 /**
  * @external RequestDatabricksAccessTokenPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/aad/service-prin-aad-token#--get-an-azure-active-directory-access-token}
- * 
+ *
  * Returns Databricks access token
  * @param {Object} args
  * @param {string} args.code Redeemable sign-in code from Microsoft login portal
@@ -87,7 +87,7 @@ async function postDatabricksAccessToken(params) {
     const queryParams = [
         { key: 'client_id', value: clientIds.appService },
         { key: 'scope', value: '2ff814a6-3304-4ab8-85cb-cd0e6f879c1d/user_impersonation' },
-        { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
+        { key: 'redirect_uri', value: 'http://localhost:1337' },
         { key: 'grant_type', value: 'authorization_code' },
         { key: 'client_secret', value: clientSecrets.appService },
         { key: 'code', value: code },
@@ -102,7 +102,7 @@ async function postDatabricksAccessToken(params) {
 /**
  * @external RefreshTheAccessTokenPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token}
- * 
+ *
  * Refreshes the access token
  * @param {Object} args
  * @param {string} args.refreshToken The token used to refresh the access token
@@ -238,7 +238,7 @@ async function postCreateServicePrincipalSyncJob({ accessToken, servicePrincipal
 /**
  * @external CreateDatabricksPatPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/tokens}
- * 
+ *
  * Generate PAT for Databricks workspace
  * @param {Object} args
  * @param {string} args.databricksAccessToken Token used to authenticate request
@@ -247,10 +247,11 @@ async function postCreateServicePrincipalSyncJob({ accessToken, servicePrincipal
  * @return {external:CreateDatabricksPatPromise}
  */
 async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, galleryAppName }) {
+    console.log('Databricks Access Token:', databricksAccessToken);
     const databricksOrgId = get({ match: databricksUrl.match(/adb-\d+/) }, 'match[0]', '').split('-')[1];
     if (!databricksOrgId) {
         throw new Error('Unable to derive Databricks Org Id from Databricks URL');
-    } 
+    }
     return await fetch(`${databricksUrl}api/2.0/token/create`, {
         agent: false,
         method: 'POST',
@@ -259,14 +260,14 @@ async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, g
             'X-Databricks-Org-Id': databricksOrgId,
             'Content-Type': 'application/json'
         },
-        body:  { lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }
+        body:  JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` })
     });
 }
 
 /**
  * @external SynchronizationJobValidateCredentialsPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-validatecredentials?view=graph-rest-beta&tabs=http}
- * 
+ *
  * Test the connection with the third-party application
  * @param {Object} args
  * @param {string} args.accessToken Token used to authenticate request
@@ -293,7 +294,7 @@ async function postValidateServicePrincipalCredentials({ accessToken, servicePri
 /**
  * @external SaveYourCredentialsPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/app-provisioning/application-provisioning-configure-api#save-your-credentials}
- * 
+ *
  * Authorize access to third-party application via databricks workspace URL and PAT
  * @param {Object} args
  * @param {string} args.accessToken Token used to authenticate request
