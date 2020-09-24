@@ -2,32 +2,6 @@ require('dotenv').config();
 const fetch = require('isomorphic-fetch');
 
 /**
- * @constant
- * @type {string} Tenant ID of App
- */
-const tenantId = process.env.TENANT_ID;
-/**
- * @constant
- * @type {Object}
- * @property {string} appService Client ID from App Registration for Delegated Token
- * @property {string} daemon Client ID from App Registration for Application Token
- */
-const clientIds = {
-    appService: process.env.APP_SERVICE_CLIENT_ID,
-    daemon: process.env.DAEMON_CLIENT_ID,
-};
-/**
- * @constant
- * @type {Object}
- * @property {string} appService Client Secret from App Registration for Delegated Token
- * @property {string} daemon Client Secret from App Registration for Application Token
- */
-const clientSecrets = {
-    appService: process.env.APP_SERVICE_CLIENT_SECRET,
-    daemon: process.env.DAEMON_CLIENT_SECRET,
-};
-
-/**
  * Returns url with appropriate http based on localhost
  * @param {Object} args
  * @param {string|null} args.origin Indicator whether origin is usable
@@ -56,9 +30,9 @@ function getQueryParams(queryParams, shouldEncode = true) {
  * @param {string} args.host Fallback for origin creation
  * @return {string} Url for Microsoft login portal
  */
-function getRedirectLoginUrl({ origin, host }) {
+function getRedirectLoginUrl({ origin, host, tenantId, clientId }) {
     const queryParams = [
-        { key: 'client_id', value: clientIds.appService },
+        { key: 'client_id', value: clientId },
         { key: 'response_type', value: 'code' },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
         { key: 'response_mode', value: 'query' },
@@ -80,13 +54,13 @@ function getRedirectLoginUrl({ origin, host }) {
  * @return {external:RequestAnAccessTokenPromise}
  */
 async function postAccessToken(params) {
-    const { code, origin, host } = params;
+    const { code, origin, host, tenantId, clientId, clientSecret } = params;
     const queryParams = [
-        { key: 'client_id', value: clientIds.appService },
+        { key: 'client_id', value: clientId },
         { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
         { key: 'grant_type', value: 'authorization_code' },
-        { key: 'client_secret', value: clientSecrets.appService },
+        { key: 'client_secret', value: clientSecret },
         { key: 'code', value: code },
     ];
     return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
@@ -107,13 +81,14 @@ async function postAccessToken(params) {
  * @param {string} args.host Fallback for origin creation
  * @return {external:RefreshTheAccessTokenPromise}
  */
-async function postRefreshAccessToken({ refreshToken, origin, host }) {
+async function postRefreshAccessToken(params) {
+    const { refreshToken, origin, host, tenantId, clientId, clientSecret } = params;
     const queryParams = [
-        { key: 'client_id', value: clientIds.appService },
+        { key: 'client_id', value: clientId },
         { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
         { key: 'grant_type', value: 'refresh_token' },
-        { key: 'client_secret', value: clientSecrets.appService },
+        { key: 'client_secret', value: clientSecret },
         { key: 'refresh_token', value: refreshToken },
     ];
     return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {

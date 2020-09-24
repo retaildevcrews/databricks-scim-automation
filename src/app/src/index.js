@@ -3,38 +3,39 @@ const fs = require('fs');
 const Promise = require('bluebird');
 const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
+const keyvaultService = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
 
 const isDatabricksUrl = url => /https://*.azuredatabricks.net*/.test(url);
 const isDatabricksPat = pat => /^dapi*/.test(pat);
 
-function getCsv(csvPath) {
-    const fileExists = fs.existsSync(csvPath);
+function getCsvInputs(path) {
+    const fileExists = fs.existsSync(path);
     if (!fileExists) {
         throw new Error('Unable to find file (i.e. npm start <PATH_TO_CSV>)');
     }
-    if (!csvPath.endsWith('.csv')) {
+    if (!path.endsWith('.csv')) {
         throw new Error('Did not receive a file with a CSV extension');
     }
-    const fileContent = fs.readFileSync(csvPath, 'utf8').split("\r\n");
+    const fileContent = fs.readFileSync(path, 'utf8').split("\r\n");
     const isFirstLineHeader = !(isDatabricksUrl(fileContent[0]));
     return {
+        csvPath: path,
         csvHeader: isFirstLineHeader ? fileContent[0] : undefined,
-        csvInput: isFirstLineHeader ? fileContent.slice(1) : fileContent,
+        csvRows: isFirstLineHeader ? fileContent.slice(1) : fileContent,
     };
-};
+}
 
-function createFile(outputDir, inputPath, initialContent) {
-    const outputDirExists = fs.existsSync(outputDir);
-    if (!outputDirExists) {
-        fs.mkdirSync(outputDir);
+async function getKeyvaultSecrets() {
+    const keyvault = new keyvaultService(process.env.KEYVAULT_URL, 'CLI');
+    await keyvault.connect();
+    const tenantId = await keyvault.getSecret('TenantID');
+    const clientId = await keyvault.getSecret('AppClientID');
+    const clientSecret = await keyvault.getSecret('AppClientSecret');
+    if (!tenantId || !clientId || !clientSecret) {
+        throw new Error('Missing Key Vault Secrets (tenantId, clientId, clientSecret)');
     }
-    const outputPath = outputDir + '/' + inputPath.split('/')[inputPath.split('/').length - 1];
-    const fileExists = fs.existsSync(outputPath);
-    if (!fileExists) {
-        fs.writeFileSync(outputPath, initialContent);
-    }
-    return outputPath;
+    return { tenantId, clientId, clientSecret };
 }
 
 const graphCalls = [
@@ -103,11 +104,30 @@ async function promisfySyncCall(csvLine, sharedParams) {
     });
 }
 
-const execCsv = async (code) => {
+function createFile(outputDir, inputPath, initialContent) {
+    const outputDirExists = fs.existsSync(outputDir);
+    if (!outputDirExists) {
+        fs.mkdirSync(outputDir);
+    }
+    const outputPath = outputDir + '/' + inputPath.split('/')[inputPath.split('/').length - 1];
+    const fileExists = fs.existsSync(outputPath);
+    if (!fileExists) {
+        fs.writeFileSync(outputPath, initialContent);
+    }
+    return outputPath;
+}
+
+const startSync = (secrets, { csvPath, csvHeader, csvRows }) => async (code) => {
     console.log('Processing...');
     try {
-        const csvInputPath = process.argv[2];
-        const tokens = await graph.postAccessToken({ code, host: signin.host }).then(syncCallbacks.postAccessToken);
+        const { tenantId, clientId, clientSecret } = secrets;
+        const tokens = await graph.postAccessToken({
+            code,
+            host: signin.host,
+            tenantId,
+            clientId,
+            clientSecret,
+        }).then(syncCallbacks.postAccessToken);
         // TODO: Account for required token refreshing with graph.postRefreshAccessToken
 
         const sharedParams = {
@@ -115,14 +135,13 @@ const execCsv = async (code) => {
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
             ...tokens
         };
-        const { csvHeader, csvInput } = getCsv(csvInputPath);
-        const syncAllStatus = await Promise.all(csvInput.map((csvLine) => promisfySyncCall(csvLine, sharedParams)));
+        const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
         console.log('Creating output file...');
         const initialOutputContent = `Execution Date (UTC),${csvHeader},${graphCalls.map(({ graphCall }) => graphCall.name).join(',')}`;
-        const csvOutputPath = createFile('./outputs', csvInputPath, initialOutputContent);
+        const csvOutputPath = createFile('./outputs', csvPath, initialOutputContent);
         for (let i = 0; i < syncAllStatus.length; i++) {
-            fs.appendFileSync(csvOutputPath, `\r\n${new Date()},${csvInput[i]},${syncAllStatus[i].join(',')}`);
+            fs.appendFileSync(csvOutputPath, `\r\n${new Date()},${csvRows[i]},${syncAllStatus[i].join(',')}`);
         }
 
         console.log('Complete...');
@@ -133,11 +152,20 @@ const execCsv = async (code) => {
     process.exit(0);
 };
 
-try {
-    console.log('Press ^C at any time to quit.');
-    console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
-    console.log(signin.redirectLoginUrl);
-    signin.startApp(execCsv);
-} catch(err) {
-    console.error(err);
+async function main() {
+    try {
+        console.log('Checking input file...');
+        const csvInputPath = process.argv[2];
+        const csvInput = getCsvInputs(csvInputPath);
+        console.log('Getting key vault secrets...');
+        const secrets = await getKeyvaultSecrets();
+        console.log('Press ^C at any time to quit.');
+        console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
+        console.log(signin.redirectLoginUrl(secrets));
+        signin.startApp(startSync(secrets, csvInput));
+    } catch(err) {
+        console.error(err);
+    }
 }
+
+main();

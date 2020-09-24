@@ -4,7 +4,7 @@ const { getRedirectLoginUrl } = require('@databricks-scim-automation/graph');
 
 const port = process.env.PORT || 8000;
 const host = `localhost:${port}`;
-const redirectLoginUrl = getRedirectLoginUrl({ host });
+const redirectLoginUrl = params => getRedirectLoginUrl({ host, ...params });
 const app = express();
 
 const startApp = (cb) => {
