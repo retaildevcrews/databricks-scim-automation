@@ -1,5 +1,6 @@
 const express = require('express');
 const { getHomepage } = require('./controllers/homepage');
+const { getKeyvaultSecrets } = require('./controllers/keyvault');
 const {
     getRedirectLogin,
     postAccessToken,
@@ -21,6 +22,7 @@ const { sendDefault } = require('./controllers/default');
 const app = express();
 
 app.get('/', getHomepage);
+app.get('/keyvault', getKeyvaultSecrets);
 app.get('/login', getRedirectLogin);
 app.post('/accessToken', postAccessToken);
 app.post('/refreshAccessToken', postRefreshAccessToken);

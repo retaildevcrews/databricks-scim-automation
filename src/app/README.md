@@ -41,6 +41,14 @@
   * If file already exists, logs will be appended to content
   * Status of 'n/a' indicates that the step was not excuted because a previous step in the sync had failed
 
+## Run GUI
+
+* Run the GUI: `npm run start:gui`
+* Open browser: localhost:1337
+* Login must be by a user of the application inorder to obtain a token with required delegated application permissions
+* Fill out inputs with `**` beside them
+* Default inputs gets value from .env file
+
 ## End User Notes
 
 * There is no restriction on duplicating SCIM connector gallery app name, which may make managing difficult in the future.

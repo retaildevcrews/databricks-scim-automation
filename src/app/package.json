@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
+    "start:gui": "nodemon src/gui/index.js",
     "dev": "nodemon src/index.js ./mocks/syncs.csv",
     "lint": "eslint ./"
   },
@@ -28,6 +29,7 @@
     "@databricks-scim-automation/graph": "file:../graph-wrapper",
     "@databricks-scim-automation/signin": "file:../signin",
     "bluebird": "^3.7.2",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1"
   }
 }

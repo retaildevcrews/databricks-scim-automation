@@ -3,9 +3,9 @@ const fs = require('fs');
 const Promise = require('bluebird');
 const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
-const keyvaultService = require('./keyvaultService');
+const { getKeyvaultSecrets } = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
-const { tokenSettings } = require('../config');
+const { keyvaultSettings, tokenSettings } = require('../config');
 
 const isDatabricksUrl = (url) => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
@@ -24,18 +24,6 @@ function getCsvInputs(path) {
         csvHeader: isFirstLineHeader ? fileContent[0] : undefined,
         csvRows: isFirstLineHeader ? fileContent.slice(1) : fileContent,
     };
-}
-
-async function getKeyvaultSecrets() {
-    const keyvault = new keyvaultService(process.env.KEYVAULT_URL, 'CLI');
-    await keyvault.connect();
-    const tenantId = await keyvault.getSecret('TenantID');
-    const clientId = await keyvault.getSecret('AppClientID');
-    const clientSecret = await keyvault.getSecret('AppClientSecret');
-    if (!tenantId || !clientId || !clientSecret) {
-        throw new Error('Missing Key Vault Secrets (tenantId, clientId, clientSecret)');
-    }
-    return { tenantId, clientId, clientSecret };
 }
 
 const graphCalls = [
@@ -118,18 +106,22 @@ function createFile(outputDir, inputPath, initialContent) {
 
 const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCode, databricksAuthCode }) => {
     console.log('Processing...');
+    const tokenParams = {
+        tenantId: secrets[keyvaultSettings.TENANT_ID_KEY],
+        clientId: secrets[keyvaultSettings.CLIENT_ID_KEY],
+        clientSecret: secrets[keyvaultSettings.CLIENT_SECRET_KEY],
+        host: signin.host,
+    };
     try {
         const graphTokens = await graph.postAccessToken({
-            ...secrets,
+            ...tokenParams,
             code: graphAuthCode,
-            host: signin.host,
             scope: tokenSettings.GRAPH_SCOPE,
         }).then(syncCallbacks.postAccessToken);
 
         const databricksTokens = await graph.postAccessToken({
-            ...secrets,
+            ...tokenParams,
             code: databricksAuthCode,
-            host: signin.host,
             scope: tokenSettings.DATABRICKS_SCOPE,
         }).then(syncCallbacks.postAccessToken);
         // TODO: Account for required token refreshing with graph.postRefreshAccessToken
@@ -164,9 +156,20 @@ async function main() {
         console.log('Checking input file...');
         const csvInputPath = process.argv[2];
         const csvInput = getCsvInputs(csvInputPath);
+
         console.log('Getting key vault secrets...');
+<<<<<<< HEAD
         const secrets = await getKeyvaultSecrets();
 
+=======
+        const keys = [
+            keyvaultSettings.TENANT_ID_KEY,
+            keyvaultSettings.CLIENT_ID_KEY,
+            keyvaultSettings.CLIENT_SECRET_KEY,
+        ];
+        const secrets = await getKeyvaultSecrets(process.env.KEYVAULT_URL, keys);
+        
+>>>>>>> Move GUI from spike/interfaces to app
         // set up express app to get authentication code
         let graphAuthCode; let
 databricksAuthCode;

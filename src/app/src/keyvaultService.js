@@ -1,6 +1,7 @@
 const { SecretClient } = require('@azure/keyvault-secrets');
 const msRestNodeAuth = require('@azure/ms-rest-nodeauth');
 const azureIdentity = require('@azure/identity');
+const Promise = require('bluebird');
 const { keyvaultSettings } = require('../config');
 
 class keyvaultService {
@@ -50,4 +51,23 @@ class keyvaultService {
     }
 }
 
+<<<<<<< HEAD
 module.exports = keyvaultService;
+=======
+async function getKeyvaultSecrets(url, keys) {
+    const keyvault = new keyvaultService(url, 'CLI');
+    await keyvault.connect();
+    return Promise.map(keys, async key => await keyvault.getSecret(key))
+        .then(secrets => (
+            secrets.map(secret => {
+                if (!secret) { throw new Error('Missing Key Vault Secrets') }
+                return secret;
+            }).reduce((agg, secret, index) => ({ ...agg, [keys[index]]: secret}), {})
+        ))
+}
+
+module.exports = {
+    keyvaultService,
+    getKeyvaultSecrets,
+};
+>>>>>>> Move GUI from spike/interfaces to app

@@ -9,7 +9,7 @@ const graph = require('@databricks-scim-automation/graph');
  */
 async function postScimConnectorGalleryApp(req, res) {
     try {
-        const accessToken = req.headers.authorization;
+        const accessToken = req.headers['x-access-token'];
         const { query: { galleryAppTemplateId, galleryAppName } } = url.parse(req.url, true);
         const response = await graph.postScimConnectorGalleryApp({ accessToken, galleryAppTemplateId, galleryAppName });
         const contentType = response.headers._headers['content-type'][0];

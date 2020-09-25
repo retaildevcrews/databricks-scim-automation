@@ -1,5 +1,8 @@
 const keyvaultSettings = {
     CONNECTION_RETRIES: 90,
+    TENANT_ID_KEY: 'TenantID',
+    CLIENT_ID_KEY: 'AppClientID',
+    CLIENT_SECRET_KEY: 'AppClientSecret',
 };
 
 const tokenSettings = {

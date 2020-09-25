@@ -9,8 +9,9 @@ const graph = require('@databricks-scim-automation/graph');
  */
 function getRedirectLogin(req, res) {
     const { headers: { origin, host } } = req;
-    const redirectUrl = graph.getRedirectLoginUrl({ origin, host });
-    res.redirect(redirectUrl);
+    const { query: { tenantId, clientId } } = url.parse(req.url, true);
+    const redirectUrl = graph.getRedirectLoginUrl({ origin, host, tenantId, clientId });
+    res.send(redirectUrl);
 }
 
 /**
@@ -21,9 +22,9 @@ function getRedirectLogin(req, res) {
  */
 async function postAccessToken(req, res) {
     try {
-        const { query: { code } } = url.parse(req.url, true);
-        const { headers: { origin, host } } = req;
-        const response = await graph.postAccessToken({ code, origin, host })
+        const { query: { code, tenantId, clientId } } = url.parse(req.url, true);
+        const { headers: { origin, host, ['x-client-secret']: clientSecret } } = req;
+        const response = await graph.postAccessToken({ code, origin, host, tenantId, clientId, clientSecret });
 
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -43,8 +44,14 @@ async function postAccessToken(req, res) {
  */
 async function postRefreshAccessToken(req, res) {
     try {
-        const { headers: { authorization: refreshToken, origin, host } } = req;
-        const response = await graph.postRefreshAccessToken({ refreshToken, origin, host });
+        const { headers: {
+            ['x-refresh-token']: refreshToken,
+            ['x-client-secret']: clientSecret,
+            origin,
+            host,
+        } } = req;
+        const { query: { tenantId, clientId } } = url.parse(req.url, true);
+        const response = await graph.postRefreshAccessToken({ refreshToken, origin, host, tenantId, clientId, clientSecret });
         const contentType = response.headers._headers['content-type'][0];
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(JSON.stringify(body));

@@ -32,12 +32,32 @@
     <body>
         <div id="gui">
             <h3>Microsoft Graph API</h3>
-            <div id="auth" class="outline">
+            <div id="authcode" class="outline">
+                <label>Key Vault URL: </label><input type="text" class="keyvault-url" value=default />
+                <br /><br />
+                <button class="keyvault-secrets">Get Key Vault Secrets</button>
+                <br /><br />
+                <label>Tenant ID: </label><input type="text" class="tenant-id" />
+                <br /><br />
+                <label>Client ID: </label><input type="text" class="client-id" />
+                <br /><br />
                 <button id="login">Login</button>
+            </div>
+            <div id="token" class="outline">
+                <label>Key Vault URL: </label><input type="text" class="keyvault-url" value=default />
+                <br /><br />
+                <button class="keyvault-secrets">Get Key Vault Secrets</button>
+                <br /><br />
+                <label>Tenant ID: </label><input type="text" class="tenant-id" />
+                <br /><br />
+                <label>Client ID: </label><input type="text" class="client-id" />
+                <br /><br />
+                <label>Client Secret: </label><input type="text" class="client-secret" />
+                <br /><br />
+                <label>Authentication Code: </label><input type="text" id="auth-code" />
                 <br /><br />
                 <button id="post-access-token">Create Access Token</button>
-            </div>
-            <div id="refresh" class="outline">
+                <br /><br />
                 <label>Access Token: </label><span class="token-expiration">0</span> seconds
                 <input type="text" class="access-token" />
                 <br /><br />
@@ -164,12 +184,63 @@
 
         // Log: User Login Status
         addToLog(getCodeValueFromUrl() ? 'Logged in...' : 'Not logged in...');
+        if (getCodeValueFromUrl()) {
+            const authCodeElement = document.querySelector('#token input#auth-code');
+            authCodeElement.value = getCodeValueFromUrl();
+        }
+
+        // Get key vault secrets, tenant ID, client ID, and client secret
+        async function getKeyvaultSecrets(boxId) {
+            try {
+                addToLog('<br />Getting key vault secrets (tenant id, client id, and client secret)...');
+                const keyvaultUrl = document.querySelector(`${boxId} input.keyvault-url`).value;
+                if (!keyvaultUrl) {
+                    return logMissingInputs([{
+                        value: keyvaultUrl,
+                        message: `Key vault url required to get key vault secrets...`,
+                    }]);
+                }
+                const response = await fetch(`${document.location.origin}/keyvault?url=${encodeURI(keyvaultUrl)}`);
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 200) {
+                    // Display key vault secrets
+                    const tenantIdElements = document.querySelectorAll('input.tenant-id');
+                    tenantIdElements.forEach(element => element.value = body.TenantID);
+                    const clientIdElements = document.querySelectorAll('input.client-id');
+                    clientIdElements.forEach(element => element.value = body.AppClientID);
+                    const clientSecretElements = document.querySelectorAll('input.client-secret');
+                    clientSecretElements.forEach(element => element.value = body.AppClientSecret);
+                    addToLog(`Fetched secrets from key vault: tenant ID (${body.TenantID}), client ID (${body.AppClientID}), client secret (${body.AppClientSecret})...`);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while fetching key vault secrets...');
+            }
+        }
+        document.querySelector('#authcode button.keyvault-secrets').onclick = () => getKeyvaultSecrets('#authcode');
+        document.querySelector('#token button.keyvault-secrets').onclick = () => getKeyvaultSecrets('#token');
 
         // Login to Create Code for Access Token
-        function redirectToLogin() {
-            return window.location.href = document.location.origin + '/login';
+        async function redirectToLogin() {
+            addToLog('<br />Redirecting to signin portal..');
+            const tenantId = document.querySelector('#authcode input.tenant-id').value;
+            const clientId = document.querySelector('#authcode input.client-id').value;
+            if (!tenantId || !clientId) {
+                return logMissingInputs([{
+                    value: tenantId,
+                    message: `Tenant id required to redirect to signin portal...`,
+                }, {
+                    value: clientId,
+                    message: `Client id required to redirect to signin portal...`,
+                }]);
+            }
+            const signinUrl = await fetch(`${document.location.origin}/login?tenantId=${tenantId}&clientId=${clientId}`);
+            return window.location.href = await signinUrl.text();
         }
-        const loginElement = document.querySelector('#auth button#login');
+        const loginElement = document.querySelector('#authcode button#login');
         loginElement.onclick = redirectToLogin;
 
         // Logs Messages for Missing Values
@@ -203,56 +274,28 @@
         async function postAccessToken() {
             try {
                 addToLog('<br />Creating access token...');
-                let code = getCodeValueFromUrl();
-                if (!code) {
+                const code = getCodeValueFromUrl();
+                const tenantId = document.querySelector('#token input.tenant-id').value;
+                const clientId = document.querySelector('#token input.client-id').value;
+                const clientSecret = document.querySelector('#token input.client-secret').value;
+                if (!code || !tenantId || !clientId || !clientSecret) {
                     return logMissingInputs([{
                         value: code,
                         message: `Login required to get access token...`,
+                    }, {
+                        value: tenantId,
+                        message: `Key vault secrets required to get access token...`,
+                    }, {
+                        value: clientId,
+                        message: `Key vault secrets required to get access token...`,
+                    }, {
+                        value: clientSecret,
+                        message: `Key vault secrets required to get access token...`,
                     }]);
                 }
-                const response = await fetch(`${document.location.origin}/accessToken?code=${code}`, { method: 'POST' });
-                const contentType = response.headers.get('content-type');
-                const body = contentType.includes('json') ? await response.json() : await response.text();
-                if (response.status === 200) {
-                    // Display access token
-                    const accessTokenElements = document.querySelectorAll('input.access-token');
-                    accessTokenElements.forEach(element => element.value = body.access_token);
-                    addToLog(`Created access token: ${body.access_token}...`);
-                    // Display refresh token
-                    const refreshTokenElement = document.querySelector('input#refresh-token');
-                    refreshTokenElement.value = body.refresh_token;
-                    setAccessTokenTimer(body.expires_in);
-                    setTimeout(() => {
-                        clearInterval(accessTokenTimer);
-                        addToLog('<br />ACCESS TOKEN HAS EXPIRED...');
-                    }, body.expires_in * 1000);
-                } else if (response.status === 400 || response.status === 404) {
-                    addToLog(response.statusText + ': ' + body.error_description);
-                } else if (response.status === 401) {
-                    addToLog(response.statusText + ': ' + body.error.code);
-                } else {
-                    addToLog(response.statusText + ': ' + body);
-                }
-            } catch (err) {
-                console.error(err);
-                addToLog('Error while fetching access token...');
-            }
-        }
-        document.querySelector('#auth button#post-access-token').onclick = postAccessToken;
-        
-        async function postRefreshAccessToken() {
-            try {
-                addToLog('<br />Refreshing access token...');
-                let refreshToken = document.querySelector('#refresh input#refresh-token').value;
-                if (!refreshToken) {
-                    return logMissingInputs([{
-                        value: refreshToken,
-                        message: `Refresh token required to get access token...`,
-                    }]);
-                }
-                const response = await fetch(`${document.location.origin}/refreshAccessToken`, {
+                const response = await fetch(`${document.location.origin}/accessToken?code=${code}&tenantId=${tenantId}&clientId=${clientId}`, {
                     method: 'POST',
-                    headers: { Authorization: refreshToken }
+                    headers: { 'X-Client-Secret': clientSecret },
                 });
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -281,7 +324,65 @@
                 addToLog('Error while fetching access token...');
             }
         }
-        document.querySelector('#refresh button#post-refresh-token').onclick = postRefreshAccessToken;
+        document.querySelector('#token button#post-access-token').onclick = postAccessToken;
+        
+        async function postRefreshAccessToken() {
+            try {
+                addToLog('<br />Refreshing access token...');
+                const refreshToken = document.querySelector('#token input#refresh-token').value;
+                const tenantId = document.querySelector('#token input.tenant-id').value;
+                const clientId = document.querySelector('#token input.client-id').value;
+                const clientSecret = document.querySelector('#token input.client-secret').value;
+                if (!refreshToken || !tenantId || !clientId || !clientSecret) {
+                    return logMissingInputs([{
+                        value: refreshToken,
+                        message: `Refresh token required to get access token...`,
+                    }, {
+                        value: tenantId,
+                        message: `Key vault secrets required to get access token...`,
+                    }, {
+                        value: clientId,
+                        message: `Key vault secrets required to get access token...`,
+                    }, {
+                        value: clientSecret,
+                        message: `Key vault secrets required to get access token...`,
+                    }]);
+                }
+                const response = await fetch(`${document.location.origin}/refreshAccessToken?tenantId=${tenantId}&clientId=${clientId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Refresh-Token': refreshToken,
+                        'X-Client-Secret': clientSecret,
+                    }
+                });
+                const contentType = response.headers.get('content-type');
+                const body = contentType.includes('json') ? await response.json() : await response.text();
+                if (response.status === 200) {
+                    // Display access token
+                    const accessTokenElements = document.querySelectorAll('input.access-token');
+                    accessTokenElements.forEach(element => element.value = body.access_token);
+                    addToLog(`Created access token: ${body.access_token}...`);
+                    // Display refresh token
+                    const refreshTokenElement = document.querySelector('input#refresh-token');
+                    refreshTokenElement.value = body.refresh_token;
+                    setAccessTokenTimer(body.expires_in);
+                    setTimeout(() => {
+                        clearInterval(accessTokenTimer);
+                        addToLog('<br />ACCESS TOKEN HAS EXPIRED...');
+                    }, body.expires_in * 1000);
+                } else if (response.status === 400 || response.status === 404) {
+                    addToLog(response.statusText + ': ' + body.error_description);
+                } else if (response.status === 401) {
+                    addToLog(response.statusText + ': ' + body.error.code);
+                } else {
+                    addToLog(response.statusText + ': ' + body);
+                }
+            } catch (err) {
+                console.error(err);
+                addToLog('Error while fetching access token...');
+            }
+        }
+        document.querySelector('#token button#post-refresh-token').onclick = postRefreshAccessToken;
  
         // POST instance of scim connector from AAD app gallery into directory
         // createSCIMApp needs appName and scimAppTemplateId
@@ -302,7 +403,7 @@
                 }
                 const response = await fetch(
                     encodeURI(`${document.location.origin}/scimConnectorGalleryApp?galleryAppTemplateId=${scimAppTemplateId}&galleryAppName=${scimConnectorGalleryAppName}`),
-                    { method: 'POST', headers: { Authorization: accessToken } },
+                    { method: 'POST', headers: { 'X-Access-Token': accessToken } },
                 );
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -341,7 +442,7 @@
                 }
                 const response = await fetch(`${document.location.origin}/aadGroups?filterAadGroupDisplayName=${encodeURIComponent(filterAadGroupDisplayName)}`, {
                     method: 'GET',
-                    headers: { Authorization: accessToken }
+                    headers: { 'X-Access-Token': accessToken }
                 })
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -397,7 +498,7 @@
                 }
                 const response = await fetch(`${document.location.origin}/servicePrincipal?servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
                     method: 'GET',
-                    headers: { Authorization: accessToken }
+                    headers: { 'X-Access-Token': accessToken }
                 })
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -465,7 +566,7 @@
                 .join('&');
                 const response = await fetch(`${document.location.origin}/aadGroupToScim?${parameters}`, {
                     method: 'POST',
-                    headers: { Authorization: accessToken },
+                    headers: { 'X-Access-Token': accessToken },
                 });
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -504,7 +605,7 @@
                 }
                 const response = await fetch(`${document.location.origin}/createSyncJob?syncJobTemplateId=${encodeURIComponent(jobTemplateId)}&servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}`, {
                     method: 'POST',
-                    headers: { Authorization: accessToken },
+                    headers: { 'X-Access-Token': accessToken },
                 });
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
@@ -555,7 +656,7 @@
                 .join('&');
                 const response = await fetch(`${document.location.origin}/validateCredentials?${parameters}`, {
                     method: 'POST',
-                    headers: { Authorization: accessToken, 'X-Databricks-Pat': databricksPat },
+                    headers: { 'X-Access-Token': accessToken, 'X-Databricks-Pat': databricksPat },
                 });
                 if (response.status === 204) {
                     addToLog(`Successfully validated credentials...`);
@@ -599,7 +700,7 @@
                 .join('&');
                 const response = await fetch(`${document.location.origin}/saveCredentials?${parameters}`, {
                     method: 'PUT',
-                    headers: { Authorization: accessToken, 'X-Databricks-Pat': databricksPat },
+                    headers: { 'X-Access-Token': accessToken, 'X-Databricks-Pat': databricksPat },
                 });
                 if (response.status === 204) {
                     addToLog(`Successfully saved credentials...`);
@@ -636,7 +737,7 @@
                 }
                 const response = await fetch(`${document.location.origin}/startSyncJob?servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
                     method: 'POST',
-                    headers: { Authorization: accessToken },
+                    headers: { 'X-Access-Token': accessToken },
                 });
                 if (response.status === 204) {
                     addToLog(`Successfully started sync job...`);
@@ -673,7 +774,7 @@
                 }
                 const response = await fetch(`${document.location.origin}/syncJobStatus?servicePrincipalId=${encodeURIComponent(scimServicePrincipalObjectId)}&syncJobId=${encodeURIComponent(syncJobId)}`, {
                     method: 'GET',
-                    headers: { Authorization: accessToken },
+                    headers: { 'X-Access-Token': accessToken },
                 });
                 const contentType = response.headers.get('content-type');
                 const body = contentType.includes('json') ? await response.json() : await response.text();
