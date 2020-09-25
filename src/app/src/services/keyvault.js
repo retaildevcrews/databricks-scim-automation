@@ -1,11 +1,11 @@
+const Promise = require('bluebird');
 const { SecretClient } = require('@azure/keyvault-secrets');
 const msRestNodeAuth = require('@azure/ms-rest-nodeauth');
 const azureIdentity = require('@azure/identity');
-const Promise = require('bluebird');
-const { keyvaultSettings } = require('../config');
+const { keyvaultSettings } = require('../../config');
 
-class keyvaultService {
-    // creates a new instance of the KeyvaultService class
+class Keyvault {
+    // creates a new instance of the Keyvault class
     constructor(url, authType) {
         this.url = url;
         this.authType = authType;
@@ -44,7 +44,7 @@ class keyvaultService {
                     // wait 1 second and retry (continue while loop)
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                 } else {
-                    throw new Error('Failed to connect to Keyvault with MI');
+                    throw e;
                 }
             }
         }
@@ -55,7 +55,7 @@ class keyvaultService {
 module.exports = keyvaultService;
 =======
 async function getKeyvaultSecrets(url, keys) {
-    const keyvault = new keyvaultService(url, 'CLI');
+    const keyvault = new Keyvault(url, 'CLI');
     await keyvault.connect();
     return Promise.map(keys, async key => await keyvault.getSecret(key))
         .then(secrets => (
@@ -67,7 +67,7 @@ async function getKeyvaultSecrets(url, keys) {
 }
 
 module.exports = {
-    keyvaultService,
+    Keyvault,
     getKeyvaultSecrets,
 };
 >>>>>>> Move GUI from spike/interfaces to app

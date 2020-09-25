@@ -1,20 +1,15 @@
-const log = require('./log');
-const { keepFetching } = require('./helpers');
+const { keepFetching, log } = require('../helpers');
 
 // Checks if created valid access and refresh tokens by redeeming sign-in code
 async function postAccessToken(response, stepsStatus, params) {
     const body = await response.json();
     if (response.status !== 200) {
-        stepsStatus = log.table(stepsStatus, { Action: 'postAccessToken', Status: 'Failed', Attempts: 1 });
         throw new Error(`Unable to get tokens!\n${JSON.stringify(body)}`);
     }
-    params.accessToken = body.access_token;
-    params.refreshToken = body.refresh_token;
-    stepsStatus = log.table(stepsStatus, { Action: 'postAccessToken', Status: 'Success', Attempts: 1 });
-    return Promise.resolve({
+    return {
         accessToken: body.access_token,
         refreshToken: body.refresh_token,
-    });
+    };
 }
 
 // Checks if created instance of SCIM connector gallery app
@@ -44,33 +39,34 @@ async function getAadGroups(response, stepsStatus, params) {
 // Checks if received usable service principal data (appRoleId)
 // Will keep trying until hits max number of retries
 async function getServicePrincipal(response, stepsStatus, params, graphCall ) {
-    let attempts = 0;
-    const failed = (body) => {
+    let attempts = 1;
+    stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Waiting...', Attempts: attempts });
+    const failedCallback = (body) => {
         stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Failed', Attempts: 5 });
         throw new Error(`Could not get app role ID from service principal!\n${JSON.stringify(body)}`);
     };
     const hasStatusErred = (status) => {
         attempts += 1;
         const hasErred = status !== 200;
-        if (hasErred) { stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Waiting...', Attempts: attempts }) }
+        if (hasErred) {
+            stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Waiting...', Attempts: attempts });
+        }
         return hasErred; 
     }
     const hasBodyErred = (body) => {
         const hasErred = body.appRoles.filter(({ isEnabled, origin, displayName }) => (isEnabled && origin === 'Application' && displayName === 'User')).length === 0;
-        if (hasErred) { stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Waiting...', Attempts: attempts }) }
+        if (hasErred) {
+            stepsStatus = log.table(stepsStatus, { Action: 'getServicePrincipal', Status: 'Waiting...', Attempts: attempts })
+        }
         return hasErred;
     }
-    const keepGettingServicePrincipal = keepFetching(
-        () => graphCall(params),
-        failed,
+    const repeatedArgs = {
+        fn: () => graphCall(params),
+        failedCallback,
         hasStatusErred,
-        hasBodyErred
-    );
-    let body = await response.json();
-    // Check if initial call failed
-    if (hasStatusErred(response.status) || hasBodyErred(body)) {
-        body = await keepGettingServicePrincipal(4, '');
-    }
+        hasBodyErred,
+    };
+    const body = await keepFetching(repeatedArgs)(5, response).then(async res => await res.json());
     params.appRoleId = body.appRoles.filter(({ isEnabled, origin, displayName }) => (
         isEnabled && origin === 'Application' && displayName === 'User'
     ))[0].id;
@@ -99,6 +95,18 @@ async function postCreateServicePrincipalSyncJob(response, stepsStatus, params) 
     params.syncJobId = body.id;
     stepsStatus = log.table(stepsStatus, { Action: 'postCreateServicePrincipalSyncJob', Status: 'Success', Attempts: 1 });
     return Promise.resolve({ syncJobId: body.id });
+}
+
+// Checks if able to successfully created Databricks PAT
+async function postCreateDatabricksPat(response, stepsStatus, params) {
+    const body = await response.json();
+    if (response.status !== 200) {
+        stepsStatus = log.table(stepsStatus, { Action: 'postCreateDatabricksPat', Status: 'Failed', Attempts: 1 });
+        throw new Error(`Could not create a databricks workspace pat!\n${JSON.stringify(body)}`);
+    }
+    params.databricksPat = body.token_value;
+    stepsStatus = log.table(stepsStatus, { Action: 'postCreateDatabricksPat', Status: 'Success', Attempts: 1 });
+    return Promise.resolve({ databricksPat: body.token_value });
 }
 
 // Checks if able to successfully validate credentials to connect with databricks workspace 
@@ -141,6 +149,7 @@ module.exports = {
     getServicePrincipal,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
+    postCreateDatabricksPat,
     postValidateServicePrincipalCredentials,
     putSaveServicePrincipalCredentials,
     postStartServicePrincipalSyncJob,

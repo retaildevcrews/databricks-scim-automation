@@ -15,18 +15,18 @@ function getRedirectLogin(req, res) {
 }
 
 /**
- * Sends an access token
+ * Sends an graph access token
  * @param {Object} req Express request
  * @param {Object} res Express response
  * @return {void}
  */
-async function postAccessToken(req, res) {
+async function postGraphAccessToken(req, res) {
     try {
         const { query: { code, tenantId, clientId } } = url.parse(req.url, true);
         const { headers: { origin, host, ['x-client-secret']: clientSecret } } = req;
         const response = await graph.postAccessToken({ code, origin, host, tenantId, clientId, clientSecret });
 
-        const contentType = response.headers._headers['content-type'][0];
+        const contentType = response.headers.get('content-type');
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(JSON.stringify(body));
     } catch(err) {
@@ -37,12 +37,12 @@ async function postAccessToken(req, res) {
 }
 
 /**
- * Sends a refreshed the access token
+ * Sends a refreshed the graph access token
  * @param {Object} req Express request 
  * @param {Object} res Express response
  * @return {void}
  */
-async function postRefreshAccessToken(req, res) {
+async function postRefreshGraphAccessToken(req, res) {
     try {
         const { headers: {
             ['x-refresh-token']: refreshToken,
@@ -52,7 +52,7 @@ async function postRefreshAccessToken(req, res) {
         } } = req;
         const { query: { tenantId, clientId } } = url.parse(req.url, true);
         const response = await graph.postRefreshAccessToken({ refreshToken, origin, host, tenantId, clientId, clientSecret });
-        const contentType = response.headers._headers['content-type'][0];
+        const contentType = response.headers.get('content-type');
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(JSON.stringify(body));
     } catch(err) {
@@ -65,6 +65,6 @@ async function postRefreshAccessToken(req, res) {
 
 module.exports = {
     getRedirectLogin,
-    postAccessToken,
-    postRefreshAccessToken,
+    postGraphAccessToken,
+    postRefreshGraphAccessToken,
 };

@@ -11,9 +11,9 @@ const graph = require('@databricks-scim-automation/graph');
 async function getAadGroups(req, res) {
     try {
         const { query: { filterAadGroupDisplayName } } = url.parse(req.url, true);
-        const accessToken = req.headers['x-access-token'];
-        const response = await graph.getAadGroups({ accessToken, filterAadGroupDisplayName });
-        const contentType = response.headers._headers['content-type'][0];
+        const graphAccessToken = req.headers['x-graph-access-token'];
+        const response = await graph.getAadGroups({ graphAccessToken, filterAadGroupDisplayName });
+        const contentType = response.headers.get('content-type');
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(body);
     } catch (err) {

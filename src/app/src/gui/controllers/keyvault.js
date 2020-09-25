@@ -1,5 +1,5 @@
 const url = require('url');
-const keyvaultService = require('../../keyvaultService');
+const keyvaultService = require('../../services/keyvault');
 const { keyvaultSettings } = require('../../../config');
 
 async function getKeyvaultSecrets(req, res) {

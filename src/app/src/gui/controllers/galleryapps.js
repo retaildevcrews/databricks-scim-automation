@@ -9,10 +9,10 @@ const graph = require('@databricks-scim-automation/graph');
  */
 async function postScimConnectorGalleryApp(req, res) {
     try {
-        const accessToken = req.headers['x-access-token'];
+        const graphAccessToken = req.headers['x-graph-access-token'];
         const { query: { galleryAppTemplateId, galleryAppName } } = url.parse(req.url, true);
-        const response = await graph.postScimConnectorGalleryApp({ accessToken, galleryAppTemplateId, galleryAppName });
-        const contentType = response.headers._headers['content-type'][0];
+        const response = await graph.postScimConnectorGalleryApp({ graphAccessToken, galleryAppTemplateId, galleryAppName });
+        const contentType = response.headers.get('content-type');
         const body = contentType.includes('json') ? await response.json() : await response.text();
         // Use service principal object ID for other calls: body.servicePrincipal.objectId
         res.set('Content-Type', contentType).status(response.status).send(body);

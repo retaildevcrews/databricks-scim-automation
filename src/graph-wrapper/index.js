@@ -30,6 +30,8 @@ function getQueryParams(queryParams, shouldEncode = true) {
  * @param {Object} args
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
+ * @param {string} args.tenantId Organization's tenant ID
+ * @param {string} args.clientId App service's client ID
  * @return {string} Url for Microsoft login portal
  */
 function getRedirectLoginUrl({
@@ -57,9 +59,9 @@ function getRedirectLoginUrl({
  * @param {string} args.code Redeemable sign-in code from Microsoft login portal
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
- * @param {string} args.tenantId Tenant ID in Azure AD
- * @param {string} args.clientId The application (service principal) ID of the application
- * @param {string} args.clientSecret The secret generated for the application
+ * @param {string} args.tenantId Organization's tenant ID
+ * @param {string} args.clientId App service's client ID
+ * @param {string} args.clientSecret App service's client secret
  * @param {string|null} args.scope The scopes that the access_token is valid for
  * @return {external:RequestAnAccessTokenPromise|external:RequestDatabricksAccessTokenPromise}
  */
@@ -91,9 +93,9 @@ async function postAccessToken(params) {
  * @param {string} args.graphRefreshToken The token used to refresh the access token
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
- * @param {string} args.tenantId Tenant ID in Azure AD
- * @param {string} args.clientId The application (service principal) ID of the application
- * @param {string} args.clientSecret The secret generated for the application
+ * @param {string} args.tenantId Organization's tenant ID
+ * @param {string} args.clientId App service's client ID
+ * @param {string} args.clientSecret App service's client secret
  * @return {external:RefreshTheAccessTokenPromise}
  */
 async function postRefreshAccessToken(params) {
@@ -241,7 +243,7 @@ async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, g
     if (!databricksOrgId) {
         throw new Error('Unable to derive Databricks Org Id from Databricks URL');
     }
-    return await fetch(`${databricksUrl}api/2.0/token/create`, {
+    return await fetch(`${databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/'}api/2.0/token/create`, {
         agent: false,
         method: 'POST',
         headers: {
@@ -275,9 +277,14 @@ async function postValidateServicePrincipalCredentials({
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
+<<<<<<< HEAD
         body: JSON.stringify({
  credentials: [
             { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
+=======
+        body: JSON.stringify({ credentials: [
+            { key: 'BaseAddress', value: `${databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/'}api/2.0/preview/scim`},
+>>>>>>> Move CLI from spike/interfaces to app
             { key: 'SecretToken', value: databricksPat },
         ],
 }),
@@ -305,9 +312,14 @@ async function putSaveServicePrincipalCredentials({
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
+<<<<<<< HEAD
         body: JSON.stringify({
  value: [
             { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
+=======
+        body: JSON.stringify({ value: [
+            { key: 'BaseAddress', value: `${databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/'}api/2.0/preview/scim` },
+>>>>>>> Move CLI from spike/interfaces to app
             { key: 'SecretToken', value: databricksPat },
         ],
 }),

@@ -1,12 +1,12 @@
 const readline = require('readline');
 const log = require('./log');
 
-function quit() {
-    console.log("Press ^C at any time to quit.");
+function howToQuit() {
+    log.highlight("Press ^C at any time to quit.");
 }
 
-function signin(url) {
-    log.bold('Click on the following link to sign in: ');
+function howToSignin(url) {
+    log.bold('\nClick on the following link to sign in: ');
     console.log(url);
 }
 
@@ -14,9 +14,12 @@ const rl = readline.createInterface({ input: process.stdin, output: process.stdo
 
 function userInput(message, defaultInput) {
     const prompt = defaultInput ? `${log.boldFormat(message)}: (${defaultInput}) ` : `${log.boldFormat(message)}: `;
-    return new Promise((resolve, reject) => rl.question(prompt, input => {
+    return new Promise(resolve => rl.question(prompt, async(input) => {
         const answer = input || defaultInput;
-        answer ? resolve(answer) : reject(`Requires user input for ${message}!`);
+        if (answer) {
+            return resolve(answer);
+        }
+        return await resolve(userInput(`${message}!`));
     }));
 }
 
@@ -48,8 +51,8 @@ function closeUserInput() {
 }
 
 module.exports = {
-    quit,
-    signin,
+    howToQuit,
+    howToSignin,
     userInput,
     getUserInputs,
     closeUserInput,

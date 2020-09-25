@@ -20,7 +20,7 @@
 * Grant admin consent for Default Directory (if created via infra/terraform, app name is {scim_Name}-tf-sp)
   * Active Directory > App Registration > {Name of App Service Client} > API Permissions > Grant admin consent for Default Directory
 
-## Run App
+## Run CSV CLI App
 
 * Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
   * The order is important
@@ -30,16 +30,24 @@
   * If file already exists, logs will be appended to content
   * Status of 'n/a' indicates that the step was not excuted because a previous step in the sync had failed
 
-## Run App for Development
+## Run CSV CLI App for Development
 
 * Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
   * The order is important
   * Databricks Url format: https://adb-*.*.azuredatabricks.net
 * Save the CSV file as `./mocks/syncs.csv`
-* Execute `npm run dev`
+* Execute `npm run dev:csv`
 * Find completed logs at `./outputs/<input_csv_filename>`
   * If file already exists, logs will be appended to content
   * Status of 'n/a' indicates that the step was not excuted because a previous step in the sync had failed
+
+## Run Single CLI
+
+* `npm start`
+
+## Run Single CLI for Development
+
+* `npm run dev:cli`
 
 ## Run GUI
 
@@ -47,7 +55,6 @@
 * Open browser: localhost:1337
 * Login must be by a user of the application inorder to obtain a token with required delegated application permissions
 * Fill out inputs with `**` beside them
-* Default inputs gets value from .env file
 
 ## End User Notes
 

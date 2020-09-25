@@ -1,9 +1,19 @@
-function bold(message) {
-    console.log("\x1b[1m%s\x1b[0m", message);
-}
+const format = {
+    reset: '\x1b[0m',
+    bold: '\x1b[1m',
+    yellow: '\x1b[33m',
+};
 
 function boldFormat(message) {
-    return `\x1b[1m${message}\x1b[0m`;
+    return `${format.bold}${message}${format.reset}`;
+}
+
+function bold(message) {
+    console.log(boldFormat(message));
+}
+
+function highlight(message) {
+    return console.log(`${format.yellow}${boldFormat(message)}`);
 }
 
 function initialTable(syncSteps) {
@@ -24,6 +34,7 @@ function table(currentSteps, updatedStep) {
 module.exports = {
     bold,
     boldFormat,
+    highlight,
     initialTable,
     table,
 };
