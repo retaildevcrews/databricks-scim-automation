@@ -74,34 +74,6 @@ async function postAccessToken(params) {
     });
 }
 
-// /**
-//  * @external RequestDatabricksAccessTokenPromise
-//  * @see {@link https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/aad/service-prin-aad-token#--get-an-azure-active-directory-access-token}
-//  *
-//  * Returns Databricks access token
-//  * @param {Object} args
-//  * @param {string} args.code Redeemable sign-in code from Microsoft login portal
-//  * @param {string|null} args.origin Indicator whether origin is usable
-//  * @param {string} args.host Fallback for origin creation
-//  * @return {external:RequestDatabricksAccessTokenPromise}
-//  */
-// async function postDatabricksAccessToken(params) {
-//     const { code, origin, host } = params;
-//     const queryParams = [
-//         { key: 'client_id', value: clientIds.appService },
-//         { key: 'scope', value: '2ff814a6-3304-4ab8-85cb-cd0e6f879c1d/user_impersonation' },
-//         { key: 'redirect_uri', value: 'http://localhost:1337' },
-//         { key: 'grant_type', value: 'authorization_code' },
-//         { key: 'client_secret', value: clientSecrets.appService },
-//         { key: 'code', value: code },
-//     ];
-//     return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/x-www-form-urlencoded'},
-//         body: getQueryParams(queryParams),
-//     });
-// }
-
 /**
  * @external RefreshTheAccessTokenPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token}
@@ -250,7 +222,6 @@ async function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrin
  * @return {external:CreateDatabricksPatPromise}
  */
 async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, galleryAppName }) {
-    console.log('Databricks Access Token:', databricksAccessToken);
     const databricksOrgId = get({ match: databricksUrl.match(/adb-\d+/) }, 'match[0]', '').split('-')[1];
     if (!databricksOrgId) {
         throw new Error('Unable to derive Databricks Org Id from Databricks URL');
@@ -281,7 +252,6 @@ async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, g
  * @return {external:SynchronizationJobValidateCredentialsPromise}
  */
 async function postValidateServicePrincipalCredentials({ graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat }) {
-    console.log('databricks PAT:', databricksPat);
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
         method: 'POST',
         headers: {

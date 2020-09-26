@@ -6,8 +6,6 @@ const graph = require('@databricks-scim-automation/graph');
 const keyvaultService = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
 const { tokenSettings } = require('../config');
-// var graphTokens = '';
-// var databricksTokens = '';
 
 const isDatabricksUrl = url => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
@@ -136,15 +134,13 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, {graphAuthCod
             host: signin.host,
             scope: tokenSettings.DATABRICKS_SCOPE,
         }).then(syncCallbacks.postAccessToken);
-        // const tokens = await graph.postAccessToken({ code, host: signin.host }).then(syncCallbacks.postAccessToken);
-        // const databricksTokens = await graph.postDatabricksAccessToken({ code, host: signin.host }).then(syncCallbacks.postDatabricksAccessToken);
         // TODO: Account for required token refreshing with graph.postRefreshAccessToken
-
+  
         const sharedParams = {
             galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
-            graphToken: graphTokens.access_token,
-            databricksToken: databricksTokens.access_token,
+            graphAccessToken: graphTokens.access_token,
+            databricksAccessToken: databricksTokens.access_token,
         };
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
@@ -181,7 +177,7 @@ async function main() {
                 startSync(secrets, csvInput, {graphAuthCode, databricksAuthCode});
             })
             console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
-            console.log(signin.redirectLoginUrl);
+            console.log(signin.redirectLoginUrl(secrets));
         })
         signinApp.start();
 

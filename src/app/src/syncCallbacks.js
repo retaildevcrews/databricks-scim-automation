@@ -15,8 +15,8 @@ async function handleResponseErrors(response, successCode) {
 const postAccessToken = async (response) => {
     const body = await handleResponseErrors(response, 200);
     return Promise.resolve({
-        graphAccessToken: body.access_token,
-        graphRefreshToken: body.refresh_token,
+        access_token: body.access_token,
+        refresh_token: body.refresh_token,
     });
 }
 
@@ -24,8 +24,8 @@ const postAccessToken = async (response) => {
 const postDatabricksAccessToken = async (response) => {
     const body = await handleResponseErrors(response, 200);
     return Promise.resolve({
-        databricksAccessToken: body.access_token,
-        databricksRefreshToken: body.refresh_token,
+        access_token: body.access_token,
+        refresh_token: body.refresh_token,
     });
 }
 
