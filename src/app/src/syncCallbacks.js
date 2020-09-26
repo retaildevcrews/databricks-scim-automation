@@ -15,8 +15,8 @@ async function handleResponseErrors(response, successCode) {
 const postAccessToken = async (response) => {
     const body = await handleResponseErrors(response, 200);
     return Promise.resolve({
-        accessToken: body.access_token,
-        refreshToken: body.refresh_token,
+        graphAccessToken: body.access_token,
+        graphRefreshToken: body.refresh_token,
     });
 }
 
@@ -130,13 +130,10 @@ async function postCreateServicePrincipalSyncJob(response) {
 // Checks if able to successfully created Databricks PAT
 async function postCreateDatabricksPat(response) {
     //await handleResponseErrors(response, 204);
-    console.log({status: response.status, response});
     const body = await response.json();
-    console.log({body});
     return Promise.resolve({
         status: 'SUCCESS',
-        //params: { databricksPat: body.token_value },
-        params: {  },
+        params: { databricksPat: body.token_value }
     });
 }
 

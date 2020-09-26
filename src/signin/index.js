@@ -8,48 +8,77 @@ const host = `localhost:${port}`;
 const redirectLoginUrl = params => getRedirectLoginUrl({ host, ...params });
 const app = express();
 
-const startApp = (cb) => {
-    app.get('/', async (req, res) => {
-        // Gets sign-in code from URL
-        const { query: { code } } = url.parse(req.url, true);
-        if (!code) {
-            const errorMessage = 'Unable to get sign-in code!';
-            res.send(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // Notifies user
-        res.send('Successfully signed in!');
-        // Calls cb with code
+class SigninApp {
+    constructor() {
+        this.app = express();
+    }
+
+    start() {
+        app.get('/', (req, res) => {
+            // Gets sign-in code from URL
+            const { query: { code } } = url.parse(req.url, true);
+            if (!code) {
+                const errorMessage = 'Unable to get sign-in code!';
+                res.send(errorMessage);
+                throw new Error(errorMessage);
+            }
+            // Notifies user
+            res.send('Successfully signed in!');
+            // Calls cb with code
+            return this.cb(code)
+        });
+    
+        app.listen(port);
+    }
+
+    setCallback(callback) {
+        this.cb = callback;
+    }
+}
+
+// const startGraphApp = (cb) => {
+//     app.get('/', async (req, res) => {
+//         // Gets sign-in code from URL
+//         const { query: { code } } = url.parse(req.url, true);
+//         if (!code) {
+//             const errorMessage = 'Unable to get sign-in code!';
+//             res.send(errorMessage);
+//             throw new Error(errorMessage);
+//         }
+//         // Notifies user
+//         res.send('Successfully signed in!');
+//         // Calls cb with code
         
-        return cb(code)
-    });
+//         return cb(code)
+//     });
 
-    app.listen(port);
-};
+//     app.listen(port);
+// };
 
-const startDatabricksApp = (cb) => {
-    app1.get('/', async (req, res) => {
-        // Gets sign-in code from URL
-        const { query: { code } } = url.parse(req.url, true);
-        console.log('code received', code);
-        if (!code) {
-            const errorMessage = 'Unable to get sign-in code!';
-            res.send(errorMessage);
-            throw new Error(errorMessage);
-        }
-        // Notifies user
-        res.send('Successfully signed in!');
-        // Calls cb with code
+// const startDatabricksApp = (cb) => {
+//     app1.get('/', async (req, res) => {
+//         // Gets sign-in code from URL
+//         const { query: { code } } = url.parse(req.url, true);
+//         console.log('code received', code);
+//         if (!code) {
+//             const errorMessage = 'Unable to get sign-in code!';
+//             res.send(errorMessage);
+//             throw new Error(errorMessage);
+//         }
+//         // Notifies user
+//         res.send('Successfully signed in!');
+//         // Calls cb with code
         
-        return cb(code)
-    });
+//         return cb(code)
+//     });
 
-    app1.listen(databricksPort);
-};
+//     app1.listen(databricksPort);
+// };
 
 module.exports = {
-    startApp,
+    //startGraphApp,
     host,
     redirectLoginUrl,
-    startDatabricksApp
+    //startDatabricksApp,
+    SigninApp
 };

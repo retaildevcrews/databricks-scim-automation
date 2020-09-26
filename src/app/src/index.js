@@ -5,8 +5,9 @@ const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
 const keyvaultService = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
-var graphTokens = '';
-var databricksTokens = '';
+const { tokenSettings } = require('../config');
+// var graphTokens = '';
+// var databricksTokens = '';
 
 const isDatabricksUrl = url => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
@@ -31,7 +32,9 @@ async function getKeyvaultSecrets() {
     const keyvault = new keyvaultService(process.env.KEYVAULT_URL, 'CLI');
     await keyvault.connect();
     const tenantId = await keyvault.getSecret('TenantID');
+    console.log('tenantId:',tenantId);
     const clientId = await keyvault.getSecret('AppClientID');
+    console.log('clientId:',clientId);
     const clientSecret = await keyvault.getSecret('AppClientSecret');
     if (!tenantId || !clientId || !clientSecret) {
         throw new Error('Missing Key Vault Secrets (tenantId, clientId, clientSecret)');
@@ -117,16 +120,21 @@ function createFile(outputDir, inputPath, initialContent) {
     return outputPath;
 }
 
-const startSync = (secrets, { csvPath, csvHeader, csvRows }) => async (code) => {
+const startSync = async (secrets, { csvPath, csvHeader, csvRows }, {graphAuthCode, databricksAuthCode}) => {
     console.log('Processing...');
     try {
-        const { tenantId, clientId, clientSecret } = secrets;
-        const tokens = await graph.postAccessToken({
-            code,
+        const graphTokens = await graph.postAccessToken({
+            ...secrets,
+            code: graphAuthCode,
             host: signin.host,
-            tenantId,
-            clientId,
-            clientSecret,
+            scope: tokenSettings.GRAPH_SCOPE,
+        }).then(syncCallbacks.postAccessToken);
+
+        const databricksTokens = await graph.postAccessToken({
+            ...secrets,
+            code: databricksAuthCode,
+            host: signin.host,
+            scope: tokenSettings.DATABRICKS_SCOPE,
         }).then(syncCallbacks.postAccessToken);
         // const tokens = await graph.postAccessToken({ code, host: signin.host }).then(syncCallbacks.postAccessToken);
         // const databricksTokens = await graph.postDatabricksAccessToken({ code, host: signin.host }).then(syncCallbacks.postDatabricksAccessToken);
@@ -135,8 +143,8 @@ const startSync = (secrets, { csvPath, csvHeader, csvRows }) => async (code) => 
         const sharedParams = {
             galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
-            ...graphTokens,
-            ...databricksTokens
+            graphToken: graphTokens.access_token,
+            databricksToken: databricksTokens.access_token,
         };
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
@@ -162,10 +170,24 @@ async function main() {
         const csvInput = getCsvInputs(csvInputPath);
         console.log('Getting key vault secrets...');
         const secrets = await getKeyvaultSecrets();
+        
+        // set up express app to get authentication code
+        let graphAuthCode, databricksAuthCode;
+        const signinApp = new signin.SigninApp();
+        signinApp.setCallback((code) => {
+            graphAuthCode = code;
+            signinApp.setCallback((code) => {
+                databricksAuthCode = code;
+                startSync(secrets, csvInput, {graphAuthCode, databricksAuthCode});
+            })
+            console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
+            console.log(signin.redirectLoginUrl);
+        })
+        signinApp.start();
+
         console.log('Press ^C at any time to quit.');
         console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
         console.log(signin.redirectLoginUrl(secrets));
-        signin.startApp(startSync(secrets, csvInput));
     } catch(err) {
         console.error(err);
     }
