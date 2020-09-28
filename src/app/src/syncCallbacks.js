@@ -15,17 +15,8 @@ async function handleResponseErrors(response, successCode) {
 const postAccessToken = async (response) => {
     const body = await handleResponseErrors(response, 200);
     return Promise.resolve({
-        access_token: body.access_token,
-        refresh_token: body.refresh_token,
-    });
-}
-
-// Checks if created valid databricks access and refresh tokens by redeeming sign-in code
-const postDatabricksAccessToken = async (response) => {
-    const body = await handleResponseErrors(response, 200);
-    return Promise.resolve({
-        access_token: body.access_token,
-        refresh_token: body.refresh_token,
+        accessToken: body.access_token,
+        refreshToken: body.refresh_token,
     });
 }
 
@@ -129,8 +120,7 @@ async function postCreateServicePrincipalSyncJob(response) {
 
 // Checks if able to successfully created Databricks PAT
 async function postCreateDatabricksPat(response) {
-    //await handleResponseErrors(response, 204);
-    const body = await response.json();
+    const body = await handleResponseErrors(response, 200);
     return Promise.resolve({
         status: 'SUCCESS',
         params: { databricksPat: body.token_value }
@@ -194,7 +184,6 @@ const  keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
 
 module.exports = {
     postAccessToken,
-    postDatabricksAccessToken,
     postScimConnectorGalleryApp,
     getAadGroups,
     keepGettingServicePrincipal,

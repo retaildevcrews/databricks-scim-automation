@@ -55,13 +55,17 @@ function getRedirectLoginUrl({ origin, host, tenantId, clientId }) {
  * @param {string} args.code Redeemable sign-in code from Microsoft login portal
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
- * @return {external:RequestAnAccessTokenPromise | external:RequestDatabricksAccessTokenPromise}
+ * @param {string} args.tenantId Tenant ID in Azure AD
+ * @param {string} args.clientId The application (service principal) ID of the application
+ * @param {string} args.clientSecret The secret generated for the application
+ * @param {string|string} args.scope The scopes that the access_token is valid for
+ * @return {external:RequestAnAccessTokenPromise|external:RequestDatabricksAccessTokenPromise}
  */
 async function postAccessToken(params) {
-    const { code, origin, host, tenantId, clientId, clientSecret, scope } = params;
+    const { code, origin, host, tenantId, clientId, clientSecret, scope = (scope === undefined ? tokenSettings.GRAPH_SCOPE : scope) } = params;
     const queryParams = [
         { key: 'client_id', value: clientId },
-        { key: 'scope', value: scope || tokenSettings.GRAPH_SCOPE },
+        { key: 'scope', value: scope },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
         { key: 'grant_type', value: 'authorization_code' },
         { key: 'client_secret', value: clientSecret },
@@ -83,6 +87,9 @@ async function postAccessToken(params) {
  * @param {string} args.graphRefreshToken The token used to refresh the access token
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
+ * @param {string} args.tenantId Tenant ID in Azure AD
+ * @param {string} args.clientId The application (service principal) ID of the application
+ * @param {string} args.clientSecret The secret generated for the application
  * @return {external:RefreshTheAccessTokenPromise}
  */
 async function postRefreshAccessToken(params) {
@@ -217,7 +224,7 @@ async function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrin
  * Generate PAT for Databricks workspace
  * @param {Object} args
  * @param {string} args.databricksAccessToken Token used to authenticate request
- * @param {string} args.databricksUrl Credentials to validate: Databricks workspace base address/URL
+ * @param {string} args.databricksUrl Databricks workspace base address/URL
  * @param {string} args.galleryAppName Name of Gallery App Service Principal
  * @return {external:CreateDatabricksPatPromise}
  */
@@ -331,7 +338,6 @@ module.exports = {
     getOriginUrl,
     getRedirectLoginUrl,
     postAccessToken,
-    //postDatabricksAccessToken,
     postRefreshAccessToken,
     postScimConnectorGalleryApp,
     getAadGroups,

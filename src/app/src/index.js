@@ -30,9 +30,7 @@ async function getKeyvaultSecrets() {
     const keyvault = new keyvaultService(process.env.KEYVAULT_URL, 'CLI');
     await keyvault.connect();
     const tenantId = await keyvault.getSecret('TenantID');
-    console.log('tenantId:',tenantId);
     const clientId = await keyvault.getSecret('AppClientID');
-    console.log('clientId:',clientId);
     const clientSecret = await keyvault.getSecret('AppClientSecret');
     if (!tenantId || !clientId || !clientSecret) {
         throw new Error('Missing Key Vault Secrets (tenantId, clientId, clientSecret)');
@@ -139,8 +137,10 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, {graphAuthCod
         const sharedParams = {
             galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
-            graphAccessToken: graphTokens.access_token,
-            databricksAccessToken: databricksTokens.access_token,
+            graphAccessToken: graphTokens.accessToken,
+            graphRefreshAccessToken: graphTokens.refreshToken,
+            databricksAccessToken: databricksTokens.accessToken,
+            databricksRefreshAccessToken: databricksTokens.refreshToken
         };
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
