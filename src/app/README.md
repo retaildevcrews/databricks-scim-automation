@@ -5,6 +5,7 @@
 * Execute `npm install`
 * Copy `.env-sample` and rename `.env`
   * Update required variables  `GALLERY_APP_TEMPLATE_ID`, `SCIM_TEMPLATE_ID`, and `KEYVAULT_URL`
+  * Note: if created via infra/terraform, keyvault URL is `https://{​​​​​scim_Name}​​​​​-kv.vault.azure.net`, otherwise find in Azure Portal
   * Update optional variables `PORT`
 * Update permissions of app service client (if created via infra/terraform, app name is {scim_Name}-tf-sp)
   * Active Directory > App Registration > {Name of App Service Client} > Authentication
@@ -15,14 +16,15 @@
     * `@databricks-scim-automation/graph` > getAadGroups (Required Permission): Microsoft Graph > Delegated permissions > Directory.Read.All
     * `@databricks-scim-automation/graph` > getServicePrincipal (Required Permission): Microsoft Graph > Delegated permissions > Directory.Read.All
     * `@databricks-scim-automation/graph` > postAddAadGroupToServicePrincipal (Required Permission): Microsoft Graph > Delegated permissions > AppRoleAssignment.ReadWrite.All
+    * `@databricks-scim-automation/graph` > postDatabricksAccessToken (Required Permission): APIs my organization uses > AzureDatabricks > user_impersonation
 * Grant admin consent for Default Directory (if created via infra/terraform, app name is {scim_Name}-tf-sp)
   * Active Directory > App Registration > {Name of App Service Client} > API Permissions > Grant admin consent for Default Directory
 
 ## Run App
 
-* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`, and `Databricks Pat`
+* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
   * The order is important
-  * Databricks Url format: `https://adb-*.*.azuredatabricks.net/api/2.0/preview/scim`
+  * Databricks Url format: https://adb-*.*.azuredatabricks.net
 * Execute `npm start <path_to_file>`
 * Find completed logs at `./outputs/<input_csv_filename>`
   * If file already exists, logs will be appended to content
@@ -30,9 +32,9 @@
 
 ## Run App for Development
 
-* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`, and `Databricks Pat`
+* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
   * The order is important
-  * Databricks Url format: `https://adb-*.*.azuredatabricks.net/api/2.0/preview/scim`
+  * Databricks Url format: https://adb-*.*.azuredatabricks.net
 * Save the CSV file as `./mocks/syncs.csv`
 * Execute `npm run dev`
 * Find completed logs at `./outputs/<input_csv_filename>`

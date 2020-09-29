@@ -5,9 +5,9 @@ const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
 const keyvaultService = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
+const { tokenSettings } = require('../config');
 
-const isDatabricksUrl = url => /https://*.azuredatabricks.net*/.test(url);
-const isDatabricksPat = pat => /^dapi*/.test(pat);
+const isDatabricksUrl = url => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
 function getCsvInputs(path) {
     const fileExists = fs.existsSync(path);
@@ -55,6 +55,9 @@ const graphCalls = [
         graphCall: graph.postCreateServicePrincipalSyncJob,
         callback: syncCallbacks.postCreateServicePrincipalSyncJob,
     }, {
+        graphCall: graph.postCreateDatabricksPat,
+        callback: syncCallbacks.postCreateDatabricksPat,
+    }, {
         graphCall: graph.postValidateServicePrincipalCredentials,
         callback: syncCallbacks.postValidateServicePrincipalCredentials,
     }, {
@@ -70,19 +73,15 @@ const graphCalls = [
 ]
 
 async function promisfySyncCall(csvLine, sharedParams) {
-    const [galleryAppName, filterAadGroupDisplayName, databricksUrl, databricksPat] = csvLine.split(',');
+    const [galleryAppName, filterAadGroupDisplayName, databricksUrl] = csvLine.split(',');
     if (!isDatabricksUrl(databricksUrl)) {
         throw new Error(`Databricks URL (${databricksUrl}) is not an accepted value`);
-    }
-    if (!isDatabricksPat(databricksPat)) {
-        throw new Error(`Databricks PAT (${databricksPat}) is not an accepted value`);
     }
 
     let params = {
         hasFailed: false,
         ...sharedParams,
-        databricksUrl,
-        databricksPat,
+        databricksUrl: databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/',
         filterAadGroupDisplayName,
         galleryAppName,
     };
@@ -117,23 +116,31 @@ function createFile(outputDir, inputPath, initialContent) {
     return outputPath;
 }
 
-const startSync = (secrets, { csvPath, csvHeader, csvRows }) => async (code) => {
+const startSync = async (secrets, { csvPath, csvHeader, csvRows }, {graphAuthCode, databricksAuthCode}) => {
     console.log('Processing...');
     try {
-        const { tenantId, clientId, clientSecret } = secrets;
-        const tokens = await graph.postAccessToken({
-            code,
+        const graphTokens = await graph.postAccessToken({
+            ...secrets,
+            code: graphAuthCode,
             host: signin.host,
-            tenantId,
-            clientId,
-            clientSecret,
+            scope: tokenSettings.GRAPH_SCOPE,
+        }).then(syncCallbacks.postAccessToken);
+
+        const databricksTokens = await graph.postAccessToken({
+            ...secrets,
+            code: databricksAuthCode,
+            host: signin.host,
+            scope: tokenSettings.DATABRICKS_SCOPE,
         }).then(syncCallbacks.postAccessToken);
         // TODO: Account for required token refreshing with graph.postRefreshAccessToken
-
+  
         const sharedParams = {
             galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
-            ...tokens
+            graphAccessToken: graphTokens.accessToken,
+            graphRefreshAccessToken: graphTokens.refreshToken,
+            databricksAccessToken: databricksTokens.accessToken,
+            databricksRefreshAccessToken: databricksTokens.refreshToken
         };
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
@@ -159,10 +166,24 @@ async function main() {
         const csvInput = getCsvInputs(csvInputPath);
         console.log('Getting key vault secrets...');
         const secrets = await getKeyvaultSecrets();
+        
+        // set up express app to get authentication code
+        let graphAuthCode, databricksAuthCode;
+        const signinApp = new signin.SigninApp();
+        signinApp.setCallback((code) => {
+            graphAuthCode = code;
+            signinApp.setCallback((code) => {
+                databricksAuthCode = code;
+                startSync(secrets, csvInput, {graphAuthCode, databricksAuthCode});
+            })
+            console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
+            console.log(signin.redirectLoginUrl(secrets));
+        })
+        signinApp.start();
+
         console.log('Press ^C at any time to quit.');
         console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
         console.log(signin.redirectLoginUrl(secrets));
-        signin.startApp(startSync(secrets, csvInput));
     } catch(err) {
         console.error(err);
     }
