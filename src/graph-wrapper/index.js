@@ -58,11 +58,11 @@ function getRedirectLoginUrl({ origin, host, tenantId, clientId }) {
  * @param {string} args.tenantId Tenant ID in Azure AD
  * @param {string} args.clientId The application (service principal) ID of the application
  * @param {string} args.clientSecret The secret generated for the application
- * @param {string|string} args.scope The scopes that the access_token is valid for
+ * @param {string|null} args.scope The scopes that the access_token is valid for
  * @return {external:RequestAnAccessTokenPromise|external:RequestDatabricksAccessTokenPromise}
  */
 async function postAccessToken(params) {
-    const { code, origin, host, tenantId, clientId, clientSecret, scope = (scope === undefined ? tokenSettings.GRAPH_SCOPE : scope) } = params;
+    const { code, origin, host, tenantId, clientId, clientSecret, scope = tokenSettings.GRAPH_SCOPE } = params;
     const queryParams = [
         { key: 'client_id', value: clientId },
         { key: 'scope', value: scope },
