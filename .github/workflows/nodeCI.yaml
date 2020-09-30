@@ -3,7 +3,7 @@ name: Docker CI
 on:
   push:
     branches:
-      - master
+      - main
       - feature/47-kushal-gh-action
 
     paths:
@@ -32,13 +32,13 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: '12.x'
-    - name: Install Required global npm Packages
+    - name: Install rquired global npm Packages
       run: |
         npm install -g eslint eslint-config-airbnb eslint-plugin-standard \
             eslint-config-standard eslint-plugin-import eslint-plugin-node eslint-plugin-promise \
-    - name: Install App Specific npm Packages
+    - name: Install app Specific npm Packages
       run: npm install app/
-    - name: Run Linting
+    - name: Run Lint
       run: npm run lint --prefix ./app
     - name: Run Tests
       run: npm test --prefix ./app
