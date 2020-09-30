@@ -21,8 +21,8 @@ function getOriginUrl({ origin, host }) {
  * @return {string} Stringified query params
  */
 function getQueryParams(queryParams, shouldEncode = true) {
-    const encode = value => shouldEncode ? encodeURIComponent(value) : value;
-    return queryParams.map(({ key, value }) => encode(key) + '=' + encode(value)).join('&');
+    const encode = (value) => (shouldEncode ? encodeURIComponent(value) : value);
+    return queryParams.map(({ key, value }) => `${encode(key)}=${encode(value)}`).join('&');
 }
 
 /**
@@ -32,7 +32,9 @@ function getQueryParams(queryParams, shouldEncode = true) {
  * @param {string} args.host Fallback for origin creation
  * @return {string} Url for Microsoft login portal
  */
-function getRedirectLoginUrl({ origin, host, tenantId, clientId }) {
+function getRedirectLoginUrl({
+ origin, host, tenantId, clientId,
+}) {
     const queryParams = [
         { key: 'client_id', value: clientId },
         { key: 'response_type', value: 'code' },
@@ -49,7 +51,7 @@ function getRedirectLoginUrl({ origin, host, tenantId, clientId }) {
  * @see {@link https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#request-an-access-token}
  * @external RequestDatabricksAccessTokenPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/aad/service-prin-aad-token#--get-an-azure-active-directory-access-token}
- * 
+ *
  * Returns an access token
  * @param {Object} args
  * @param {string} args.code Redeemable sign-in code from Microsoft login portal
@@ -62,7 +64,9 @@ function getRedirectLoginUrl({ origin, host, tenantId, clientId }) {
  * @return {external:RequestAnAccessTokenPromise|external:RequestDatabricksAccessTokenPromise}
  */
 async function postAccessToken(params) {
-    const { code, origin, host, tenantId, clientId, clientSecret, scope = tokenSettings.GRAPH_SCOPE } = params;
+    const {
+ code, origin, host, tenantId, clientId, clientSecret, scope = tokenSettings.GRAPH_SCOPE,
+} = params;
     const queryParams = [
         { key: 'client_id', value: clientId },
         { key: 'scope', value: scope },
@@ -73,7 +77,7 @@ async function postAccessToken(params) {
     ];
     return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded'},
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: getQueryParams(queryParams),
     });
 }
@@ -93,7 +97,9 @@ async function postAccessToken(params) {
  * @return {external:RefreshTheAccessTokenPromise}
  */
 async function postRefreshAccessToken(params) {
-    const { refreshToken, origin, host, tenantId, clientId, clientSecret } = params;
+    const {
+ refreshToken, origin, host, tenantId, clientId, clientSecret,
+} = params;
     const queryParams = [
         { key: 'client_id', value: clientId },
         { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
@@ -104,7 +110,7 @@ async function postRefreshAccessToken(params) {
     ];
     return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: getQueryParams(queryParams),
     });
 }
@@ -112,7 +118,7 @@ async function postRefreshAccessToken(params) {
 /**
  * @external ApplicationTemplateInstantiatePromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/applicationtemplate-instantiate?view=graph-rest-beta&tabs=http}
- * 
+ *
  * Adds an instance of an application, scim connector, from the Azure AD application gallery into directory
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
@@ -136,8 +142,8 @@ async function postScimConnectorGalleryApp({ graphAccessToken, galleryAppTemplat
 
 /**
  * @external FilteredListOfGroupObjectsPromise
- * @see {@link https://docs.microsoft.com/en-us/graph/api/group-list?view=graph-rest-beta&tabs=http} 
- * 
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/group-list?view=graph-rest-beta&tabs=http}
+ *
  * Returns details about the AAD group
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
@@ -153,7 +159,7 @@ async function getAadGroups({ graphAccessToken, filterAadGroupDisplayName }) {
 /**
  * @external GetServicePrincipalPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-get?view=graph-rest-beta&tabs=http}
- * 
+ *
  * Returns info about service principal, including app roles. May take some time to be available.
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
@@ -171,7 +177,7 @@ async function getServicePrincipal(params) {
 /**
  * @external GrantAnAppRoleAssignmentToAServicePrincipalPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-post-approleassignments?view=graph-rest-beta&tabs=http}
- * 
+ *
  * Add AAD group to service principal
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
@@ -180,7 +186,9 @@ async function getServicePrincipal(params) {
  * @param {string} args.appRoleId ID of the appRole (defined on the resource service principal) to assign to the client service principal
  * @return {external:GrantAnAppRoleAssignmentToAServicePrincipalPromise}
  */
-async function postAddAadGroupToServicePrincipal({ graphAccessToken, servicePrincipalId, aadGroupId, appRoleId }) {
+async function postAddAadGroupToServicePrincipal({
+ graphAccessToken, servicePrincipalId, aadGroupId, appRoleId,
+}) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/appRoleAssignments`, {
         method: 'POST',
         headers: {
@@ -190,7 +198,7 @@ async function postAddAadGroupToServicePrincipal({ graphAccessToken, servicePrin
         body: JSON.stringify({
             resourceId: servicePrincipalId,
             principalId: aadGroupId,
-            appRoleId
+            appRoleId,
         }),
     });
 }
@@ -198,7 +206,7 @@ async function postAddAadGroupToServicePrincipal({ graphAccessToken, servicePrin
 /**
  * @external CreateSynchronizationJobPromise
  * @see (@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-post?view=graph-rest-beta&tabs=http)
- * 
+ *
  * Creates a provisioning job to sync the service principal
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
@@ -206,7 +214,7 @@ async function postAddAadGroupToServicePrincipal({ graphAccessToken, servicePrin
  * @param {string} args.syncJobTemplateId One of the template IDs created for this application/service principal
  * @return {external:CreateSynchronizationJobPromise}
  */
-async function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobTemplateId }){
+async function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobTemplateId }) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs`, {
         method: 'POST',
         headers: {
@@ -239,9 +247,9 @@ async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, g
         headers: {
             Authorization: `Bearer ${databricksAccessToken}`,
             'X-Databricks-Org-Id': databricksOrgId,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` })
+        body: JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }),
     });
 }
 
@@ -258,17 +266,21 @@ async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, g
  * @param {string} args.databricksPat Credentials to validate: Databricks workspace personal access token
  * @return {external:SynchronizationJobValidateCredentialsPromise}
  */
-async function postValidateServicePrincipalCredentials({ graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat }) {
+async function postValidateServicePrincipalCredentials({
+ graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat,
+}) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ credentials: [
-            { key: 'BaseAddress', value: databricksUrl + 'api/2.0/preview/scim'},
+        body: JSON.stringify({
+ credentials: [
+            { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
             { key: 'SecretToken', value: databricksPat },
-        ]}),
+        ],
+}),
     });
 }
 
@@ -284,24 +296,28 @@ async function postValidateServicePrincipalCredentials({ graphAccessToken, servi
  * @param {string} args.databricksPat Secret token used to establish trust between Azure AD and the application
  * @return {external:SaveYourCredentialsPromise}
  */
-async function putSaveServicePrincipalCredentials({ graphAccessToken, servicePrincipalId, databricksUrl, databricksPat}) {
+async function putSaveServicePrincipalCredentials({
+ graphAccessToken, servicePrincipalId, databricksUrl, databricksPat,
+}) {
     return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/secrets`, {
         method: 'PUT',
         headers: {
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ value: [
-            { key: 'BaseAddress', value: databricksUrl + 'api/2.0/preview/scim' },
+        body: JSON.stringify({
+ value: [
+            { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
             { key: 'SecretToken', value: databricksPat },
-        ]}),
+        ],
+}),
     });
 }
 
 /**
  * @external StartSynchronizationJobPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-start?view=graph-rest-beta&tabs=http}
- * 
+ *
  * Starts the provisioning job to sync the service principal
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
@@ -319,7 +335,7 @@ async function postStartServicePrincipalSyncJob({ graphAccessToken, servicePrinc
 /**
  * @external GetSynchronizationJobPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/synchronization-synchronizationjob-get?view=graph-rest-beta&tabs=http};
- * 
+ *
  * Returns the progress of the current provisioning cycle and stats
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request

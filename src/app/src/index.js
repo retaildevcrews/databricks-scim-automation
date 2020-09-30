@@ -7,7 +7,7 @@ const keyvaultService = require('./keyvaultService');
 const syncCallbacks = require('./syncCallbacks');
 const { tokenSettings } = require('../config');
 
-const isDatabricksUrl = url => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
+const isDatabricksUrl = (url) => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
 function getCsvInputs(path) {
     const fileExists = fs.existsSync(path);
@@ -17,7 +17,7 @@ function getCsvInputs(path) {
     if (!path.endsWith('.csv')) {
         throw new Error('Did not receive a file with a CSV extension');
     }
-    const fileContent = fs.readFileSync(path, 'utf8').split("\r\n");
+    const fileContent = fs.readFileSync(path, 'utf8').split('\r\n');
     const isFirstLineHeader = !(isDatabricksUrl(fileContent[0]));
     return {
         csvPath: path,
@@ -70,7 +70,7 @@ const graphCalls = [
         graphCall: graph.getServicePrincipalSyncJobStatus,
         callback: syncCallbacks.keepGettingServicePrincipalSyncJobStatus,
     },
-]
+];
 
 async function promisfySyncCall(csvLine, sharedParams) {
     const [galleryAppName, filterAadGroupDisplayName, databricksUrl] = csvLine.split(',');
@@ -81,7 +81,7 @@ async function promisfySyncCall(csvLine, sharedParams) {
     let params = {
         hasFailed: false,
         ...sharedParams,
-        databricksUrl: databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/',
+        databricksUrl: databricksUrl.endsWith('/') ? databricksUrl : `${databricksUrl}/`,
         filterAadGroupDisplayName,
         galleryAppName,
     };
@@ -96,10 +96,10 @@ async function promisfySyncCall(csvLine, sharedParams) {
                 params = { ...params, ...res.params };
                 return new Promise.resolve(res.status);
             })
-            .catch(error => {
+            .catch((error) => {
                 params = { ...params, hasFailed: true };
-                return new Promise.resolve(error.message)
-            })
+                return new Promise.resolve(error.message);
+            });
     });
 }
 
@@ -108,7 +108,7 @@ function createFile(outputDir, inputPath, initialContent) {
     if (!outputDirExists) {
         fs.mkdirSync(outputDir);
     }
-    const outputPath = outputDir + '/' + inputPath.split('/')[inputPath.split('/').length - 1];
+    const outputPath = `${outputDir}/${inputPath.split('/')[inputPath.split('/').length - 1]}`;
     const fileExists = fs.existsSync(outputPath);
     if (!fileExists) {
         fs.writeFileSync(outputPath, initialContent);
@@ -116,7 +116,7 @@ function createFile(outputDir, inputPath, initialContent) {
     return outputPath;
 }
 
-const startSync = async (secrets, { csvPath, csvHeader, csvRows }, {graphAuthCode, databricksAuthCode}) => {
+const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCode, databricksAuthCode }) => {
     console.log('Processing...');
     try {
         const graphTokens = await graph.postAccessToken({
@@ -133,14 +133,14 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, {graphAuthCod
             scope: tokenSettings.DATABRICKS_SCOPE,
         }).then(syncCallbacks.postAccessToken);
         // TODO: Account for required token refreshing with graph.postRefreshAccessToken
-  
+
         const sharedParams = {
             galleryAppTemplateId: process.env.GALLERY_APP_TEMPLATE_ID,
             syncJobTemplateId: process.env.SCIM_TEMPLATE_ID,
             graphAccessToken: graphTokens.accessToken,
             graphRefreshAccessToken: graphTokens.refreshToken,
             databricksAccessToken: databricksTokens.accessToken,
-            databricksRefreshAccessToken: databricksTokens.refreshToken
+            databricksRefreshAccessToken: databricksTokens.refreshToken,
         };
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
@@ -152,7 +152,7 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, {graphAuthCod
         }
 
         console.log('Complete...');
-    } catch(error) {
+    } catch (error) {
         console.log('Erred...');
         console.error({ error });
     }
@@ -166,25 +166,26 @@ async function main() {
         const csvInput = getCsvInputs(csvInputPath);
         console.log('Getting key vault secrets...');
         const secrets = await getKeyvaultSecrets();
-        
+
         // set up express app to get authentication code
-        let graphAuthCode, databricksAuthCode;
+        let graphAuthCode; let
+databricksAuthCode;
         const signinApp = new signin.SigninApp();
         signinApp.setCallback((code) => {
             graphAuthCode = code;
             signinApp.setCallback((code) => {
                 databricksAuthCode = code;
-                startSync(secrets, csvInput, {graphAuthCode, databricksAuthCode});
-            })
-            console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
+                startSync(secrets, csvInput, { graphAuthCode, databricksAuthCode });
+            });
+            console.log('\x1b[1m%s\x1b[0m', 'Click on the following link to sign in: ');
             console.log(signin.redirectLoginUrl(secrets));
-        })
+        });
         signinApp.start();
 
         console.log('Press ^C at any time to quit.');
-        console.log("\x1b[1m%s\x1b[0m", 'Click on the following link to sign in: ');
+        console.log('\x1b[1m%s\x1b[0m', 'Click on the following link to sign in: ');
         console.log(signin.redirectLoginUrl(secrets));
-    } catch(err) {
+    } catch (err) {
         console.error(err);
     }
 }
