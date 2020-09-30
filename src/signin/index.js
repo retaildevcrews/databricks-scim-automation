@@ -4,7 +4,7 @@ const { getRedirectLoginUrl } = require('@databricks-scim-automation/graph');
 
 const port = process.env.PORT || 8000;
 const host = `localhost:${port}`;
-const redirectLoginUrl = params => getRedirectLoginUrl({ host, ...params });
+const redirectLoginUrl = (params) => getRedirectLoginUrl({ host, ...params });
 const app = express();
 
 class SigninApp {
@@ -24,9 +24,9 @@ class SigninApp {
             // Notifies user
             res.send('Successfully signed in!');
             // Calls cb with code
-            return this.cb(code)
+            return this.cb(code);
         });
-    
+
         app.listen(port);
     }
 
@@ -38,5 +38,5 @@ class SigninApp {
 module.exports = {
     host,
     redirectLoginUrl,
-    SigninApp
+    SigninApp,
 };

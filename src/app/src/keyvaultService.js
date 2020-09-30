@@ -27,27 +27,27 @@ class keyvaultService {
         // set retry managed identity count
         const MAX_RETRIES = keyvaultSettings.CONNECTION_RETRIES;
         let retries = 0;
-        while (retries < MAX_RETRIES){
+        while (retries < MAX_RETRIES) {
             try {
                 // use specified authentication type (either MI or CLI)
-                const creds = this.authType === "MI" ?
-                    new azureIdentity.ManagedIdentityCredential() :
-                    await msRestNodeAuth.AzureCliCredentials.create({ resource: "https://vault.azure.net" });
+                const creds = this.authType === 'MI'
+                    ? new azureIdentity.ManagedIdentityCredential()
+                    : await msRestNodeAuth.AzureCliCredentials.create({ resource: 'https://vault.azure.net' });
                 this.client = new SecretClient(this.url, creds);
                 // test getSecret to validate successful Keyvault connection
-                await this.getSecret("CosmosUrl");
+                await this.getSecret('CosmosUrl');
                 return true;
             } catch (e) {
                 retries++;
-                if (this.authType === "MI" && retries < MAX_RETRIES) {
+                if (this.authType === 'MI' && retries < MAX_RETRIES) {
                     // wait 1 second and retry (continue while loop)
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
                 } else {
-                    throw new Error("Failed to connect to Keyvault with MI");
+                    throw new Error('Failed to connect to Keyvault with MI');
                 }
             }
         }
     }
 }
 
-module.exports = keyvaultService
+module.exports = keyvaultService;

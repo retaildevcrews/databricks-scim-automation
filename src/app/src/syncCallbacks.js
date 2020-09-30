@@ -18,7 +18,7 @@ const postAccessToken = async (response) => {
         accessToken: body.access_token,
         refreshToken: body.refresh_token,
     });
-}
+};
 
 // Checks if created instance of SCIM connector gallery app
 async function postScimConnectorGalleryApp(response) {
@@ -41,14 +41,14 @@ async function getAadGroups(response) {
     });
 }
 
-const boolNoop = bool => () => bool;
-const delay = (time) => new Promise(done => setTimeout(() => done(), time));
+const boolNoop = (bool) => () => bool;
+const delay = (time) => new Promise((done) => setTimeout(() => done(), time));
 const keepFetching = (args) => (
-    async function(retries, response) {
+    async function (retries, response) {
         console.log('...');
         const {
             fn,
-            waitTime = 5000, //milliseconds
+            waitTime = 5000, // milliseconds
             failedCallback,
             hasStatusErred = boolNoop(false),
             hasBodyErred = boolNoop(false),
@@ -58,9 +58,7 @@ const keepFetching = (args) => (
                 return failedCallback(response);
             }
             await delay(waitTime);
-            return await fn().then(async res => {
-                return await keepFetching(args)(retries - 1, res);
-            });
+            return await fn().then(async (res) => await keepFetching(args)(retries - 1, res));
         }
         return response;
     }
@@ -84,25 +82,25 @@ const keepGettingServicePrincipal = async (response, params) => {
         const body = await clonedRes.json();
         const hasErred = !Array.isArray(body.appRoles) || getAppRoles(body).length === 0;
         return hasErred;
-    }
+    };
     const repeatedArgs = {
         fn: () => graph.getServicePrincipal(params),
-        waitTime: 5000, //milliseconds
+        waitTime: 5000, // milliseconds
         failedCallback,
         hasStatusErred,
         hasBodyErred,
     };
     const maxRetries = 5;
-    const body = await keepFetching(repeatedArgs)(maxRetries, response).then(async res => await res.json());
+    const body = await keepFetching(repeatedArgs)(maxRetries, response).then(async (res) => await res.json());
     return Promise.resolve({
         status: 'SUCCESS',
         params: { appRoleId: getAppRoles(body)[0].id },
     });
-}
+};
 
 // Checks if successfully added AAD group to service principal
 async function postAddAadGroupToServicePrincipal(response) {
-    await handleResponseErrors(response, 201)
+    await handleResponseErrors(response, 201);
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},
@@ -123,11 +121,11 @@ async function postCreateDatabricksPat(response) {
     const body = await handleResponseErrors(response, 200);
     return Promise.resolve({
         status: 'SUCCESS',
-        params: { databricksPat: body.token_value }
+        params: { databricksPat: body.token_value },
     });
 }
 
-// Checks if able to successfully validate credentials to connect with databricks workspace 
+// Checks if able to successfully validate credentials to connect with databricks workspace
 async function postValidateServicePrincipalCredentials(response) {
     await handleResponseErrors(response, 204);
     return Promise.resolve({
@@ -156,7 +154,7 @@ async function postStartServicePrincipalSyncJob(response) {
 }
 
 // Outputs sync job status until successful or hits max number of attempts
-const  keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
+const keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
     const failedCallback = async (res) => {
         await handleResponseErrors(res, 200);
         throw new Error('FAILED> Unable to get successful sync job');
@@ -166,7 +164,7 @@ const  keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
         const body = await res.clone().json();
         const { lastExecution, lastSuccessfulExecution, lastSuccessfulExecutionWithExports } = body.status;
         return !(lastSuccessfulExecutionWithExports || lastSuccessfulExecution || (lastExecution && lastExecution.state === 'Succeeded'));
-    }
+    };
     const repeatedArgs = {
         fn: () => graph.getServicePrincipalSyncJobStatus(params),
         waitTime: 5000,
@@ -175,12 +173,12 @@ const  keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
         hasBodyErred,
     };
     const maxRetries = 10;
-    await keepFetching(repeatedArgs)(maxRetries, response).then(async res => await res.json());
+    await keepFetching(repeatedArgs)(maxRetries, response).then(async (res) => await res.json());
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},
     });
-}
+};
 
 module.exports = {
     postAccessToken,
