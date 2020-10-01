@@ -33,15 +33,22 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: '12.x'
-    - name: Install rquired global npm Packages
+    - name: Install npm packages
       run: |
-        npm install -g eslint eslint-config-airbnb eslint-plugin-standard \
-            eslint-config-standard eslint-plugin-import eslint-plugin-node eslint-plugin-promise
-    - name: Install app Specific npm Packages
-      run: npm install app/
-    - name: Run Lint
-      run: npm run lint --prefix ./app
-    - name: Run Tests
-      run: npm test --prefix ./app
+        npm install signin/ --prefix signin/
+        npm install graph-wrapper/ --prefix graph-wrapper/
+        # npm install app/ --prefix app/
+    - name: Run lint on 'graph-wrapper/'
+      run: npm run lint --prefix ./graph-wrapper
+    - name: Run Lint on 'signin/'
+      run: npm run lint --prefix ./signin
+    # - name: Run Lint on 'app/'
+    #   run : npm run lint --prefix ./app
+    - name: Run tests in 'signin/'
+      run: npm run test --prefix ./signin
+    - name: Run tests in 'graph-wrapper/'
+      run: npm run test --prefix ./graph-wrapper
+    # - name: Run tests in 'app/'
+    #   run: npm run test --prefix ./app
       env:
         CI: true
