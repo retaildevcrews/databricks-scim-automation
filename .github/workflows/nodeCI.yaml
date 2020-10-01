@@ -36,7 +36,7 @@ jobs:
     - name: Install rquired global npm Packages
       run: |
         npm install -g eslint eslint-config-airbnb eslint-plugin-standard \
-            eslint-config-standard eslint-plugin-import eslint-plugin-node eslint-plugin-promise \
+            eslint-config-standard eslint-plugin-import eslint-plugin-node eslint-plugin-promise
     - name: Install app Specific npm Packages
       run: npm install app/
     - name: Run Lint
