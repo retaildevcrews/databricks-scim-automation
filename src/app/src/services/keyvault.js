@@ -51,9 +51,6 @@ class Keyvault {
     }
 }
 
-<<<<<<< HEAD
-module.exports = keyvaultService;
-=======
 async function getKeyvaultSecrets(url, keys) {
     const keyvault = new Keyvault(url, 'CLI');
     await keyvault.connect();
@@ -70,4 +67,3 @@ module.exports = {
     Keyvault,
     getKeyvaultSecrets,
 };
->>>>>>> Move GUI from spike/interfaces to app

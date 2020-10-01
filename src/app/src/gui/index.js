@@ -1,45 +1,44 @@
 const express = require('express');
 const path = require('path');
-const { getHomepage } = require('./controllers/homepage');
-const { getKeyvaultSecrets } = require('./controllers/keyvault');
 const {
+    getHomepage,
+    getKeyvaultSecrets,
     getRedirectLogin,
-    postGraphAccessToken,
-    postRefreshGraphAccessToken,
-} = require('./controllers/tokens');
-const { postScimConnectorGalleryApp } = require('./controllers/galleryapps');
-const { getAadGroups } = require('./controllers/aadgroups');
-const {
+    postAccessToken,
+    postRefreshAccessToken,
+    postScimConnectorGalleryApp,
+    getAadGroups,
     getServicePrincipal,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
+    postCreateDatabricksPat,
     postValidateServicePrincipalCredentials,
     putSaveServicePrincipalCredentials,
     postStartServicePrincipalSyncJob,
     getServicePrincipalSyncJobStatus,
-} = require('./controllers/serviceprincipals');
-const { sendDefault } = require('./controllers/default');
+} = require('./syncCallbacks');
 
 const app = express();
 
 // make public directory available
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../gui')));
 
 app.get('/', getHomepage);
 app.get('/keyvault', getKeyvaultSecrets);
 app.get('/login', getRedirectLogin);
-app.post('/graphAccessToken', postGraphAccessToken);
-app.post('/refreshGraphAccessToken', postRefreshGraphAccessToken);
+app.post('/accessToken', postAccessToken);
+app.post('/refreshAccessToken', postRefreshAccessToken);
 app.post('/scimConnectorGalleryApp', postScimConnectorGalleryApp);
 app.get('/aadGroups', getAadGroups);
 app.get('/servicePrincipal', getServicePrincipal);
 app.post('/aadGroupToScim', postAddAadGroupToServicePrincipal);
+app.post('/databricksPat', postCreateDatabricksPat);
 app.post('/validateCredentials', postValidateServicePrincipalCredentials);
 app.put('/saveCredentials', putSaveServicePrincipalCredentials);
 app.post('/createSyncJob', postCreateServicePrincipalSyncJob);
 app.post('/startSyncJob', postStartServicePrincipalSyncJob)
 app.get('/syncJobStatus', getServicePrincipalSyncJobStatus);
-app.all('*', sendDefault);
+app.all('*', (req, res) => res.set('Content-Type', 'text/plain').status(405).send('Unsupported Method'));
 
 const port = process.env.PORT || 1337;
 app.listen(port);

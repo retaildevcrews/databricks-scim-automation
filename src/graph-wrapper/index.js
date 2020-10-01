@@ -31,7 +31,7 @@ function getQueryParams(queryParams, shouldEncode = true) {
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
  * @param {string} args.tenantId Organization's tenant ID
- * @param {string} args.clientId App service's client ID
+ * @param {string} args.clientId App registration's client ID
  * @return {string} Url for Microsoft login portal
  */
 function getRedirectLoginUrl({
@@ -60,8 +60,8 @@ function getRedirectLoginUrl({
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
  * @param {string} args.tenantId Organization's tenant ID
- * @param {string} args.clientId App service's client ID
- * @param {string} args.clientSecret App service's client secret
+ * @param {string} args.clientId App registration's client ID
+ * @param {string} args.clientSecret App registration's client secret
  * @param {string|null} args.scope The scopes that the access_token is valid for
  * @return {external:RequestAnAccessTokenPromise|external:RequestDatabricksAccessTokenPromise}
  */
@@ -94,17 +94,15 @@ async function postAccessToken(params) {
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
  * @param {string} args.tenantId Organization's tenant ID
- * @param {string} args.clientId App service's client ID
- * @param {string} args.clientSecret App service's client secret
+ * @param {string} args.clientId App registration's client ID
+ * @param {string} args.clientSecret App registration's client secret
  * @return {external:RefreshTheAccessTokenPromise}
  */
 async function postRefreshAccessToken(params) {
-    const {
- refreshToken, origin, host, tenantId, clientId, clientSecret,
-} = params;
+    const { refreshToken, origin, host, tenantId, clientId, clientSecret, scope = tokenSettings.GRAPH_SCOPE } = params;
     const queryParams = [
         { key: 'client_id', value: clientId },
-        { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
+        { key: 'scope', value: scope },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
         { key: 'grant_type', value: 'refresh_token' },
         { key: 'client_secret', value: clientSecret },
@@ -277,14 +275,8 @@ async function postValidateServicePrincipalCredentials({
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
-<<<<<<< HEAD
-        body: JSON.stringify({
- credentials: [
-            { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
-=======
         body: JSON.stringify({ credentials: [
             { key: 'BaseAddress', value: `${databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/'}api/2.0/preview/scim`},
->>>>>>> Move CLI from spike/interfaces to app
             { key: 'SecretToken', value: databricksPat },
         ],
 }),
@@ -312,14 +304,8 @@ async function putSaveServicePrincipalCredentials({
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
-<<<<<<< HEAD
-        body: JSON.stringify({
- value: [
-            { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
-=======
         body: JSON.stringify({ value: [
             { key: 'BaseAddress', value: `${databricksUrl.endsWith('/') ? databricksUrl : databricksUrl + '/'}api/2.0/preview/scim` },
->>>>>>> Move CLI from spike/interfaces to app
             { key: 'SecretToken', value: databricksPat },
         ],
 }),

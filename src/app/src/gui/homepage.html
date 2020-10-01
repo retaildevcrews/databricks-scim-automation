@@ -26,6 +26,15 @@
                 background-color: black;
                 padding: 14px;
             }
+            #auth-code {
+                display: flex;
+            }
+            #auth-code > div:first-child {
+                padding-right: 10px;
+            }
+            #auth-code > div:last-child {
+                padding-left: 10px;
+            }
         </style>
         <title>AD Sync for Databricks</title>
     </head>
@@ -33,7 +42,7 @@
         <div id="gui">
             <h3>Microsoft Graph API</h3>
             <div id="authcode" class="outline">
-                <label>Key Vault URL: </label><input type="text" class="keyvault-url" value=default />
+                <label>Key Vault URL: </label><input type="text" class="keyvault-url" value=".env" />
                 <br /><br />
                 <button class="keyvault-secrets">Get Key Vault Secrets</button>
                 <br /><br />
@@ -41,51 +50,59 @@
                 <br /><br />
                 <label>Client ID: </label><input type="text" class="client-id" />
                 <br /><br />
-                <button id="login">Login</button>
+                <button id="get-graph-auth-code">Get Graph Auth Code</button>
+                <button id="get-databricks-auth-code">Get Databricks Auth Code</button>
             </div>
             <div id="token" class="outline">
-                <label>Key Vault URL: </label><input type="text" class="keyvault-url" value=default />
-                <br /><br />
-                <button class="keyvault-secrets">Get Key Vault Secrets</button>
-                <br /><br />
                 <label>Tenant ID: </label><input type="text" class="tenant-id" />
                 <br /><br />
                 <label>Client ID: </label><input type="text" class="client-id" />
                 <br /><br />
                 <label>Client Secret: </label><input type="text" class="client-secret" />
                 <br /><br />
-                <label>Authentication Code: </label><input type="text" id="auth-code" />
-                <br /><br />
-                <button id="post-graph-access-token">Create Graph Access Token</button>
-                <br /><br />
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
-                <br /><br />
-                <label>Refresh Token: </label><input type="text" id="refresh-token" />
-                <br /><br />
-                <button id="post-refresh-token">Refresh Token</button>
+                <div id="auth-code">
+                    <div>
+                        <label>Graph Auth Code: </label><input type="text" id="graph-auth-code" />
+                        <br /><br />
+                        <button id="post-graph-access-token">Create Graph Access Token</button>
+                        <br /><br />
+                        <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
+                        <br /><br />
+                        <label>Refresh Graph Token: </label><input type="text" id="refresh-graph-token" />
+                        <br /><br />
+                        <button id="post-refresh-graph-token">Refresh Graph Token</button>
+                    </div>
+                    <div>
+                        <label>Databricks Auth Code: </label><input type="text" id="databricks-auth-code" />
+                        <br /><br />
+                        <button id="post-databricks-access-token">Create Databricks Access Token</button>
+                        <br /><br />
+                        <label>Databricks Access Token: </label><input type="text" class="databricks-access-token" />
+                        <br /><br />
+                        <label>Refresh Databricks Token: </label><input type="text" id="refresh-databricks-token" />
+                        <br /><br />
+                        <button id="post-refresh-databricks-token">Refresh Databricks Token</button>
+                    </div>
+                </div>
             </div>
             <div id="post-scim-connector-gallery-app" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM App Template ID: </label><input type="text" id="scim-app-template-id" value="9c9818d2-2900-49e8-8ba4-22688be7c675" />
                 <br /><br />
-                <label>**SCIM Connector Gallery App Name: </label><input type="text" id="scim-connector-gallery-app-name" />
+                <label>**SCIM Connector Gallery App Name: </label><input type="text" class="scim-connector-gallery-app-name" />
                 <br /><br />
                 <button>Add instance of SCIM Connector App from AAD App Gallery to Directory</button>
             </div>
             <div id="get-aad-groups" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
-                <label>**Search Display Name: </label><input type="text" id="filter-display-name" value="Databricks-SCIM" />
+                <label>**AAD Group Name: </label><input type="text" id="filter-display-name" value="Databricks-SCIM" />
                 <br /><br />
                 <button>Get AAD Groups</button>
             </div>
             <div id="get-service-principal" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -94,32 +111,36 @@
                 <em>May need to wait until service principals are created for the SCIM Connector Gallery App before getting App Roles</em>
             </div>
             <div id="post-aad-group-to-scim" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>AAD Groups:</label>
-                <div id="aad-group-ids"></div>
+                <label>AAD Groups:</label><div id="aad-group-ids"></div>
                 <br />
-                <label>App Roles:</label>
-                <div id="app-role-ids"></div>
+                <label>App Roles:</label><div id="app-role-ids"></div>
                 <br />
                 <button>Add AAD Group to SCIM</button>
             </div>
             <div id="post-sync-job" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
-                <label>**Job Template ID: </label><input type="text" id="job-template-id" value="dataBricks" />
+                <label>Job Template ID: </label><input type="text" id="job-template-id" value="dataBricks" />
                 <br /><br />
                 <button>Create Sync Job</button>
             </div>
+            <div id="post-create-databricks-pat" class="outline">
+                <label>Databricks Access Token: </label><input type="text" class="databricks-access-token" />
+                <br /><br />
+                <label>**Databricks URL: </label><input type="text" placeholder="https://adb-*.*.azuredatabricks.net/" class="databricks-url"/>
+                <br /><br />
+                <label>**SCIM Connector Gallery App Name: </label><input type="text" class="scim-connector-gallery-app-name" />
+                <br /><br />
+                <button>Create Databricks PAT</button>
+            </div>
             <div id="post-validate-credentials" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -127,25 +148,23 @@
                 <br /><br />
                 <label>**Databricks URL: </label><input type="text" placeholder="https://adb-*.*.azuredatabricks.net/" class="databricks-url"/>
                 <br /><br />
-                <label>**Databricks PAT/Secret Token: </label><input type="text" class="databricks-pat" />
+                <label>Databricks PAT/Secret Token: </label><input type="text" class="databricks-pat" />
                 <br /><br />
                 <button>Validate Credentials</button>
             </div>
             <div id="put-save-credentials" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
                 <label>**Databricks URL: </label><input type="text" placeholder="https://adb-*.*.azuredatabricks.net" class="databricks-url"/>
                 <br /><br />
-                <label>**Databricks PAT/Secret Token: </label><input type="text" class="databricks-pat" />
+                <label>Databricks PAT/Secret Token: </label><input type="text" class="databricks-pat" />
                 <br /><br />
                 <button>Save Credentials</button>
             </div>
             <div id="post-start-sync-job" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -154,8 +173,7 @@
                 <button>Start Sync Job</button>
             </div>
             <div id="get-sync-job-status" class="outline">
-                <label>Graph Access Token: </label><span class="token-expiration">0</span> seconds
-                <input type="text" class="graph-access-token" />
+                <label>Graph Access Token: </label><input type="text" class="graph-access-token" />
                 <br /><br />
                 <label>SCIM Service Principal Object ID: </label><input type="text" class="scim-service-principal-object-id" />
                 <br /><br />
@@ -167,6 +185,6 @@
         <div id="log"></div>
     </body>
     <footer>
-        <script src="./index.js"></script>
+        <script src="./homepage.js"></script>
     </footer>
 </html>
