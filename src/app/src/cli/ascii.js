@@ -39,4 +39,4 @@ ___'       ' /"\\ |  '-."".    '-'   '-.'    '\`      |____
 ~-~-~-~-~-~    ~-~~-~-~-~-~    ========  ~-~-~-~
 `;
 
-module.exports = { scimSync, celebrate }
+module.exports = { scimSync, celebrate };

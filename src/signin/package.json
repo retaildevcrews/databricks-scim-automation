@@ -4,14 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "preinstall": "npm install npm-force-resolutions && npx npm-force-resolutions",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint ./"
   },
   "author": "",
   "license": "ISC",
+  "resolutions": {
+    "node-fetch": ">=2.6.1"
+  },
   "dependencies": {
     "@databricks-scim-automation/graph": "file:../graph-wrapper",
     "express": "^4.17.1",
+    "npm-force-resolutions": "0.0.3",
     "url": "^0.11.0"
   },
   "devDependencies": {

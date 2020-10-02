@@ -1,18 +1,28 @@
+# Terraform to Setup App Service, Key Vault, and CosmosDB
+
+## Configure AZ CLI
+
 ### Login to Azure
 
 ```bash
 az login
-
-###  show your Azure accounts
-az account list -o table
-
-###  select the Azure subscription if necessary
-az account set -s {subscription name or Id}
 ```
 
->All commands require you to be in databricks-scim-automation/infra
+### Set Azure Subscription
+
+```bash
+az account list -o table
+>> Name | CloudName | SubscriptionId | State | IsDefault
+
+az account set -s {Name or SubscriptionId}
+```
+
+## Set Terraform Variables
+
+**All commands must be executed in _databricks-scim-automation/infra_**
 
 ### Choose a unique DNS name
+
 ```bash
 # this will be the prefix for all resources
 #  only use a-z and 0-9 - do not include punctuation or uppercase characters
@@ -20,64 +30,90 @@ az account set -s {subscription name or Id}
 #  must start with a-z (only lowercase)
 export scim_Name=[your unique name]
 ```
-### if true, change scim_Name
+
 ```bash
+# If true, change scim_Name
 az cosmosdb check-name-exists -n ${scim_Name}
 
-### if nslookup doesn't fail to resolve, change scim_Name
+# If nslookup finds server, change scim_Name
 nslookup ${scim_Name}.azurewebsites.net
 nslookup ${scim_Name}.vault.azure.net
-
-# no CR for this project yet
-# nslookup ${scim_Name}.azurecr.io 
-
-# Set additional values
-# export scim_Email=replaceWithYourEmail
-
-### change the location (optional)
-export scim_Location=centralus
-
-###  >>>>>>>>>>>>>>>>>>>>>>>>> TODO <<<<<<<<<<<<<<<<<<<<<<<<<<
-###  change the repo (optional - valid: test-csharp, test-java, test-typescript)
-export scim_Repo=test-csharp
-## Deploy databricks-scrime-automation
-## Make sure you are in the scim-terraform/src/infra directory 
-
-### create tfvars file
-./create-tf-vars.sh
-
-###  initialize
-terraform init
-
-###  validate
-terraform validate
-
-###  If you have no errors you can create the resources
-terraform apply # Will prompt for confirmation, type 'yes' if all-ok
-# To avoid confirmation prompt: use the cmd below (with caution)
-#terraform apply -auto-approve
-
-###  This generally takes about 10 minutes to complete
 ```
 
-### Accessing KeyVault's Secrets
-By default a Service Principal by terraform is created for terraform usage. And that SP owns access of the KV secrets
-To view(or use) the KV sercrets with a different User/service-principal, the target User/SP needs to be added to the Access Policy of that Key Vault. It can be done via Azure cli or from the azure portal
+### Set Location (Optional)
+
+```bash
+export scim_Location=centralus
+```
+
+### Create tfvars Files
+
+- Delete any existing `terraform.tf*` files from previous terraform applies
+- Create new tfvars files
+
+```bash
+./create-tf-vars.sh
+```
+
+## Apply Terraform to Create Infrastructure
+
+### Initialize Terraform
+
+```bash
+terraform init
+```
+
+### Validate Terraform
+
+```bash
+terraform validate
+```
+
+If you have no errors you can create the resources
+
+### Create Resources
+
+```bash
+# Will prompt for confirmation, type 'yes' if all-ok
+terraform apply
+# To avoid confirmation prompt: use the cmd below (with caution)
+terraform apply -auto-approve
+```
+
+**_Note: This generally takes about 10 minutes to complete_
+
+## Accessing KeyVault Secrets
+
+- Terraform creates an app service (service principal), which owns access to the KeyVault secrets
+- To view (or use) the KeyVault secrets with a user or service principal, the target user or service principal needs to be added to the Access Policy of that Key Vault.
+- Access can be set via Azure cli or from the Azure Portal
 
 ### From the Azure Portal
-- Goto the respective key vault created by Terraform
-- Goto "Access Policies"
-- Click on "+ Add Access Policy"
-  - Under "Configure From template (optional)" Select "Secret Management"
-  - Under "Secret Permissions" select required management operations (e.g. Get, List, Set, Delete etc)
-  - Select Principal (add user, Service Principal, group or app)
+
+- Go to the KeyVault created by Terraform (i.e. `${scim_Name}-kv`)
+- Go to "Access Policies"
+- Click `+ Add Access Policy`
+  - `Configure From template (optional)` > `Secret Management`
+  - `Secret Permissions` > `Secret Management Operations` > `Get`, `List`, `Set`, `Delete`, `Recover`, `Backup`, `Restore`
+  - `Select Principal` > `${scim_Name}-tf-sp`
   - Click "Add"
-- After adding, make sure to save the Access Policy
+- Click `+ Add Access Policy`
+  - `Configure From template (optional)` > `Secret Management`
+  - `Secret Permissions` > `Secret Management Operations` > `Get`, `List`
+  - `Select Principal` > `${scim_Name}`
+  - Click "Add"
+- Click `+ Add Access Policy`
+  - `Configure From template (optional)` > `Secret Management`
+  - `Secret Permissions` > `Secret Management Operations` > `Get`
+  - `Select Principal` > `{User Executing App}`
+  - Click "Add"
+- Click `Save`
 
 ### From the Azure CLI
-#### Note the User/Service Principal/App/Group ID
-Usually you can goto Azure Portal and take a note of your target object's (user/sp/app) ID.
+
+Usually you can go to Azure Portal and take a note of your target object's (user/sp/app) ID.
 Or you can also get it from Azure CLI. Shown below, execute one of them depending on your target
+
 ```bash
 # If trying to add a specific user
 az ad user show --id "EMAIL_ADDRESS_FOR_USER" --query '[displayName, objectId]'
@@ -89,7 +125,8 @@ az ad sp show --id "APP_ID_OR_ANY_IDENTIFIER" --query '[displayName, objectId]'
 az ad app show --id "APP_ID_OR_ANY_IDENTIFIER" --query '[displayName, objectId]'
 ```
 
-#### Now add that user/sp/app to your keyvaults access policy
+Add the user/sp/app to your keyvaults access policy
+
 ```bash
 az keyvault set-policy --name KV_NAME_FROM_TERRAFORM --object-id ID_FROM_PREV_STEP --secret-permissions get set list
 # For more list of permissions goto: https://docs.microsoft.com/en-us/cli/azure/keyvault?view=azure-cli-latest#az-keyvault-set-policy

@@ -4,9 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "preinstall": "npm install npm-force-resolutions && npx npm-force-resolutions",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js ./mocks/syncs.csv",
+    "start:gui": "nodemon src/gui/index.js",
+    "dev:cli": "nodemon src/index.js",
+    "dev:csv": "nodemon src/index.js ./mocks/syncs.csv",
     "lint": "eslint ./"
   },
   "author": "",
@@ -28,6 +31,14 @@
     "@databricks-scim-automation/graph": "file:../graph-wrapper",
     "@databricks-scim-automation/signin": "file:../signin",
     "bluebird": "^3.7.2",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "npm-force-resolutions": "0.0.3",
+    "path": "^0.12.7",
+    "readline": "^1.3.0"
+  },
+  "resolutions": {
+    "node-fetch": ">=2.6.1"
   }
 }

@@ -2,25 +2,27 @@
 
 ## Setup App
 
+* (Optional) Use `databricks-scim-automation/infra` to create infrastructure
 * Execute `npm install`
 * Copy `.env-sample` and rename `.env`
   * Update required variables  `GALLERY_APP_TEMPLATE_ID`, `SCIM_TEMPLATE_ID`, and `KEYVAULT_URL`
-  * Note: if created via infra/terraform, keyvault URL is `https://{​​​​​scim_Name}​​​​​-kv.vault.azure.net`, otherwise find in Azure Portal
+    * If created infrastructure via `databricks-scim-automation/infra`, `KEYVAULT_URL` is `https://{​​​​​scim_Name}​​​​​-kv.vault.azure.net`, otherwise find in Azure Portal
   * Update optional variables `PORT`
-* Update permissions of app service client (if created via infra/terraform, app name is {scim_Name}-tf-sp)
-  * Active Directory > App Registration > {Name of App Service Client} > Authentication
-    * Add a Platform > Web > Redirect URIs: <http://localhost:{1337|.env.PORT>}
-    * Select Access Tokens option > Save
-* Add required API permissions to App (if created via infra/terraform, app name is {scim_Name}-tf-sp)
-  * Active Directory > App Registration > {Name of App Service Client} > API Permissions
-    * `@databricks-scim-automation/graph` > getAadGroups (Required Permission): Microsoft Graph > Delegated permissions > Directory.Read.All
-    * `@databricks-scim-automation/graph` > getServicePrincipal (Required Permission): Microsoft Graph > Delegated permissions > Directory.Read.All
-    * `@databricks-scim-automation/graph` > postAddAadGroupToServicePrincipal (Required Permission): Microsoft Graph > Delegated permissions > AppRoleAssignment.ReadWrite.All
-    * `@databricks-scim-automation/graph` > postDatabricksAccessToken (Required Permission): APIs my organization uses > AzureDatabricks > user_impersonation
-* Grant admin consent for Default Directory (if created via infra/terraform, app name is {scim_Name}-tf-sp)
-  * Active Directory > App Registration > {Name of App Service Client} > API Permissions > Grant admin consent for Default Directory
+* Update permissions of app service client (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
+  * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `Authentication`
+    * `Add a Platform` > `Web` > `Redirect URIs`: `http://localhost:{1337|.env.PORT}`
+    * Select `Implicit grant` > `Access tokens` option
+    * Click `Save`
+* Add required API permissions to App (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
+  * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `API Permissions` > `Add a permission`
+    * `@databricks-scim-automation/graph` > getAadGroups (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
+    * `@databricks-scim-automation/graph` > getServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
+    * `@databricks-scim-automation/graph` > postAddAadGroupToServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `AppRoleAssignment.ReadWrite.All`
+    * `@databricks-scim-automation/graph` > postDatabricksAccessToken (Required Permission): `APIs my organization uses` > `AzureDatabricks` > `user_impersonation`
+* Grant admin consent for Default Directory (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
+  * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `API Permissions` > Click `Grant admin consent for Default Directory`
 
-## Run App
+## Run CSV CLI App
 
 * Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
   * The order is important
@@ -30,16 +32,31 @@
   * If file already exists, logs will be appended to content
   * Status of 'n/a' indicates that the step was not excuted because a previous step in the sync had failed
 
-## Run App for Development
+## Run CSV CLI App for Development
 
 * Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
   * The order is important
   * Databricks Url format: https://adb-*.*.azuredatabricks.net
 * Save the CSV file as `./mocks/syncs.csv`
-* Execute `npm run dev`
+* Execute `npm run dev:csv`
 * Find completed logs at `./outputs/<input_csv_filename>`
   * If file already exists, logs will be appended to content
   * Status of 'n/a' indicates that the step was not excuted because a previous step in the sync had failed
+
+## Run Single CLI
+
+* `npm start`
+
+## Run Single CLI for Development
+
+* `npm run dev:cli`
+
+## Run GUI
+
+* Run the GUI: `npm run start:gui`
+* Open browser: localhost:1337
+* Login must be by a user of the application in order to obtain a token with required delegated application permissions
+* Fill out inputs with `**` beside them
 
 ## End User Notes
 
