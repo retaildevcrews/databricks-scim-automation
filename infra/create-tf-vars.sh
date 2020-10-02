@@ -48,7 +48,7 @@ COSMOS_RU=1000
 # Backup previous terraform.tfvars file is present
 if [[ -f "${tf_file}" ]]; then
   bak="${tf_file}.bak.$(date +%s)"
-  /bin/mv "${tf_file}" $bak
+  cat "${tf_file}" >| $bak
   echo "Backing up $(basename ${tf_file}) file to $bak"
 fi
 
