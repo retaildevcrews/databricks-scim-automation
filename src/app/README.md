@@ -3,6 +3,8 @@
 ## Setup App
 
 * (Optional) Use `databricks-scim-automation/infra` to create infrastructure
+  * Must have following KeyVault Secrets: `TenantID`, `AppClientId`, `AppClientSecret`
+  * Required permissions for KeyVault included in [databricks-scim-automation/infra/README.md](../../infra/README.md#accessing-keyvault-secrets)
 * Execute `npm install`
 * Copy `.env-sample` and rename `.env`
   * Update required variables  `GALLERY_APP_TEMPLATE_ID`, `SCIM_TEMPLATE_ID`, and `KEYVAULT_URL`
@@ -59,6 +61,8 @@
 * Fill out inputs with `**` beside them
 
 ## End User Notes
+
+* <a name="scim-sync-cadence"></a>Notes on SCIM Sync Cadence: [Provisioning Tips](https://docs.microsoft.com/en-us/azure/databricks/administration-guide/users-groups/scim/aad#provisioning-tips)
 
 * There is no restriction on duplicating SCIM connector gallery app name, which may make managing difficult in the future.
 * If there is more than one AAD group with the same name, will use the first one returned from the API.

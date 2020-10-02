@@ -73,6 +73,8 @@ If you have no errors you can create the resources
 
 ### Create Resources
 
+**_Note: Must have write access to create app registration, KeyVault, and service principal_
+
 ```bash
 # Will prompt for confirmation, type 'yes' if all-ok
 terraform apply
@@ -84,11 +86,12 @@ terraform apply -auto-approve
 
 ## Accessing KeyVault Secrets
 
-- Terraform creates an app service (service principal), which owns access to the KeyVault secrets
+- Terraform creates an app registration and KeyVault
+- Terraform keeps the following secrets in KeyVault: `TenantID`, `AppClientId`, `AppClientSecret`
 - To view (or use) the KeyVault secrets with a user or service principal, the target user or service principal needs to be added to the Access Policy of that Key Vault.
 - Access can be set via Azure cli or from the Azure Portal
 
-### From the Azure Portal
+### From the Azure Portal<a name="accessing-keyvault-secrets"></a>
 
 - Go to the KeyVault created by Terraform (i.e. `${scim_Name}-kv`)
 - Go to "Access Policies"
