@@ -36,10 +36,10 @@ app.post('/databricksPat', postCreateDatabricksPat);
 app.post('/validateCredentials', postValidateServicePrincipalCredentials);
 app.put('/saveCredentials', putSaveServicePrincipalCredentials);
 app.post('/createSyncJob', postCreateServicePrincipalSyncJob);
-app.post('/startSyncJob', postStartServicePrincipalSyncJob)
+app.post('/startSyncJob', postStartServicePrincipalSyncJob);
 app.get('/syncJobStatus', getServicePrincipalSyncJobStatus);
 app.all('*', (req, res) => res.set('Content-Type', 'text/plain').status(405).send('Unsupported Method'));
 
 const port = process.env.PORT || 1337;
 app.listen(port);
-console.log("Server running at http://localhost:%d", port);
+console.log('Server running at http://localhost:%d', port); // eslint-disable-line no-console

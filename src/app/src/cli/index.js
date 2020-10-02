@@ -20,7 +20,7 @@ let stepsStatus = [];
 
 async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
     try {
-        console.log('Creating access tokens...');
+        console.log('Creating access tokens...'); // eslint-disable-line no-console
         const graphTokens = await graph.postAccessToken({
             ...secrets,
             host: signin.host,
@@ -39,9 +39,9 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
         const inputPrompts = [
             { message: 'SCIM connector gallery app template ID', key: 'galleryAppTemplateId', defaultInput: '9c9818d2-2900-49e8-8ba4-22688be7c675' },
             { message: 'SCIM connector gallery app display name', key: 'galleryAppName', defaultInput: undefined },
-            { message: 'filter AAD group by display name', key: 'filterAadGroupDisplayName', defaultInput: 'Databricks-SCIM' },
+            { message: 'filter AAD group by display name', key: 'filterAadGroupDisplayName', defaultInput: undefined },
             { message: 'sync job template ID', key: 'syncJobTemplateId', defaultInput: 'dataBricks' },
-            { message: `databricks workspace URL (Format: https://adb-*.*.azuredatabricks.net)`, key: 'databricksUrl', defaultInput: undefined },
+            { message: 'databricks workspace URL (Format: https://adb-*.*.azuredatabricks.net)', key: 'databricksUrl', defaultInput: undefined },
         ];
         // Prompt user for inputs
         const userInputs = await prompts.getUserInputs(inputPrompts);
@@ -57,7 +57,7 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
             graphAccessToken: graphTokens.accessToken,
             graphRefreshAccessToken: graphTokens.refreshToken,
             databricksAccessToken: databricksTokens.accessToken,
-            databricksRefreshAccessToken: databricksTokens.refreshToken
+            databricksRefreshAccessToken: databricksTokens.refreshToken,
         };
         const syncSteps = [
             graph.postScimConnectorGalleryApp,
@@ -71,37 +71,39 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
             graph.postStartServicePrincipalSyncJob,
         ];
         // Print initial sync status
-        stepsStatus = log.initialTable(syncSteps.map(step => step.name));
+        stepsStatus = log.initialTable(syncSteps.map((step) => step.name));
         // Execute the sync steps
-        await Promise.mapSeries(syncSteps, (step) => step(params).then(response => (
+        await Promise.mapSeries(syncSteps, (step) => step(params).then((response) => (
             syncCallbacks[step.name](response, stepsStatus, params, step)
         )));
         // Log the sync job statuses
         await graph.getServicePrincipalSyncJobStatus(params)
-            .then(async response => {
-                const fn =  async () => await graph.getServicePrincipalSyncJobStatus(params);
-                const failedCallback = (body) => { throw new Error(`Could not get successful status from provisioning job to sync the service principal!\n${JSON.stringify(body)}`) };
+            .then((response) => {
+                const fn = () => graph.getServicePrincipalSyncJobStatus(params);
+                const failedCallback = (body) => { throw new Error(`Could not get successful status from provisioning job to sync the service principal!\n${JSON.stringify(body)}`); };
                 const hasStatusErred = (status) => status !== 200;
                 const hasBodyErred = (body) => {
                     const { lastExecution, lastSuccessfulExecution, lastSuccessfulExecutionWithExports } = body.status;
-                    lastExecution && console.log(`Last Execution (${lastExecution.state}) began at ${lastExecution.timeBegan} and ended at ${lastExecution.timeEnded}`);
-                    lastSuccessfulExecution && console.log(`Last Successful Execution (${lastSuccessfulExecution.state}) began at ${lastSuccessfulExecution.timeBegan} and ended at ${lastSuccessfulExecution.timeEnded}`);
-                    lastSuccessfulExecutionWithExports && console.log(`Last Successful Execution with Exports (${lastSuccessfulExecutionWithExports.state}) began at ${lastSuccessfulExecutionWithExports.timeBegan} and ended at ${lastSuccessfulExecutionWithExports.timeEnded}`);
+                    lastExecution && console.log(`Last Execution (${lastExecution.state}) began at ${lastExecution.timeBegan} and ended at ${lastExecution.timeEnded}`); // eslint-disable-line no-unused-expressions, no-console
+                    lastSuccessfulExecution && console.log(`Last Successful Execution (${lastSuccessfulExecution.state}) began at ${lastSuccessfulExecution.timeBegan} and ended at ${lastSuccessfulExecution.timeEnded}`); // eslint-disable-line no-unused-expressions, no-console
+                    lastSuccessfulExecutionWithExports && console.log(`Last Successful Execution with Exports (${lastSuccessfulExecutionWithExports.state}) began at ${lastSuccessfulExecutionWithExports.timeBegan} and ended at ${lastSuccessfulExecutionWithExports.timeEnded}`); // eslint-disable-line no-unused-expressions, no-console
                     return !(lastSuccessfulExecutionWithExports || lastSuccessfulExecution || (lastExecution && lastExecution.state === 'Succeeded'));
-                }
-                return await keepFetching({ fn, failedCallback, hasStatusErred, hasBodyErred })(10, response);
+                };
+                return keepFetching({
+                    fn, failedCallback, hasStatusErred, hasBodyErred,
+                })(10, response);
             });
         // Completed sync steps
         log.bold('SYNCING STEPS COMPLETED!');
-        console.log(ascii.celebrate);
-    } catch(err) {
-        console.error(err)
+        console.log(ascii.celebrate); // eslint-disable-line no-console
+    } catch (err) {
+        console.error(err); // eslint-disable-line no-console
     }
     process.exit(0);
 }
 
 async function startCli() {
-    console.log('Getting key vault secrets...');
+    console.log('Getting key vault secrets...'); // eslint-disable-line no-console
     const keys = [
         keyvaultSettings.TENANT_ID_KEY,
         keyvaultSettings.CLIENT_ID_KEY,
@@ -113,11 +115,12 @@ async function startCli() {
             [keyvaultSettings.CLIENT_ID_KEY]: clientId,
             [keyvaultSettings.CLIENT_SECRET_KEY]: clientSecret,
         }) => ({ tenantId, clientId, clientSecret }))
-        .catch(error => {
-            throw(error);
+        .catch((error) => {
+            throw error;
         });
     // set up express app to get authentication code
-    let graphAuthCode, databricksAuthCode;
+    let graphAuthCode;
+    let databricksAuthCode;
     const signinApp = new signin.SigninApp();
     signinApp.setCallback((graphCode) => {
         graphAuthCode = graphCode;
@@ -128,7 +131,7 @@ async function startCli() {
         });
     });
     signinApp.start();
-    console.log(ascii.scimSync);
+    console.log(ascii.scimSync); // eslint-disable-line no-console
     // Instruct user how to quit
     prompts.howToQuit();
     prompts.howToSignin(signin.redirectLoginUrl(secrets));

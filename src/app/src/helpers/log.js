@@ -9,25 +9,25 @@ function boldFormat(message) {
 }
 
 function bold(message) {
-    console.log(boldFormat(message));
+    console.log(boldFormat(message)); // eslint-disable-line no-console
 }
 
 function highlight(message) {
-    return console.log(`${format.yellow}${boldFormat(message)}`);
+    return console.log(`${format.yellow}${boldFormat(message)}`); // eslint-disable-line no-console
 }
 
 function initialTable(syncSteps) {
-    const tableSteps = syncSteps.map(step => ({ Action: step, Status: 'Waiting...', Attempts: 0 }));
-    console.clear();
-    console.table(tableSteps);
+    const tableSteps = syncSteps.map((step) => ({ Action: step, Status: 'Waiting...', Attempts: 0 }));
+    console.clear(); // eslint-disable-line no-console
+    console.table(tableSteps); // eslint-disable-line no-console
     return tableSteps;
 }
 
 function table(currentSteps, updatedStep) {
     const stepIndex = currentSteps.findIndex(({ Action }) => Action === updatedStep.Action);
-    currentSteps[stepIndex] = updatedStep;
-    console.clear();
-    console.table(currentSteps);
+    currentSteps[stepIndex] = updatedStep; // eslint-disable-line no-param-reassign
+    console.clear(); // eslint-disable-line no-console
+    console.table(currentSteps); // eslint-disable-line no-console
     return currentSteps;
 }
 

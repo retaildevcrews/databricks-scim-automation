@@ -33,34 +33,35 @@ class Keyvault {
                 // use specified authentication type (either MI or CLI)
                 const creds = this.authType === 'MI'
                     ? new azureIdentity.ManagedIdentityCredential()
-                    : await msRestNodeAuth.AzureCliCredentials.create({ resource: 'https://vault.azure.net' });
+                    : await msRestNodeAuth.AzureCliCredentials.create({ resource: 'https://vault.azure.net' }); // eslint-disable-line no-await-in-loop
                 this.client = new SecretClient(this.url, creds);
                 // test getSecret to validate successful Keyvault connection
-                await this.getSecret('CosmosUrl');
+                await this.getSecret('CosmosUrl'); // eslint-disable-line no-await-in-loop
                 return true;
             } catch (e) {
-                retries++;
+                retries += 1;
                 if (this.authType === 'MI' && retries < MAX_RETRIES) {
                     // wait 1 second and retry (continue while loop)
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, 1000)); // eslint-disable-line no-await-in-loop
                 } else {
                     throw e;
                 }
             }
         }
+        return true;
     }
 }
 
 async function getKeyvaultSecrets(url, keys) {
     const keyvault = new Keyvault(url, 'CLI');
     await keyvault.connect();
-    return Promise.map(keys, async key => await keyvault.getSecret(key))
-        .then(secrets => (
-            secrets.map(secret => {
-                if (!secret) { throw new Error('Missing Key Vault Secrets') }
+    return Promise.map(keys, (key) => keyvault.getSecret(key))
+        .then((secrets) => (
+            secrets.map((secret) => {
+                if (!secret) { throw new Error('Missing Key Vault Secrets'); }
                 return secret;
-            }).reduce((agg, secret, index) => ({ ...agg, [keys[index]]: secret}), {})
-        ))
+            }).reduce((agg, secret, index) => ({ ...agg, [keys[index]]: secret }), {})
+        ));
 }
 
 module.exports = {

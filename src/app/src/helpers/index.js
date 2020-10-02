@@ -2,7 +2,7 @@ const fs = require('fs');
 const log = require('./log');
 const prompts = require('./prompts');
 
-const isDatabricksUrl = url => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
+const isDatabricksUrl = (url) => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
 
 function isCsvFile(path) {
     const fileExists = fs.existsSync(path);
@@ -10,7 +10,7 @@ function isCsvFile(path) {
 }
 
 function getCsvInputs(path) {
-    const fileContent = fs.readFileSync(path, 'utf8').split("\r\n");
+    const fileContent = fs.readFileSync(path, 'utf8').split('\r\n');
     const isFirstLineHeader = !(isDatabricksUrl(fileContent[0]));
     return {
         csvPath: path,
@@ -24,7 +24,7 @@ function createFile(outputDir, inputPath, initialContent) {
     if (!outputDirExists) {
         fs.mkdirSync(outputDir);
     }
-    const outputPath = outputDir + '/' + inputPath.split('/')[inputPath.split('/').length - 1];
+    const outputPath = `${outputDir}/${inputPath.split('/')[inputPath.split('/').length - 1]}`;
     const fileExists = fs.existsSync(outputPath);
     if (!fileExists) {
         fs.writeFileSync(outputPath, initialContent);
@@ -43,9 +43,9 @@ async function handleResponseErrors(response, successCode) {
     return body;
 }
 
-const boolNoop = bool => () => bool;
-const delay = (time) => new Promise(done => setTimeout(() => done(), time));
-const keepFetching = args => async function(retries, response) {
+const boolNoop = (bool) => () => bool;
+const delay = (time) => new Promise((done) => setTimeout(() => done(), time));
+const keepFetching = (args) => async (retries, response) => {
     if (retries === 0) {
         return args.failedCallback(response);
     }
@@ -53,13 +53,13 @@ const keepFetching = args => async function(retries, response) {
     const { waitTime = 5000, hasStatusErred = boolNoop(false), hasBodyErred = boolNoop(false) } = args;
     // Delay before executing function
     await delay(waitTime);
-    return await args.fn().then(async res => {
+    return args.fn().then(async (res) => {
         if (hasStatusErred(res.status)) {
-            return await keepFetching(args)(retries - 1, res);
+            return keepFetching(args)(retries - 1, res);
         }
         const body = await res.clone().json();
         if (hasBodyErred(body)) {
-            return await keepFetching(args)(retries - 1, res);
+            return keepFetching(args)(retries - 1, res);
         }
         return res;
     });

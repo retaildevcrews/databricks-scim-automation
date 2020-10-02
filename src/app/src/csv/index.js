@@ -46,7 +46,7 @@ const graphCalls = [
         graphCall: graph.getServicePrincipalSyncJobStatus,
         callback: syncCallbacks.keepGettingServicePrincipalSyncJobStatus,
     },
-]
+];
 
 async function promisfySyncCall(csvLine, sharedParams) {
     const [galleryAppName, filterAadGroupDisplayName, databricksUrl] = csvLine.split(',');
@@ -64,28 +64,24 @@ async function promisfySyncCall(csvLine, sharedParams) {
 
     return Promise.mapSeries(graphCalls, ({ graphCall, callback }) => {
         if (params.hasFailed) {
-            return new Promise.resolve('n/a');
+            return new Promise.resolve('n/a'); // eslint-disable-line new-cap
         }
         return graphCall(params)
-            .then(async (res) => await callback(res, params))
+            .then((res) => callback(res, params))
             .then((res) => {
                 params = { ...params, ...res.params };
-                return new Promise.resolve(res.status);
+                return new Promise.resolve(res.status); // eslint-disable-line new-cap
             })
-            .catch(error => {
+            .catch((error) => {
                 params = { ...params, hasFailed: true };
-                return new Promise.resolve(error.message)
-            })
+                return new Promise.resolve(error.message); // eslint-disable-line new-cap
+            });
     });
 }
 
-const startSync = async (
-    secrets,
-    { csvPath, csvHeader, csvRows },
-    { graphAuthCode, databricksAuthCode }
-) => {
+const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCode, databricksAuthCode }) => {
     try {
-        console.log('Creating access tokens...');
+        console.log('Creating access tokens...'); // eslint-disable-line no-console
         const graphTokens = await graph.postAccessToken({
             ...secrets,
             host: signin.host,
@@ -108,35 +104,35 @@ const startSync = async (
             graphAccessToken: graphTokens.accessToken,
             graphRefreshAccessToken: graphTokens.refreshToken,
             databricksAccessToken: databricksTokens.accessToken,
-            databricksRefreshAccessToken: databricksTokens.refreshToken
+            databricksRefreshAccessToken: databricksTokens.refreshToken,
         };
 
-        console.log('Create SCIM connector apps and running sync jobs...');
+        console.log('Create SCIM connector apps and running sync jobs...'); // eslint-disable-line no-console
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
-        console.log('Creating output file...');
+        console.log('Creating output file...'); // eslint-disable-line no-console
         const initialOutputContent = `Execution Date (UTC),${csvHeader},${graphCalls.map(({ graphCall }) => graphCall.name).join(',')}`;
         const csvOutputPath = createFile('./outputs', csvPath, initialOutputContent);
-        for (let i = 0; i < syncAllStatus.length; i++) {
+        for (let i = 0; i < syncAllStatus.length; i += 1) {
             fs.appendFileSync(csvOutputPath, `\r\n${new Date()},${csvRows[i]},${syncAllStatus[i].join(',')}`);
         }
 
-        console.log('Complete...');
-    } catch(error) {
-        console.log('Erred...');
-        console.error({ error });
+        console.log('Complete...'); // eslint-disable-line no-console
+    } catch (error) {
+        console.log('Erred...'); // eslint-disable-line no-console
+        console.error({ error }); // eslint-disable-line no-console
     }
     process.exit(0);
 };
 
 async function startCsv(csvInputPath = process.argv[2]) {
     try {
-        console.log('Checking input file...');
+        console.log('Checking input file...'); // eslint-disable-line no-console
         if (!isCsvFile(csvInputPath)) {
             throw new Error('Unable to find csv file (i.e. npm start <PATH_TO_CSV>)');
         }
         const csvInput = getCsvInputs(csvInputPath);
-        console.log('Getting key vault secrets...');
+        console.log('Getting key vault secrets...'); // eslint-disable-line no-console
         const keys = [
             keyvaultSettings.TENANT_ID_KEY,
             keyvaultSettings.CLIENT_ID_KEY,
@@ -149,7 +145,8 @@ async function startCsv(csvInputPath = process.argv[2]) {
                 [keyvaultSettings.CLIENT_SECRET_KEY]: clientSecret,
             }) => ({ tenantId, clientId, clientSecret }));
         // set up express app to get authentication code
-        let graphAuthCode, databricksAuthCode;
+        let graphAuthCode;
+        let databricksAuthCode;
         const signinApp = new signin.SigninApp();
         signinApp.setCallback((graphCode) => {
             graphAuthCode = graphCode;
@@ -157,13 +154,13 @@ async function startCsv(csvInputPath = process.argv[2]) {
             signinApp.setCallback((databricksCode) => {
                 databricksAuthCode = databricksCode;
                 startSync(secrets, csvInput, { graphAuthCode, databricksAuthCode });
-            })
-        })
+            });
+        });
         signinApp.start();
         prompts.howToQuit();
         prompts.howToSignin(signin.redirectLoginUrl(secrets));
-    } catch(err) {
-        console.error(err);
+    } catch (err) {
+        console.error(err); // eslint-disable-line no-console
     }
 }
 

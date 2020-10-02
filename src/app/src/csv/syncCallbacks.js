@@ -38,13 +38,13 @@ const keepGettingServicePrincipal = async (response, params) => {
         await handleResponseErrors(res, 200);
         throw new Error('FAILED> Unable to get app role ID from service principal');
     };
-    const hasStatusErred = status => status !== 200;
+    const hasStatusErred = (status) => status !== 200;
     const getAppRoles = (body) => (
         body.appRoles.filter(({ isEnabled, origin, displayName }) => (
             isEnabled && origin === 'Application' && displayName === 'User'
         ))
     );
-    const hasBodyErred = body => (!Array.isArray(body.appRoles) || getAppRoles(body).length === 0);
+    const hasBodyErred = (body) => (!Array.isArray(body.appRoles) || getAppRoles(body).length === 0);
     const repeatedArgs = {
         fn: () => graph.getServicePrincipal(params),
         failedCallback,
@@ -52,7 +52,7 @@ const keepGettingServicePrincipal = async (response, params) => {
         hasBodyErred,
     };
     const maxRetries = 5;
-    const body = await keepFetching(repeatedArgs)(maxRetries, response).then(async (res) => await res.json());
+    const body = await keepFetching(repeatedArgs)(maxRetries, response).then((res) => res.json());
     return Promise.resolve({
         status: 'SUCCESS',
         params: { appRoleId: getAppRoles(body)[0].id },
@@ -120,8 +120,8 @@ const keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
         await handleResponseErrors(res, 200);
         throw new Error('FAILED> Unable to get successful sync job');
     };
-    const hasStatusErred = status => status !== 200;
-    const hasBodyErred = body => {
+    const hasStatusErred = (status) => status !== 200;
+    const hasBodyErred = (body) => {
         const { lastExecution, lastSuccessfulExecution, lastSuccessfulExecutionWithExports } = body.status;
         return !(lastSuccessfulExecutionWithExports || lastSuccessfulExecution || (lastExecution && lastExecution.state === 'Succeeded'));
     };

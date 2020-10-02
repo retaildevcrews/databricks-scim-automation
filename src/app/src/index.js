@@ -1,4 +1,4 @@
-const startCsv = require('./csv')
+const startCsv = require('./csv');
 const startCli = require('./cli');
 const { isCsvFile, log, prompts } = require('./helpers');
 
@@ -16,8 +16,9 @@ async function startSync() {
         const csvInputPath = await prompts.userInput('Enter path to CSV file with inputs');
         return startCsv(csvInputPath);
     } catch (error) {
-        console.error(error)
+        console.error(error); // eslint-disable-line no-console
     }
+    return true;
 }
 
 startSync();

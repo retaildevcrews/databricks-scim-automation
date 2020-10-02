@@ -18,7 +18,7 @@ function getHomepage(req, res) {
         res.set('Content-Type', 'text/html').send(response);
     } catch (err) {
         const errorMessage = 'Error reading and sending homepage html';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.status(500).set('Content-Type', 'text/plain').send(errorMessage);
     }
 }
@@ -34,9 +34,9 @@ async function getKeyvaultSecrets(req, res) {
         ];
         const secrets = await keyvaultService.getKeyvaultSecrets(keyvaultUrl, keys);
         res.set('Content-Type', 'application/json').status(200).send(JSON.stringify(secrets));
-    } catch(err) {
+    } catch (err) {
         const errorMessage = 'Error fetching key vault secrets';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -50,8 +50,10 @@ async function getKeyvaultSecrets(req, res) {
 function getRedirectLogin(req, res) {
     const { headers: { origin, host } } = req;
     const { query: { tenantId, clientId } } = url.parse(req.url, true);
-    const redirectUrl = graph.getRedirectLoginUrl({ origin, host, tenantId, clientId });
-    res.send( redirectUrl);
+    const redirectUrl = graph.getRedirectLoginUrl({
+        origin, host, tenantId, clientId,
+    });
+    res.send(redirectUrl);
 }
 
 /**
@@ -62,44 +64,54 @@ function getRedirectLogin(req, res) {
  */
 async function postAccessToken(req, res) {
     try {
-        const { query: { type, code, tenantId, clientId } } = url.parse(req.url, true);
-        const { headers: { origin, host, ['x-client-secret']: clientSecret } } = req;
+        const {
+            query: {
+                type, code, tenantId, clientId,
+            },
+        } = url.parse(req.url, true);
+        const { headers: { origin, host, 'x-client-secret': clientSecret } } = req;
         const scope = type === 'graph' ? tokenSettings.GRAPH_SCOPE : tokenSettings.DATABRICKS_SCOPE;
-        const response = await graph.postAccessToken({ scope, code, origin, host, tenantId, clientId, clientSecret });
+        const response = await graph.postAccessToken({
+            scope, code, origin, host, tenantId, clientId, clientSecret,
+        });
 
         const contentType = response.headers.get('content-type');
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(JSON.stringify(body));
-    } catch(err) {
+    } catch (err) {
         const errorMessage = 'Error fetching token';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
 
 /**
  * Sends a refreshed the access token
- * @param {Object} req Express request 
+ * @param {Object} req Express request
  * @param {Object} res Express response
  * @return {void}
  */
 async function postRefreshAccessToken(req, res) {
     try {
-        const { headers: {
-            ['x-refresh-token']: refreshToken,
-            ['x-client-secret']: clientSecret,
-            origin,
-            host,
-        } } = req;
+        const {
+            headers: {
+                'x-refresh-token': refreshToken,
+                'x-client-secret': clientSecret,
+                origin,
+                host,
+            },
+        } = req;
         const { query: { type, tenantId, clientId } } = url.parse(req.url, true);
         const scope = type === 'graph' ? tokenSettings.GRAPH_SCOPE : tokenSettings.DATABRICKS_SCOPE;
-        const response = await graph.postRefreshAccessToken({ scope, refreshToken, origin, host, tenantId, clientId, clientSecret });
+        const response = await graph.postRefreshAccessToken({
+            scope, refreshToken, origin, host, tenantId, clientId, clientSecret,
+        });
         const contentType = response.headers.get('content-type');
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(JSON.stringify(body));
-    } catch(err) {
+    } catch (err) {
         const errorMessage = 'Error refreshing token';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -119,9 +131,9 @@ async function postScimConnectorGalleryApp(req, res) {
         const body = contentType.includes('json') ? await response.json() : await response.text();
         // Use service principal object ID for other calls: body.servicePrincipal.objectId
         res.set('Content-Type', contentType).status(response.status).send(body);
-    } catch(err) {
+    } catch (err) {
         const errorMessage = 'Error creating scim gallery app';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -143,9 +155,9 @@ async function getAadGroups(req, res) {
         res.set('Content-Type', contentType).status(response.status).send(body);
     } catch (err) {
         const errorMessage = 'Error fetching aad groups';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
-    };
+    }
 }
 
 /**
@@ -166,7 +178,7 @@ async function getServicePrincipal(req, res) {
         res.set('Content-Type', contentType).status(response.status).send(body);
     } catch (err) {
         const errorMessage = 'Error fetching service principals';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -192,7 +204,7 @@ async function postAddAadGroupToServicePrincipal(req, res) {
         res.set('Content-Type', contentType).status(response.status).send(body);
     } catch (err) {
         const errorMessage = 'Error adding aad group to scim';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -214,7 +226,7 @@ async function postCreateServicePrincipalSyncJob(req, res) {
         res.set('Content-Type', contentType).status(response.status).send(body);
     } catch (err) {
         const errorMessage = 'Error syncing jobs';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -233,9 +245,9 @@ async function postCreateDatabricksPat(req, res) {
         const contentType = response.headers.get('content-type');
         const body = contentType.includes('json') ? await response.json() : await response.text();
         res.set('Content-Type', contentType).status(response.status).send(body);
-    } catch(err) {
+    } catch (err) {
         const errorMessage = 'Error creating databricks pat';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -251,11 +263,13 @@ async function postValidateServicePrincipalCredentials(req, res) {
         const { query: { servicePrincipalId, syncJobId, databricksUrl } } = url.parse(req.url, true);
         const graphAccessToken = req.headers['x-access-token'];
         const databricksPat = req.headers['x-databricks-pat'];
-        const response = await graph.postValidateServicePrincipalCredentials({ graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat });
+        const response = await graph.postValidateServicePrincipalCredentials({
+            graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat,
+        });
         res.sendStatus(response.status);
     } catch (err) {
         const errorMessage = 'Error syncing jobs';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -271,11 +285,13 @@ async function putSaveServicePrincipalCredentials(req, res) {
         const { query: { servicePrincipalId, databricksUrl } } = url.parse(req.url, true);
         const graphAccessToken = req.headers['x-access-token'];
         const databricksPat = req.headers['x-databricks-pat'];
-        const response = await graph.putSaveServicePrincipalCredentials({ graphAccessToken, servicePrincipalId, databricksUrl, databricksPat });
+        const response = await graph.putSaveServicePrincipalCredentials({
+            graphAccessToken, servicePrincipalId, databricksUrl, databricksPat,
+        });
         res.sendStatus(response.status);
     } catch (err) {
         const errorMessage = 'Error syncing jobs';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
@@ -294,11 +310,11 @@ async function postStartServicePrincipalSyncJob(req, res) {
         res.sendStatus(response.status);
     } catch (err) {
         const errorMessage = 'Error syncing jobs';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
- 
+
 /**
  * Sends the progress of the current provisioning cycle and stats
  * @param {Object} req Express request
@@ -315,7 +331,7 @@ async function getServicePrincipalSyncJobStatus(req, res) {
         res.set('Content-Type', contentType).status(response.status).send(body);
     } catch (err) {
         const errorMessage = 'Error fetching sync job status';
-        console.error(errorMessage + ': ', err);
+        console.error(`${errorMessage}: ${err}`); // eslint-disable-line no-console
         res.set('Content-Type', 'text/plain').status(500).send(errorMessage);
     }
 }
