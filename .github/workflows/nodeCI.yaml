@@ -37,18 +37,19 @@ jobs:
       run: |
         npm install signin/ --prefix signin/
         npm install graph-wrapper/ --prefix graph-wrapper/
-        # npm install app/ --prefix app/
+        rm  app/package-lock.json # Without it app packages fail to install
+        npm install app/ --prefix app/
     - name: Run lint on 'graph-wrapper/'
       run: npm run lint --prefix ./graph-wrapper
     - name: Run Lint on 'signin/'
       run: npm run lint --prefix ./signin
-    # - name: Run Lint on 'app/'
-    #   run : npm run lint --prefix ./app
+    - name: Run Lint on 'app/'
+      run : npm run lint --prefix ./app
     - name: Run tests in 'signin/'
       run: npm run test --prefix ./signin
     - name: Run tests in 'graph-wrapper/'
       run: npm run test --prefix ./graph-wrapper
-    # - name: Run tests in 'app/'
-    #   run: npm run test --prefix ./app
+    - name: Run tests in 'app/'
+      run: npm run test --prefix ./app
       env:
         CI: true
