@@ -11,8 +11,9 @@ const postAccessToken = async (response) => {
 };
 
 // Checks if created instance of SCIM connector gallery app
-async function postScimConnectorGalleryApp(response) {
+async function postScimConnectorGalleryApp(response, params) {
     const body = await handleResponseErrors(response, 201);
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: { servicePrincipalId: body.servicePrincipal.objectId },
@@ -20,11 +21,12 @@ async function postScimConnectorGalleryApp(response) {
 }
 
 // Checks if received usable AAD group (aadGroupId)
-async function getAadGroups(response) {
+async function getAadGroups(response, params) {
     const body = await handleResponseErrors(response, 200);
     if (body.value.length === 0) {
         throw new Error('FAILED> Did not find any AAD groups');
     }
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: { aadGroupId: body.value[0].id },
@@ -53,6 +55,7 @@ const keepGettingServicePrincipal = async (response, params) => {
     };
     const maxRetries = 5;
     const body = await keepFetching(repeatedArgs)(maxRetries, response).then((res) => res.json());
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: { appRoleId: getAppRoles(body)[0].id },
@@ -60,8 +63,9 @@ const keepGettingServicePrincipal = async (response, params) => {
 };
 
 // Checks if successfully added AAD group to service principal
-async function postAddAadGroupToServicePrincipal(response) {
+async function postAddAadGroupToServicePrincipal(response, params) {
     await handleResponseErrors(response, 201);
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},
@@ -69,8 +73,9 @@ async function postAddAadGroupToServicePrincipal(response) {
 }
 
 // Checks if successfully provisioned a sync job
-async function postCreateServicePrincipalSyncJob(response) {
+async function postCreateServicePrincipalSyncJob(response, params) {
     const body = await handleResponseErrors(response, 201);
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: { syncJobId: body.id },
@@ -78,8 +83,9 @@ async function postCreateServicePrincipalSyncJob(response) {
 }
 
 // Checks if able to successfully created Databricks PAT
-async function postCreateDatabricksPat(response) {
+async function postCreateDatabricksPat(response, params) {
     const body = await handleResponseErrors(response, 200);
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: { databricksPat: body.token_value },
@@ -87,8 +93,9 @@ async function postCreateDatabricksPat(response) {
 }
 
 // Checks if able to successfully validate credentials to connect with databricks workspace
-async function postValidateServicePrincipalCredentials(response) {
+async function postValidateServicePrincipalCredentials(response, params) {
     await handleResponseErrors(response, 204);
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},
@@ -96,18 +103,19 @@ async function postValidateServicePrincipalCredentials(response) {
 }
 
 // Checks if successfully saved credentials to connect with databricks workspace
-async function putSaveServicePrincipalCredentials(response) {
+async function putSaveServicePrincipalCredentials(response, params) {
     await handleResponseErrors(response, 204);
+    params.progressBar.increment();
     return Promise.resolve({
-        // status: `${event}> SUCCESS`,
         status: 'SUCCESS',
         params: {},
     });
 }
 
 // Checks if successfully started sync job
-async function postStartServicePrincipalSyncJob(response) {
+async function postStartServicePrincipalSyncJob(response, params) {
     await handleResponseErrors(response, 204);
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},
@@ -133,6 +141,7 @@ const keepGettingServicePrincipalSyncJobStatus = async (response, params) => {
     };
     const maxRetries = 10;
     await keepFetching(repeatedArgs)(maxRetries, response);
+    params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},

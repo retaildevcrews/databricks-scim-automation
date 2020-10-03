@@ -1,6 +1,7 @@
 require('dotenv').config();
 const Promise = require('bluebird');
 const fs = require('fs');
+const cliProgress = require('cli-progress');
 const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
 const { getKeyvaultSecrets } = require('../services/keyvault');
@@ -48,22 +49,29 @@ const graphCalls = [
     },
 ];
 
+const progressMultiBar = new cliProgress.MultiBar({
+    format: '{galleryAppName}: [{bar}] | {percentage}% | {value}/{total} Steps | {duration}s Elapsed',
+}, cliProgress.Presets.legacy);
+
 async function promisfySyncCall(csvLine, sharedParams) {
     const [galleryAppName, filterAadGroupDisplayName, databricksUrl] = csvLine.split(',');
     if (!isDatabricksUrl(databricksUrl)) {
         throw new Error(`Databricks URL (${databricksUrl}) is not an accepted value`);
     }
+    const progressBar = progressMultiBar.create(graphCalls.length, 0, { galleryAppName });
 
     let params = {
         hasFailed: false,
+        progressBar,
         ...sharedParams,
         databricksUrl,
         filterAadGroupDisplayName,
         galleryAppName,
     };
 
-    return Promise.mapSeries(graphCalls, ({ graphCall, callback }) => {
+    const syncResult = await Promise.mapSeries(graphCalls, ({ graphCall, callback }) => {
         if (params.hasFailed) {
+            progressBar.stop();
             return new Promise.resolve('n/a'); // eslint-disable-line new-cap
         }
         return graphCall(params)
@@ -77,11 +85,13 @@ async function promisfySyncCall(csvLine, sharedParams) {
                 return new Promise.resolve(error.message); // eslint-disable-line new-cap
             });
     });
+    progressBar.stop();
+    return syncResult;
 }
 
 const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCode, databricksAuthCode }) => {
     try {
-        console.log('Creating access tokens...'); // eslint-disable-line no-console
+        console.log('\nCreating access tokens...'); // eslint-disable-line no-console
         const graphTokens = await graph.postAccessToken({
             ...secrets,
             host: signin.host,
@@ -107,16 +117,15 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCo
             databricksRefreshAccessToken: databricksTokens.refreshToken,
         };
 
-        console.log('Create SCIM connector apps and running sync jobs...'); // eslint-disable-line no-console
+        console.log('\nCreating SCIM connector apps and running sync jobs...'); // eslint-disable-line no-console
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
-        console.log('Creating output file...'); // eslint-disable-line no-console
+        console.log('\n\nCreating output file...'); // eslint-disable-line no-console
         const initialOutputContent = `Execution Date (UTC),${csvHeader},${graphCalls.map(({ graphCall }) => graphCall.name).join(',')}`;
         const csvOutputPath = createFile('./outputs', csvPath, initialOutputContent);
         for (let i = 0; i < syncAllStatus.length; i += 1) {
             fs.appendFileSync(csvOutputPath, `\r\n${new Date()},${csvRows[i]},${syncAllStatus[i].join(',')}`);
         }
-
         console.log('Complete...'); // eslint-disable-line no-console
     } catch (error) {
         console.log('Erred...'); // eslint-disable-line no-console
