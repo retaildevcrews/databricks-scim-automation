@@ -16,6 +16,7 @@
   "dependencies": {
     "@databricks-scim-automation/graph": "file:../graph-wrapper",
     "express": "^4.17.1",
+    "npm-force-resolutions": "0.0.3",
     "url": "^0.11.0"
   },
   "devDependencies": {
@@ -30,7 +31,6 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "mocha": "^5.1.1",
-    "npm-force-resolutions": "0.0.3",
     "nyc": "^15.1.0"
   }
 }
