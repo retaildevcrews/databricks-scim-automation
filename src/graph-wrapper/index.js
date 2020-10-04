@@ -30,6 +30,8 @@ function getQueryParams(queryParams, shouldEncode = true) {
  * @param {Object} args
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
+ * @param {string} args.tenantId Organization's tenant ID
+ * @param {string} args.clientId App registration's client ID
  * @return {string} Url for Microsoft login portal
  */
 function getRedirectLoginUrl({
@@ -57,13 +59,13 @@ function getRedirectLoginUrl({
  * @param {string} args.code Redeemable sign-in code from Microsoft login portal
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
- * @param {string} args.tenantId Tenant ID in Azure AD
- * @param {string} args.clientId The application (service principal) ID of the application
- * @param {string} args.clientSecret The secret generated for the application
+ * @param {string} args.tenantId Organization's tenant ID
+ * @param {string} args.clientId App registration's client ID
+ * @param {string} args.clientSecret App registration's client secret
  * @param {string|null} args.scope The scopes that the access_token is valid for
  * @return {external:RequestAnAccessTokenPromise|external:RequestDatabricksAccessTokenPromise}
  */
-async function postAccessToken(params) {
+function postAccessToken(params) {
     const {
  code, origin, host, tenantId, clientId, clientSecret, scope = tokenSettings.GRAPH_SCOPE,
 } = params;
@@ -75,7 +77,7 @@ async function postAccessToken(params) {
         { key: 'client_secret', value: clientSecret },
         { key: 'code', value: code },
     ];
-    return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
+    return fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: getQueryParams(queryParams),
@@ -91,24 +93,24 @@ async function postAccessToken(params) {
  * @param {string} args.graphRefreshToken The token used to refresh the access token
  * @param {string|null} args.origin Indicator whether origin is usable
  * @param {string} args.host Fallback for origin creation
- * @param {string} args.tenantId Tenant ID in Azure AD
- * @param {string} args.clientId The application (service principal) ID of the application
- * @param {string} args.clientSecret The secret generated for the application
+ * @param {string} args.tenantId Organization's tenant ID
+ * @param {string} args.clientId App registration's client ID
+ * @param {string} args.clientSecret App registration's client secret
  * @return {external:RefreshTheAccessTokenPromise}
  */
-async function postRefreshAccessToken(params) {
+function postRefreshAccessToken(params) {
     const {
- refreshToken, origin, host, tenantId, clientId, clientSecret,
-} = params;
+        refreshToken, origin, host, tenantId, clientId, clientSecret, scope = tokenSettings.GRAPH_SCOPE,
+    } = params;
     const queryParams = [
         { key: 'client_id', value: clientId },
-        { key: 'scope', value: 'https://graph.microsoft.com/mail.read' },
+        { key: 'scope', value: scope },
         { key: 'redirect_uri', value: getOriginUrl({ origin, host }) },
         { key: 'grant_type', value: 'refresh_token' },
         { key: 'client_secret', value: clientSecret },
         { key: 'refresh_token', value: refreshToken },
     ];
-    return await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
+    return fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: getQueryParams(queryParams),
@@ -126,9 +128,9 @@ async function postRefreshAccessToken(params) {
  * @param {string} args.galleryAppName Custom name of instantiated gallery app
  * @return {external:ApplicationTemplateInstantiatePromise}
  */
-async function postScimConnectorGalleryApp({ graphAccessToken, galleryAppTemplateId, galleryAppName }) {
+function postScimConnectorGalleryApp({ graphAccessToken, galleryAppTemplateId, galleryAppName }) {
     // Use service principal object ID for other calls: body.servicePrincipal.objectId
-    return await fetch(`https://graph.microsoft.com/beta/applicationTemplates/${galleryAppTemplateId}/instantiate`, {
+    return fetch(`https://graph.microsoft.com/beta/applicationTemplates/${galleryAppTemplateId}/instantiate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -150,8 +152,8 @@ async function postScimConnectorGalleryApp({ graphAccessToken, galleryAppTemplat
  * @param {string} args.filterAadGroupDisplayName Display name of AAD group to filter by
  * @return {external:FilteredListOfGroupObjectsPromise}
  */
-async function getAadGroups({ graphAccessToken, filterAadGroupDisplayName }) {
-    return await fetch(`https://graph.microsoft.com/beta/groups?filter=displayname+eq+'${filterAadGroupDisplayName}'`, {
+function getAadGroups({ graphAccessToken, filterAadGroupDisplayName }) {
+    return fetch(`https://graph.microsoft.com/beta/groups?filter=displayname+eq+'${filterAadGroupDisplayName}'`, {
         headers: { Authorization: `Bearer ${graphAccessToken}` },
     });
 }
@@ -166,9 +168,9 @@ async function getAadGroups({ graphAccessToken, filterAadGroupDisplayName }) {
  * @param {string} args.servicePrincipalId ID of the servicePrincipal
  * @return {external:GetServicePrincipalPromise}
  */
-async function getServicePrincipal(params) {
+function getServicePrincipal(params) {
     const { graphAccessToken, servicePrincipalId } = params;
-    return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}`, {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${graphAccessToken}` },
     });
@@ -186,10 +188,10 @@ async function getServicePrincipal(params) {
  * @param {string} args.appRoleId ID of the appRole (defined on the resource service principal) to assign to the client service principal
  * @return {external:GrantAnAppRoleAssignmentToAServicePrincipalPromise}
  */
-async function postAddAadGroupToServicePrincipal({
+function postAddAadGroupToServicePrincipal({
  graphAccessToken, servicePrincipalId, aadGroupId, appRoleId,
 }) {
-    return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/appRoleAssignments`, {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/appRoleAssignments`, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${graphAccessToken}`,
@@ -214,8 +216,8 @@ async function postAddAadGroupToServicePrincipal({
  * @param {string} args.syncJobTemplateId One of the template IDs created for this application/service principal
  * @return {external:CreateSynchronizationJobPromise}
  */
-async function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobTemplateId }) {
-    return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs`, {
+function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobTemplateId }) {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs`, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${graphAccessToken}`,
@@ -236,12 +238,12 @@ async function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrin
  * @param {string} args.galleryAppName Name of Gallery App Service Principal
  * @return {external:CreateDatabricksPatPromise}
  */
-async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, galleryAppName }) {
+function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, galleryAppName }) {
     const databricksOrgId = get({ match: databricksUrl.match(/adb-\d+/) }, 'match[0]', '').split('-')[1];
     if (!databricksOrgId) {
         throw new Error('Unable to derive Databricks Org Id from Databricks URL');
     }
-    return await fetch(`${databricksUrl}api/2.0/token/create`, {
+    return fetch(`${databricksUrl.endsWith('/') ? databricksUrl : `${databricksUrl}/`}api/2.0/token/create`, {
         agent: false,
         method: 'POST',
         headers: {
@@ -266,21 +268,21 @@ async function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, g
  * @param {string} args.databricksPat Credentials to validate: Databricks workspace personal access token
  * @return {external:SynchronizationJobValidateCredentialsPromise}
  */
-async function postValidateServicePrincipalCredentials({
+function postValidateServicePrincipalCredentials({
  graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat,
 }) {
-    return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/validateCredentials`, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
- credentials: [
-            { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
-            { key: 'SecretToken', value: databricksPat },
-        ],
-}),
+            credentials: [
+                { key: 'BaseAddress', value: `${databricksUrl.endsWith('/') ? databricksUrl : `${databricksUrl}/`}api/2.0/preview/scim` },
+                { key: 'SecretToken', value: databricksPat },
+            ],
+        }),
     });
 }
 
@@ -296,21 +298,21 @@ async function postValidateServicePrincipalCredentials({
  * @param {string} args.databricksPat Secret token used to establish trust between Azure AD and the application
  * @return {external:SaveYourCredentialsPromise}
  */
-async function putSaveServicePrincipalCredentials({
+function putSaveServicePrincipalCredentials({
  graphAccessToken, servicePrincipalId, databricksUrl, databricksPat,
 }) {
-    return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/secrets`, {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/secrets`, {
         method: 'PUT',
         headers: {
             Authorization: `Bearer ${graphAccessToken}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
- value: [
-            { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
-            { key: 'SecretToken', value: databricksPat },
-        ],
-}),
+            value: [
+                { key: 'BaseAddress', value: `${databricksUrl.endsWith('/') ? databricksUrl : `${databricksUrl}/`}api/2.0/preview/scim` },
+                { key: 'SecretToken', value: databricksPat },
+            ],
+        }),
     });
 }
 
@@ -325,8 +327,8 @@ async function putSaveServicePrincipalCredentials({
  * @param {string} args.syncJobId ID of the provisioned synchronization job
  * @return {external:StartSynchronizationJobPromise}
  */
-async function postStartServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobId }) {
-    return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/start`, {
+function postStartServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobId }) {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/start`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${graphAccessToken}` },
     });
@@ -343,8 +345,8 @@ async function postStartServicePrincipalSyncJob({ graphAccessToken, servicePrinc
  * @param {string} args.syncJobId ID of the provisioned synchronization job
  * @return {external:GetSynchronizationJobPromise}
  */
-async function getServicePrincipalSyncJobStatus({ graphAccessToken, servicePrincipalId, syncJobId }) {
-    return await fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}`, {
+function getServicePrincipalSyncJobStatus({ graphAccessToken, servicePrincipalId, syncJobId }) {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${graphAccessToken}` },
     });
