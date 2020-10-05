@@ -10,7 +10,7 @@
   * Update required variables  `GALLERY_APP_TEMPLATE_ID`, `SCIM_TEMPLATE_ID`, and `KEYVAULT_URL`
     * If created infrastructure via `databricks-scim-automation/infra`, `KEYVAULT_URL` is `https://{​​​​​scim_Name}​​​​​-kv.vault.azure.net`, otherwise find in Azure Portal
   * Update optional variables `PORT`
-* Update permissions of app service client (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
+* Update permissions of app registration (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
   * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `Authentication`
     * `Add a Platform` > `Web` > `Redirect URIs`: `http://localhost:{1337|.env.PORT}`
     * Select `Implicit grant` > `Access tokens` option
