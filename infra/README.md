@@ -1,5 +1,9 @@
 # Terraform to Setup App Service, Key Vault, and CosmosDB
 
+## Prerequisites
+- Azure CLI 2.12.1+ ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
+- Terraform 0.13.4+ ([download](https://www.terraform.io/downloads.html))
+
 ## Configure AZ CLI
 
 ### Login to Azure

@@ -20,8 +20,8 @@ Create a service principal from a SCIM Connector Gallery App that will sync user
 - App registration with permissions to use:
   - Microsoft Graph API
   - Databricks API
-- Azure CLI and Terraform for Infrastructure
-- Node for CLI/GUI
+- Azure CLI or Terraform for Infrastructure
+- Node for CLI/GUI 12.18.4+ ([download](https://nodejs.org/en/download/))
 
 ## Documentation && Setup
 
