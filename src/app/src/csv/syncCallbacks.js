@@ -79,7 +79,7 @@ async function postAddOwner1(response, params) {
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},
-    })
+    });
 }
 
 // Checks if second email received is a usable directory user (objectId)
@@ -99,7 +99,7 @@ async function postAddOwner2(response, params) {
     return Promise.resolve({
         status: 'SUCCESS',
         params: {},
-    })
+    });
 }
 
 // Checks if successfully added AAD group to service principal

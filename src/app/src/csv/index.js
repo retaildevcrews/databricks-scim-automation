@@ -31,16 +31,16 @@ const graphCalls = [
     }, {
         graphCall: graph.getUserForOwner1,
         callback: syncCallbacks.getUserForOwner1,
-    },{
+    }, {
         graphCall: graph.postAddOwner1,
         callback: syncCallbacks.postAddOwner1,
-    },{
+    }, {
         graphCall: graph.getUserForOwner2,
         callback: syncCallbacks.getUserForOwner2,
-    },{
+    }, {
         graphCall: graph.postAddOwner2,
         callback: syncCallbacks.postAddOwner2,
-    },{
+    }, {
         graphCall: graph.postCreateServicePrincipalSyncJob,
         callback: syncCallbacks.postCreateServicePrincipalSyncJob,
     }, {
