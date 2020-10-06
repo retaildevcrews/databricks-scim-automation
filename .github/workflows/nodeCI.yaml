@@ -1,0 +1,55 @@
+name: NodeJS CI
+
+on:
+  push:
+    branches:
+      - main
+
+    paths:
+      - 'src/**'
+      - '.github/**'
+
+    tags:
+      - v*
+
+  pull_request:
+    types: [ opened, reopened, synchronize, closed ]
+    branches:
+      - main
+    paths:
+      - 'src/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - name: Install npm packages
+      run: |
+        # Weirdly it has to be an ordered install: graph-wrapper --> signin --> app
+        npm install graph-wrapper/ --prefix graph-wrapper/
+        npm install signin/ --prefix signin/
+        rm  app/package-lock.json # Without it app packages fail to install
+        npm install app/ --prefix app/
+    - name: Run lint on 'graph-wrapper/'
+      run: npm run lint --prefix ./graph-wrapper
+    - name: Run Lint on 'signin/'
+      run: npm run lint --prefix ./signin
+    - name: Run Lint on 'app/'
+      run : npm run lint --prefix ./app
+    - name: Run tests in 'signin/'
+      run: npm run test --prefix ./signin
+    # - name: Run tests in 'graph-wrapper/'
+    #   run: npm run test --prefix ./graph-wrapper
+    # - name: Run tests in 'app/'
+    #   run: npm run test --prefix ./app
+      env:
+        CI: true
