@@ -4,32 +4,30 @@
 
 ## Description
 
-Description of the project ...
+Create a service principal from a SCIM Connector Gallery App that will sync users in an AAD group to a specified Databricks workspace. Then create and start an initial sync job.
 
 ## Features
 
-- Feature
-- Feature
+- Create a single SCIM app and execute initial sync job via CLI
+- Create multiple SCIM apps from a CSV and execute all initial sync jobs via CLI
+- Create a single SCIM app and execute initial sync job via GUI
+- Notes on SCIM sync cadence at [./src/app/README.md > End User Notes](./src/app/README.md#scim-sync-cadence)
 
 ## Prerequisites
 
 - Azure subscription with permissions to create:
-  - Resource Groups, Service Principals, Key Vault, Cosmos DB, Azure Container Registry, Azure Monitor, App Service
-- Bash shell (tested on Visual Studio Codespaces, Mac, Ubuntu, Windows with WSL2)
-  - Will not work with WSL1 or Cloud Shell
-- .NET Core SDK 3.1 ([download](https://dotnet.microsoft.com/download))
-- Docker CLI ([download](https://docs.docker.com/install/))
-- Azure CLI ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
-- Visual Studio Code (optional) ([download](https://code.visualstudio.com/download))
-- VS Code ESLint Extension (optional) ([download](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint))
+  - Resource Groups, Service Principals, and Key Vault
+- App registration with permissions to use:
+  - Microsoft Graph API
+  - Databricks API
+- Azure CLI or Terraform for Infrastructure
+- Node for CLI/GUI 12.18.4+ ([download](https://nodejs.org/en/download/))
 
-## Documentation
+## Documentation && Setup
 
-- Table of contents is at [docs/index.md](docs/index.md)
+- Infrastructure Setup and Execution: [README.md](./infra/README.md)
+- CLI/GUI Setup and Execution: [README.md](./src/app/README.md)
 
-## Setup
-
-TODO: Add instructions on setting up infrastructure
 
 ### Validate az CLI works
 
@@ -42,34 +40,6 @@ az account show
 
 # if not, log in
 az login
-
-```
-
-### Run app locally
-
-```bash
-
-# run the application
-# assumes a key vault is created with "AccessToken" secret
-# TODO: consider parameterizing
-dotnet run -p src/app/databricksscim.csproj -- --auth-type CLI --keyvault-name {insert key vault name}
-
-```
-
-### Test application
-
-Open a new terminal
-
-```bash
-
-# test the application
-
-# test using curl
-curl localhost:4120/version
-
-# test dummy endpoint
-# TODO: remove/update when graph API calls are integrated
-curl localhost:4120/api/SCIM
 
 ```
 
