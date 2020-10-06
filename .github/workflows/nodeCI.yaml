@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/**
 
     paths:
       - 'src/**'
@@ -34,11 +35,10 @@ jobs:
         node-version: '12.x'
     - name: Install npm packages
       run: |
-        # Weirdly it has to be an ordered install: graph-wrapper --> signin --> app
-        npm install graph-wrapper/ --prefix graph-wrapper/
-        npm install signin/ --prefix signin/
-        rm  app/package-lock.json # Without it app packages fail to install
-        npm install app/ --prefix app/
+        cd app/
+        npm link ../graph-wrapper/
+        npm link ../signin/
+        npm install
     - name: Run lint on 'graph-wrapper/'
       run: npm run lint --prefix ./graph-wrapper
     - name: Run Lint on 'signin/'
