@@ -24,7 +24,7 @@
 
 ## Run CSV CLI App
 
-* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
+* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Owner Email 1`, `Owner Email 2`, `Databricks Url`
   * The order is important
   * Databricks Url format: https://adb-*.*.azuredatabricks.net
 * Execute `npm start <path_to_file>`

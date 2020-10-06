@@ -74,6 +74,52 @@ async function getServicePrincipal(response, stepsStatus, params, graphCall) {
     return Promise.resolve({ appRoleId: params.appRoleId });
 }
 
+// Checks if first email received is a usable directory user (objectId)
+async function getUserForOwner1(response, stepsStatus, params) {
+    const body = await response.json();
+    if (response.status !== 200 || body.value.length === 0) {
+        stepsStatus = log.table(stepsStatus, { Action: 'getUserForOwner1', Status: 'Failed', Attempts: 1}); // eslint-disable-line no-param-reassign
+        throw new Error(`Could not get a user objectId from provided email address to assign as owner!\n${JSON.stringify(body)}`);
+    }
+    params.directoryObjectId1 = body.value[0].id; // eslint-disable-line no-param-reassign
+    stepsStatus = log.table(stepsStatus, { Action: 'getUserForOwner1', Status: 'Success', Attempts: 1}); // eslint-disable-line no-param-reassign
+    return Promise.resolve({ directoryObjectId1: body.value.id });
+}
+
+// Checks if first owner was successfully added to SCIM Connector
+async function postAddOwner1(response, stepsStatus, params) {
+    if (response.status !== 204) {
+        stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner1', Status: 'Failed', Attempts: 1}); // eslint-disable-line no-param-reassign
+        const body = await response.json();
+        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+    }
+    stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner1', Status: 'Success', Attempts: 1}); // eslint-disable-line no-param-reassign
+    return Promise.resolve({});
+}
+
+// Checks if second email received is a usable directory user (objectId)
+async function getUserForOwner2(response, stepsStatus, params) {
+    const body = await response.json();
+    if (response.status !== 200 || body.value.length === 0) {
+        stepsStatus = log.table(stepsStatus, { Action: 'getUserForOwner2', Status: 'Failed', Attempts: 1}); // eslint-disable-line no-param-reassign
+        throw new Error(`Could not get a user objectId from provided email address to assign as owner!\n${JSON.stringify(body)}`);
+    }
+    params.directoryObjectId2 = body.value[0].id; // eslint-disable-line no-param-reassign
+    stepsStatus = log.table(stepsStatus, { Action: 'getUserForOwner2', Status: 'Success', Attempts: 1}); // eslint-disable-line no-param-reassign
+    return Promise.resolve({ directoryObjectId2: body.value.id });
+}
+
+// Checks if second owner was successfully added to SCIM Connector
+async function postAddOwner2(response, stepsStatus, params) {
+    if (response.status !== 204) {
+        stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner2', Status: 'Failed', Attempts: 1}); // eslint-disable-line no-param-reassign
+        const body = await response.json();
+        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+    }
+    stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner2', Status: 'Success', Attempts: 1}); // eslint-disable-line no-param-reassign
+    return Promise.resolve({});
+}
+
 // Checks if successfully added AAD group to service principal
 async function postAddAadGroupToServicePrincipal(response, stepsStatus) {
     const body = await response.json();
@@ -147,6 +193,10 @@ module.exports = {
     postScimConnectorGalleryApp,
     getAadGroups,
     getServicePrincipal,
+    getUserForOwner1,
+    postAddOwner1,
+    getUserForOwner2,
+    postAddOwner2,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
     postCreateDatabricksPat,

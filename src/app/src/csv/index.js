@@ -29,6 +29,18 @@ const graphCalls = [
         graphCall: graph.postAddAadGroupToServicePrincipal,
         callback: syncCallbacks.postAddAadGroupToServicePrincipal,
     }, {
+        graphCall: graph.getUserForOwner1,
+        callback: syncCallbacks.getUserForOwner1,
+    },{
+        graphCall: graph.postAddOwner1,
+        callback: syncCallbacks.postAddOwner1,
+    },{
+        graphCall: graph.getUserForOwner2,
+        callback: syncCallbacks.getUserForOwner2,
+    },{
+        graphCall: graph.postAddOwner2,
+        callback: syncCallbacks.postAddOwner2,
+    },{
         graphCall: graph.postCreateServicePrincipalSyncJob,
         callback: syncCallbacks.postCreateServicePrincipalSyncJob,
     }, {
@@ -54,7 +66,7 @@ const progressMultiBar = new cliProgress.MultiBar({
 }, cliProgress.Presets.legacy);
 
 async function promisfySyncCall(csvLine, sharedParams) {
-    const [galleryAppName, filterAadGroupDisplayName, databricksUrl] = csvLine.split(',');
+    const [galleryAppName, filterAadGroupDisplayName, ownerEmail1, ownerEmail2, databricksUrl] = csvLine.split(',');
     if (!isDatabricksUrl(databricksUrl)) {
         throw new Error(`Databricks URL (${databricksUrl}) is not an accepted value`);
     }
@@ -67,6 +79,8 @@ async function promisfySyncCall(csvLine, sharedParams) {
         databricksUrl,
         filterAadGroupDisplayName,
         galleryAppName,
+        ownerEmail1,
+        ownerEmail2,
     };
 
     const syncResult = await Promise.mapSeries(graphCalls, ({ graphCall, callback }) => {

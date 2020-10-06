@@ -62,6 +62,46 @@ const keepGettingServicePrincipal = async (response, params) => {
     });
 };
 
+// Checks if first email received is a usable directory user (objectId)
+async function getUserForOwner1(response, params) {
+    const body = await handleResponseErrors(response, 200);
+    params.progressBar.increment();
+    return Promise.resolve({
+        status: 'SUCCESS',
+        params: { directoryObjectId1: body.value[0].id },
+    });
+}
+
+// Checks if first owner was successfully added to SCIM Connector
+async function postAddOwner1(response, params) {
+    await handleResponseErrors(response, 204);
+    params.progressBar.increment();
+    return Promise.resolve({
+        status: 'SUCCESS',
+        params: {},
+    })
+}
+
+// Checks if second email received is a usable directory user (objectId)
+async function getUserForOwner2(response, params) {
+    const body = await handleResponseErrors(response, 200);
+    params.progressBar.increment();
+    return Promise.resolve({
+        status: 'SUCCESS',
+        params: { directoryObjectId2: body.value[0].id },
+    });
+}
+
+// Checks if second owner was successfully added to SCIM Connector
+async function postAddOwner2(response, params) {
+    await handleResponseErrors(response, 204);
+    params.progressBar.increment();
+    return Promise.resolve({
+        status: 'SUCCESS',
+        params: {},
+    })
+}
+
 // Checks if successfully added AAD group to service principal
 async function postAddAadGroupToServicePrincipal(response, params) {
     await handleResponseErrors(response, 201);
@@ -153,6 +193,10 @@ module.exports = {
     postScimConnectorGalleryApp,
     getAadGroups,
     keepGettingServicePrincipal,
+    getUserForOwner1,
+    postAddOwner1,
+    getUserForOwner2,
+    postAddOwner2,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
     postCreateDatabricksPat,
