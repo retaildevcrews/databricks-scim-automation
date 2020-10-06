@@ -2,6 +2,10 @@ const assert = require('chai').assert;
 const expect = require('chai').expect;
 const index = require('../index.js');
 const fetchMock = require('fetch-mock');
+const chaiFetchMock = require('chai-fetch-mock');
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+chai.use(chaiHttp);
 
 const tenantId = '1234-3333-3333';
 const clientId = '1111-2222-2222';
@@ -55,34 +59,46 @@ describe('Get Redirect Login Url', () => {
     });
 });
 
+// describe('API /token', () => {
+//     it('it should return 200', (done) => {
+//       chai.request('https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token')
+//         .post('/')
+//         .end((err, res) => {
+//           //console.log('req',req);
+//           res.should.have.status(200);
+//           done();
+//         });
+//     });
+//   });
+
+
 describe('postAccessToken', () => {
-    const urlRegex = /\/oauth2\/v2.0\/token/;
+    let urlRegex = /\/token/;
     afterEach(() => {
         fetchMock.restore();
     });
 
     it('should call fetch /token with required query parameters', () => {
         fetchMock.mock(urlRegex, 200);
-        let calledAction;
-        const fakeDispatcher = (action) => {
-            calledAction = action;
-        };
 
-        const next = index.postAccessToken({
+        index.postAccessToken({
             ...secrets,
             host: 'localhost:8000',
             code: 'graphAuthCode',
             scope: 'tokenSettings.GRAPH_SCOPE' 
         });
-        next(fakeDispatcher);
+            return expect(fetchMock.called(urlRegex)).to.equal(true);
 
-        expect(fetchMock.called(urlRegex)).to.equal(true);
-        expect(fetchMock.lastOptions(urlRegex)).to.deep.equal({});
+        //xpect(fetchMock).route('/token').to.have.been.called;
+        //console.log('fetct is',fetchMock.config.Request.);
+        //expect(fetchMock.headers.Content-Type).to.equal('123456')
+        //expect(fetch(urlRegex)).to.have.been.called;
+        
 
-        // let calledUrl = fetchMock.lastUrl(giphyUrlRegex);
-        // let queryString = url.parse(calledUrl, true).query;
-
-        // expect(queryString.api_key).to.not.be.null;
+         //let calledUrl = fetchMock.lastUrl(urlRegex);
+         //let queryString = url.parse(calledUrl, true).query;
+         //expect(queryString.client_id).to.not.be.null;
         // expect(queryString.limit).to.equal("1");
     });
 });
+
