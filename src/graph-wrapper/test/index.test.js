@@ -1,29 +1,46 @@
-const assert = require('chai').assert;
-const expect = require('chai').expect;
-const index = require('../index.js');
-const fetchMock = require('fetch-mock');
-const chaiFetchMock = require('chai-fetch-mock');
+const { assert } = require('chai');
+const { expect } = require('chai');
 const chai = require('chai');
+const spies = require('chai-spies');
 const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const rewire = require('rewire');
+const get = require('lodash.get');
+const index = require('../index.js');
 
-const tenantId = '1234-3333-3333';
-const clientId = '1111-2222-2222';
-const clientSecret = '1111-2222-3333';
+const graph = rewire('../index.js');
+
+chai.use(chaiHttp);
+chai.use(spies);
+
+const tenantId = 'mock-tenant-id';
+const clientId = 'mock-client-id';
+const clientSecret = 'mock-client-secret';
 const scope = 'https://graph.microsoft.com/mail.read';
-const databricksUrl = 'https://adb-123.11.azuredatabricks.net/';
-const filterAadGroupDisplayName = 'testAADGroup';
-const galleryAppName = 'test';
+const databricksUrl = 'https://adb-11222222.10.azuredatabricks.net/';
+const filterAadGroupDisplayName = 'mockAADGroup';
+const galleryAppName = 'mockGalleryApp';
+const galleryAppTemplateId = 'mockGalleryTemplateId';
+const syncJobTemplateId = 'mockSyncJobTemplateId';
+const graphAccessToken = 'mockGraphAccessToken';
+const graphRefreshAccessToken = 'mockGraphRegreshAccessToken';
+const databricksAccessToken = 'mockDatabricksAccessToken';
+const databricksRefreshAccessToken = 'mockDatabricksRegreshAccessToken';
 const secrets = { tenantId, clientId, clientSecret };
+const servicePrincipalId = 'mockServicePrincipalId';
+const aadGroupId = 'mockAADGroupId';
+const appRoleId = 'mockAppRoleId';
+const syncJobId = 'mockSyncJobId';
+const databricksPat = 'mockDatabricksPat';
+const graphAuthCode = 'mockGraphAuthCode';
 const sharedParams = {
-    galleryAppTemplateId: 'test-template-id-1',
-    syncJobTemplateId: 'test-sync-jpb=template-id-1',
-    graphAccessToken: '1111111111-11111',
-    graphRefreshAccessToken: '22222222222-222222',
-    databricksAccessToken: 'databricksTokens.accessToken',
-    databricksRefreshAccessToken: `databricksTokens.refreshToken`,
+    galleryAppTemplateId,
+    syncJobTemplateId,
+    graphAccessToken,
+    graphRefreshAccessToken,
+    databricksAccessToken,
+    databricksRefreshAccessToken,
 };
-let params = {
+const params = {
     hasFailed: false,
     ...sharedParams,
     databricksUrl,
@@ -31,74 +48,240 @@ let params = {
     galleryAppName,
 };
 
+describe('Validate AccessToken', () => {
+    const spy = chai.spy();
+    graph.__set__('getQueryParams', spy);
+    const queryParams = [
+        { key: 'client_id', value: clientId },
+        { key: 'scope', value: scope },
+        { key: 'redirect_uri', value: 'http://localhost:8000' },
+        { key: 'grant_type', value: 'authorization_code' },
+        { key: 'client_secret', value: clientSecret },
+        { key: 'code', value: graphAuthCode },
+    ];
+
+    it('should call postAccessToken with required parametes', (done) => {
+    graph.postAccessToken({
+                ...secrets,
+                host: 'localhost:8000',
+                code: graphAuthCode,
+                scope,
+            });
+
+    expect(spy).to.have.been.called();
+    expect(spy).to.have.been.called.with(queryParams);
+    done();
+    });
+
+    it('should call postRefreshAccessToken with required parametes', (done) => {
+        graph.postRefreshAccessToken({
+                    ...secrets,
+                    host: 'localhost:8000',
+                    code: graphAuthCode,
+                    scope,
+                });
+
+    expect(spy).to.have.been.called();
+    expect(spy).to.have.been.called.with(queryParams);
+    done();
+    });
+});
+
 describe('Get Origin URL', () => {
-    let expectedResult = 'http://localhost:8000';
+    const expectedResult = 'http://localhost:8000';
     it('should get origin url with no origin provided', () => {
-        let origin = ''; 
-        let host = 'localhost:8000';
-        let result = index.getOriginUrl({origin, host});
-        assert.equal(result,expectedResult);
+        const origin = '';
+        const host = 'localhost:8000';
+        const result = index.getOriginUrl({ origin, host });
+        assert.equal(result, expectedResult);
     });
 
     it('should get origin url with origin provided', () => {
-        let origin = 'http://localhost:8000'; 
-        let host = '';
-        let result = index.getOriginUrl({origin, host});
-        assert.equal(result,expectedResult);
+        const origin = 'http://localhost:8000';
+        const host = '';
+        const result = index.getOriginUrl({ origin, host });
+        assert.equal(result, expectedResult);
     });
 });
 
 describe('Get Redirect Login Url', () => {
     it('should get origin url with client id and tenant id', () => {
-        let origin = ''; 
-        let host = 'localhost:8000';
-        let result = index.getRedirectLoginUrl({origin, host, tenantId, clientId});
+        const origin = '';
+        const host = 'localhost:8000';
+        const result = index.getRedirectLoginUrl({
+            origin, host, tenantId, clientId,
+        });
         expect(result).to.include.string(tenantId);
         expect(result).to.include.string(clientId);
-
     });
 });
 
-// describe('API /token', () => {
-//     it('it should return 200', (done) => {
-//       chai.request('https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token')
-//         .post('/')
-//         .end((err, res) => {
-//           //console.log('req',req);
-//           res.should.have.status(200);
-//           done();
-//         });
-//     });
-//   });
+describe('Validate Databricks & Graph API Calls', () => {
+    const spiedFetch = chai.spy();
+    graph.__set__('fetch', spiedFetch);
 
+    it('should call postCreateDatabricksPat with required parametes', (done) => {
+        graph.postCreateDatabricksPat({ databricksAccessToken, databricksUrl, galleryAppName });
+        const databricksOrgId = get({ match: databricksUrl.match(/adb-\d+/) }, 'match[0]', '').split('-')[1];
 
-describe('postAccessToken', () => {
-    let urlRegex = /\/token/;
-    afterEach(() => {
-        fetchMock.restore();
-    });
-
-    it('should call fetch /token with required query parameters', () => {
-        fetchMock.mock(urlRegex, 200);
-
-        index.postAccessToken({
-            ...secrets,
-            host: 'localhost:8000',
-            code: 'graphAuthCode',
-            scope: 'tokenSettings.GRAPH_SCOPE' 
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`${databricksUrl}api/2.0/token/create`);
+        expect(spiedFetch).to.have.been.called.with({
+            agent: false,
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${databricksAccessToken}`,
+                'X-Databricks-Org-Id': databricksOrgId,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }),
         });
-            return expect(fetchMock.called(urlRegex)).to.equal(true);
+        done();
+    });
 
-        //xpect(fetchMock).route('/token').to.have.been.called;
-        //console.log('fetct is',fetchMock.config.Request.);
-        //expect(fetchMock.headers.Content-Type).to.equal('123456')
-        //expect(fetch(urlRegex)).to.have.been.called;
-        
+    it('should call postScimConnectorGalleryApp with required parametes', (done) => {
+        graph.postScimConnectorGalleryApp({ graphAccessToken, galleryAppTemplateId, galleryAppName });
 
-         //let calledUrl = fetchMock.lastUrl(urlRegex);
-         //let queryString = url.parse(calledUrl, true).query;
-         //expect(queryString.client_id).to.not.be.null;
-        // expect(queryString.limit).to.equal("1");
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/applicationTemplates/${galleryAppTemplateId}/instantiate`);
+        expect(spiedFetch).to.have.been.called.with({
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${graphAccessToken}`,
+            },
+            body: JSON.stringify({ displayName: galleryAppName }),
+        });
+        done();
+    });
+
+    it('should call getAadGroups with required parametes', (done) => {
+        graph.getAadGroups({ graphAccessToken, filterAadGroupDisplayName });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/groups?filter=displayname+eq+'${filterAadGroupDisplayName}'`);
+        expect(spiedFetch).to.have.been.called.with({
+            headers: { Authorization: `Bearer ${graphAccessToken}` },
+        });
+        done();
+    });
+
+    it('should call postAddAadGroupToServicePrincipal with required parametes', (done) => {
+        graph.postAddAadGroupToServicePrincipal({
+            graphAccessToken, servicePrincipalId, aadGroupId, appRoleId,
+            });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/appRoleAssignments`);
+        expect(spiedFetch).to.have.been.called.with({
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${graphAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                resourceId: servicePrincipalId,
+                principalId: aadGroupId,
+                appRoleId,
+            }),
+        });
+        done();
+    });
+
+    it('should call postCreateServicePrincipalSyncJob with required parametes', (done) => {
+        graph.postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobTemplateId });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs`);
+        expect(spiedFetch).to.have.been.called.with({
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${graphAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ templateId: syncJobTemplateId }),
+        });
+        done();
+    });
+
+    it('should call postValidateServicePrincipalCredentials with required parametes', (done) => {
+        graph.postValidateServicePrincipalCredentials({
+            graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat,
+        });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/validateCredentials`);
+        expect(spiedFetch).to.have.been.called.with({
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${graphAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                credentials: [
+                    { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
+                    { key: 'SecretToken', value: databricksPat },
+                ],
+            }),
+        });
+        done();
+    });
+
+    it('should call putSaveServicePrincipalCredentials with required parametes', (done) => {
+        graph.putSaveServicePrincipalCredentials({
+            graphAccessToken, servicePrincipalId, databricksUrl, databricksPat,
+        });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/secrets`);
+        expect(spiedFetch).to.have.been.called.with({
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${graphAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                value: [
+                    { key: 'BaseAddress', value: `${databricksUrl}api/2.0/preview/scim` },
+                    { key: 'SecretToken', value: databricksPat },
+                ],
+            }),
+        });
+        done();
+    });
+
+    it('should call postStartServicePrincipalSyncJob with required parametes', (done) => {
+        graph.postStartServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobId });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}/start`);
+        expect(spiedFetch).to.have.been.called.with({
+            method: 'POST',
+            headers: { Authorization: `Bearer ${graphAccessToken}` },
+        });
+        done();
+    });
+
+    it('should call getServicePrincipalSyncJobStatus with required parametes', (done) => {
+        graph.getServicePrincipalSyncJobStatus({ graphAccessToken, servicePrincipalId, syncJobId });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/synchronization/jobs/${syncJobId}`);
+        expect(spiedFetch).to.have.been.called.with({
+            method: 'GET',
+            headers: { Authorization: `Bearer ${graphAccessToken}` },
+        });
+        done();
+    });
+
+    it('should call getServicePrincipal with required parametes', (done) => {
+        graph.getServicePrincipal({ graphAccessToken, servicePrincipalId });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}`, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${graphAccessToken}` },
+        });
+        done();
     });
 });
-
