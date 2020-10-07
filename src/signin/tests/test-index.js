@@ -18,7 +18,7 @@ signinApp.start();
 // URI Test cases for various types of Empty code query
 const queryParamsEmpty = ['/?code=', '/?code=&otherq=1234',
 '/?other=abcd&code=', '/?other=abcd',
-'/?other=abcd&code=', '/?other=abcd&code=&somethinelse=11', '/?code=""'];
+'/?other=abcd&code=', '/?other=abcd&code=&somethinelse=11'];
 
 // URI Test cases for various position of code query
 const queryParamsCoded = ['/?code=00&otherq=1234',
