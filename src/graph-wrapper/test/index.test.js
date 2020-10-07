@@ -30,6 +30,10 @@ const appRoleId = 'mockAppRoleId';
 const syncJobId = 'mockSyncJobId';
 const databricksPat = 'mockDatabricksPat';
 const graphAuthCode = 'mockGraphAuthCode';
+const directoryObjectId1 = 'mockDirectoryObjectId1';
+const directoryObjectId2 = 'mockDirectoryObjectId2';
+const ownerEmail1 = 'mockOwner1@Email1.com';
+const ownerEmail2 = 'mockOwner2@Email2.com';
 
 describe('Validate AccessToken', () => {
     const spy = chai.spy();
@@ -43,7 +47,7 @@ describe('Validate AccessToken', () => {
         { key: 'code', value: graphAuthCode },
     ];
 
-    it('should call postAccessToken with required parametes', (done) => {
+    it('should call postAccessToken with required parameters', (done) => {
     graph.postAccessToken({
                 ...secrets,
                 host: 'localhost:8000',
@@ -56,7 +60,7 @@ describe('Validate AccessToken', () => {
     done();
     });
 
-    it('should call postRefreshAccessToken with required parametes', (done) => {
+    it('should call postRefreshAccessToken with required parameters', (done) => {
         graph.postRefreshAccessToken({
                     ...secrets,
                     host: 'localhost:8000',
@@ -103,7 +107,7 @@ describe('Validate Databricks & Graph API Calls', () => {
     const spiedFetch = chai.spy();
     graph.__set__('fetch', spiedFetch);
 
-    it('should call postCreateDatabricksPat with required parametes', (done) => {
+    it('should call postCreateDatabricksPat with required parameters', (done) => {
         graph.postCreateDatabricksPat({ databricksAccessToken, databricksUrl, galleryAppName });
         const databricksOrgId = get({ match: databricksUrl.match(/adb-\d+/) }, 'match[0]', '').split('-')[1];
 
@@ -122,7 +126,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call postScimConnectorGalleryApp with required parametes', (done) => {
+    it('should call postScimConnectorGalleryApp with required parameters', (done) => {
         graph.postScimConnectorGalleryApp({ graphAccessToken, galleryAppTemplateId, galleryAppName });
 
         expect(spiedFetch).to.have.been.called();
@@ -138,7 +142,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call getAadGroups with required parametes', (done) => {
+    it('should call getAadGroups with required parameters', (done) => {
         graph.getAadGroups({ graphAccessToken, filterAadGroupDisplayName });
 
         expect(spiedFetch).to.have.been.called();
@@ -149,7 +153,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call postAddAadGroupToServicePrincipal with required parametes', (done) => {
+    it('should call postAddAadGroupToServicePrincipal with required parameters', (done) => {
         graph.postAddAadGroupToServicePrincipal({
             graphAccessToken, servicePrincipalId, aadGroupId, appRoleId,
             });
@@ -171,7 +175,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call postCreateServicePrincipalSyncJob with required parametes', (done) => {
+    it('should call postCreateServicePrincipalSyncJob with required parameters', (done) => {
         graph.postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobTemplateId });
 
         expect(spiedFetch).to.have.been.called();
@@ -187,7 +191,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call postValidateServicePrincipalCredentials with required parametes', (done) => {
+    it('should call postValidateServicePrincipalCredentials with required parameters', (done) => {
         graph.postValidateServicePrincipalCredentials({
             graphAccessToken, servicePrincipalId, syncJobId, databricksUrl, databricksPat,
         });
@@ -210,7 +214,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call putSaveServicePrincipalCredentials with required parametes', (done) => {
+    it('should call putSaveServicePrincipalCredentials with required parameters', (done) => {
         graph.putSaveServicePrincipalCredentials({
             graphAccessToken, servicePrincipalId, databricksUrl, databricksPat,
         });
@@ -233,7 +237,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call postStartServicePrincipalSyncJob with required parametes', (done) => {
+    it('should call postStartServicePrincipalSyncJob with required parameters', (done) => {
         graph.postStartServicePrincipalSyncJob({ graphAccessToken, servicePrincipalId, syncJobId });
 
         expect(spiedFetch).to.have.been.called();
@@ -245,7 +249,7 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call getServicePrincipalSyncJobStatus with required parametes', (done) => {
+    it('should call getServicePrincipalSyncJobStatus with required parameters', (done) => {
         graph.getServicePrincipalSyncJobStatus({ graphAccessToken, servicePrincipalId, syncJobId });
 
         expect(spiedFetch).to.have.been.called();
@@ -257,13 +261,71 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call getServicePrincipal with required parametes', (done) => {
+    it('should call getServicePrincipal with required parameters', (done) => {
         graph.getServicePrincipal({ graphAccessToken, servicePrincipalId });
 
         expect(spiedFetch).to.have.been.called();
         expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}`, {
             method: 'GET',
             headers: { Authorization: `Bearer ${graphAccessToken}` },
+        });
+        done();
+    });
+
+    it('should call getUserForOwner1 with required parameters', (done) => {
+        graph.getUserForOwner1({ graphAccessToken, ownerEmail1 });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/users?$filter=startswith(userPrincipalName,'${ownerEmail1}')`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${graphAccessToken}`,
+            },
+        });
+        done();
+    });
+
+    it('should call getUserForOwner2 with required parameters', (done) => {
+        graph.getUserForOwner2({ graphAccessToken, ownerEmail2 });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/users?$filter=startswith(userPrincipalName,'${ownerEmail2}')`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${graphAccessToken}`,
+            },
+        });
+        done();
+    });
+
+    it('should call postAddOwner1 with required parameters', (done) => {
+        graph.postAddOwner1({ graphAccessToken, servicePrincipalId, directoryObjectId1 });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${graphAccessToken}`,
+            },
+            body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId1}` }),
+        });
+        done();
+    });
+
+    it('should call postAddOwner2 with required parameters', (done) => {
+        graph.postAddOwner2({ graphAccessToken, servicePrincipalId, directoryObjectId2 });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${graphAccessToken}`,
+            },
+            body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId2}` }),
         });
         done();
     });
