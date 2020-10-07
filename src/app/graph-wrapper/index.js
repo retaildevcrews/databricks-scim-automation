@@ -1,7 +1,7 @@
 require('dotenv').config();
 const fetch = require('isomorphic-fetch');
 const get = require('lodash.get');
-const { tokenSettings } = require('../app/config');
+const { tokenSettings } = require('../config');
 
 /**
  * Returns url with appropriate http based on localhost
