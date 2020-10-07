@@ -3,12 +3,14 @@
 ## Setup App
 
 * (Optional) Use `databricks-scim-automation/infra` to create infrastructure
+  * Must have following KeyVault Secrets: `TenantID`, `AppClientId`, `AppClientSecret`
+  * Required permissions for KeyVault included in [databricks-scim-automation/infra/README.md](../../infra/README.md#accessing-keyvault-secrets)
 * Execute `npm install`
 * Copy `.env-sample` and rename `.env`
   * Update required variables  `GALLERY_APP_TEMPLATE_ID`, `SCIM_TEMPLATE_ID`, and `KEYVAULT_URL`
     * If created infrastructure via `databricks-scim-automation/infra`, `KEYVAULT_URL` is `https://{​​​​​scim_Name}​​​​​-kv.vault.azure.net`, otherwise find in Azure Portal
   * Update optional variables `PORT`
-* Update permissions of app service client (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
+* Update permissions of app registration (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
   * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `Authentication`
     * `Add a Platform` > `Web` > `Redirect URIs`: `http://localhost:{1337|.env.PORT}`
     * Select `Implicit grant` > `Access tokens` option
@@ -59,6 +61,8 @@
 * Fill out inputs with `**` beside them
 
 ## End User Notes
+
+* <a name="scim-sync-cadence"></a>Notes on SCIM Sync Cadence: [Provisioning Tips](https://docs.microsoft.com/en-us/azure/databricks/administration-guide/users-groups/scim/aad#provisioning-tips)
 
 * There is no restriction on duplicating SCIM connector gallery app name, which may make managing difficult in the future.
 * If there is more than one AAD group with the same name, will use the first one returned from the API.
