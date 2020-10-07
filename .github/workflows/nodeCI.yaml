@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - feature/**
+      - bugs/47-fix-gh-action
 
     paths:
       - 'src/**'
