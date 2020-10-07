@@ -177,6 +177,90 @@ function getServicePrincipal(params) {
 }
 
 /**
+ * @external GetUserForOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/user-list?view=graph-rest-beta&tabs=http}
+ *
+ * Retrieves the directory user objectId for the first email address provided
+ * @param {Object} args
+ * @param {string} args.graphAccessToken Token used to authenticate request
+ * @param {string} args.ownerEmail1 Email address of first user to look up
+ * @return {external:GetUserForOwnerPromise}
+ */
+function getUserForOwner1({ graphAccessToken, ownerEmail1 }) {
+    return fetch(`https://graph.microsoft.com/beta/users?$filter=startswith(userPrincipalName,'${ownerEmail1}')`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${graphAccessToken}`,
+        },
+    });
+}
+
+/**
+ * @external AddOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ *
+ * Adds the provided user as the first owner of the scim connector
+ * @param {Object} args
+ * @param {string} args.graphAccessToken Token used to authenticate request
+ * @param {string} args.servicePrincipalId ObjectId of the SCIM gallery app Service Principal
+ * @param {string} args.directoryObjectId1 Directory user objectId to be assigned as first owner
+ * @return {external:AddOwnerPromise}
+ */
+function postAddOwner1({ graphAccessToken, servicePrincipalId, directoryObjectId1 }) {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${graphAccessToken}`,
+        },
+        body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId1}` }),
+    });
+}
+
+/**
+ * @external GetUserForOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/user-list?view=graph-rest-beta&tabs=http}
+ *
+ * Retrieves the directory user objectId for the second email address
+ * @param {Object} args
+ * @param {string} args.graphAccessToken Token used to authenticate request
+ * @param {string} args.ownerEmail2 Email address of second user to look up
+ * @return {external:GetUserForOwnerPromise}
+ */
+function getUserForOwner2({ graphAccessToken, ownerEmail2 }) {
+    return fetch(`https://graph.microsoft.com/beta/users?$filter=startswith(userPrincipalName,'${ownerEmail2}')`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${graphAccessToken}`,
+        },
+    });
+}
+
+/**
+ * @external AddOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ *
+ * Adds the provided user as the second owner of the scim connector
+ * @param {Object} args
+ * @param {string} args.graphAccessToken Token used to authenticate request
+ * @param {string} args.servicePrincipalId ObjectId of the SCIM gallery app Service Principal
+ * @param {string} args.directoryObjectId2 Directory user objectId to be assigned as second owner
+ * @return {external:AddOwnerPromise}
+ */
+function postAddOwner2({ graphAccessToken, servicePrincipalId, directoryObjectId2 }) {
+    return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${graphAccessToken}`,
+        },
+        body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId2}` }),
+    });
+}
+
+/**
  * @external GrantAnAppRoleAssignmentToAServicePrincipalPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-post-approleassignments?view=graph-rest-beta&tabs=http}
  *
@@ -360,6 +444,10 @@ module.exports = {
     postScimConnectorGalleryApp,
     getAadGroups,
     getServicePrincipal,
+    getUserForOwner1,
+    postAddOwner1,
+    getUserForOwner2,
+    postAddOwner2,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
     postCreateDatabricksPat,

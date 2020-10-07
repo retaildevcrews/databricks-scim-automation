@@ -20,13 +20,14 @@
     * `@databricks-scim-automation/graph` > getAadGroups (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
     * `@databricks-scim-automation/graph` > getServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
     * `@databricks-scim-automation/graph` > postAddAadGroupToServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `AppRoleAssignment.ReadWrite.All`
+    * `@databricks-scim-automation/graph` > postAddOwner (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Application.ReadWrite.All`
     * `@databricks-scim-automation/graph` > postDatabricksAccessToken (Required Permission): `APIs my organization uses` > `AzureDatabricks` > `user_impersonation`
 * Grant admin consent for Default Directory (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
   * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `API Permissions` > Click `Grant admin consent for Default Directory`
 
 ## Run CSV CLI App
 
-* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
+* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Owner Email 1`, `Owner Email 2`, `Databricks Url`
   * The order is important
   * Databricks Url format: https://adb-*.*.azuredatabricks.net
 * Execute `npm start <path_to_file>`
@@ -36,7 +37,7 @@
 
 ## Run CSV CLI App for Development
 
-* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Databricks Url`
+* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Owner Email 1`, `Owner Email 2`, `Databricks Url`
   * The order is important
   * Databricks Url format: https://adb-*.*.azuredatabricks.net
 * Save the CSV file as `./mocks/syncs.csv`

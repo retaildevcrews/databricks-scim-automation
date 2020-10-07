@@ -39,9 +39,11 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
         const inputPrompts = [
             { message: 'SCIM connector gallery app template ID', key: 'galleryAppTemplateId', defaultInput: '9c9818d2-2900-49e8-8ba4-22688be7c675' },
             { message: 'SCIM connector gallery app display name', key: 'galleryAppName', defaultInput: undefined },
-            { message: 'filter AAD group by display name', key: 'filterAadGroupDisplayName', defaultInput: undefined },
-            { message: 'sync job template ID', key: 'syncJobTemplateId', defaultInput: 'dataBricks' },
-            { message: 'databricks workspace URL (Format: https://adb-*.*.azuredatabricks.net)', key: 'databricksUrl', defaultInput: undefined },
+            { message: 'AAD group display name', key: 'filterAadGroupDisplayName', defaultInput: undefined },
+            { message: 'SCIM connector owner 1 email address', key: 'ownerEmail1', defaultInput: undefined },
+            { message: 'SCIM connector owner 2 email address', key: 'ownerEmail2', defaultInput: undefined },
+            { message: 'Sync job template ID', key: 'syncJobTemplateId', defaultInput: 'dataBricks' },
+            { message: 'Databricks workspace URL (Format: https://adb-*.*.azuredatabricks.net)', key: 'databricksUrl', defaultInput: undefined },
         ];
         // Prompt user for inputs
         const userInputs = await prompts.getUserInputs(inputPrompts);
@@ -63,6 +65,10 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
             graph.postScimConnectorGalleryApp,
             graph.getAadGroups,
             graph.getServicePrincipal,
+            graph.getUserForOwner1,
+            graph.postAddOwner1,
+            graph.getUserForOwner2,
+            graph.postAddOwner2,
             graph.postAddAadGroupToServicePrincipal,
             graph.postCreateServicePrincipalSyncJob,
             graph.postCreateDatabricksPat,
