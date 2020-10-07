@@ -35,10 +35,8 @@ jobs:
     - name: Install npm packages
       run: |
         # Weirdly it has to be an ordered install: graph-wrapper --> signin --> app
-        npm install graph-wrapper/ --prefix graph-wrapper/
-        npm install signin/ --prefix signin/
-        rm  app/package-lock.json # Without it app packages fail to install
-        npm install app/ --prefix app/
+        rm  {graph-wrapper,signin,app}/package-lock.json
+        for i in {graph-wrapper,signin,app}; do c="npm install $i --prefix $i";echo "CMD: $c";$c ;done
     - name: Run lint on 'graph-wrapper/'
       run: npm run lint --prefix ./graph-wrapper
     - name: Run Lint on 'signin/'
@@ -51,5 +49,3 @@ jobs:
     #   run: npm run test --prefix ./graph-wrapper
     # - name: Run tests in 'app/'
     #   run: npm run test --prefix ./app
-      env:
-        CI: true
