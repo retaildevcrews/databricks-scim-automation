@@ -20,6 +20,7 @@
     * `@databricks-scim-automation/graph` > getAadGroups (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
     * `@databricks-scim-automation/graph` > getServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
     * `@databricks-scim-automation/graph` > postAddAadGroupToServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `AppRoleAssignment.ReadWrite.All`
+    * `@databricks-scim-automation/graph` > postAddOwner (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Application.ReadWrite.All`
     * `@databricks-scim-automation/graph` > postDatabricksAccessToken (Required Permission): `APIs my organization uses` > `AzureDatabricks` > `user_impersonation`
 * Grant admin consent for Default Directory (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
   * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `API Permissions` > Click `Grant admin consent for Default Directory`
