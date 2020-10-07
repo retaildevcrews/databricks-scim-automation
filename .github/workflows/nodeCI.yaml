@@ -37,7 +37,7 @@ jobs:
         # Weirdly it has to be an ordered install: graph-wrapper --> signin --> app
         rm  {graph-wrapper,signin,app}/package-lock.json
         for i in {graph-wrapper,signin,app}; do c="npm install $i --prefix $i";echo "CMD: $c";$c ;done
-    - name: Run lint on 'graph-wrapper/'
+    - name: Run Lint on 'graph-wrapper/'
       run: npm run lint --prefix ./graph-wrapper
     - name: Run Lint on 'signin/'
       run: npm run lint --prefix ./signin
