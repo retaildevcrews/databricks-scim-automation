@@ -22,9 +22,7 @@ const galleryAppName = 'mockGalleryApp';
 const galleryAppTemplateId = 'mockGalleryTemplateId';
 const syncJobTemplateId = 'mockSyncJobTemplateId';
 const graphAccessToken = 'mockGraphAccessToken';
-const graphRefreshAccessToken = 'mockGraphRegreshAccessToken';
 const databricksAccessToken = 'mockDatabricksAccessToken';
-const databricksRefreshAccessToken = 'mockDatabricksRegreshAccessToken';
 const secrets = { tenantId, clientId, clientSecret };
 const servicePrincipalId = 'mockServicePrincipalId';
 const aadGroupId = 'mockAADGroupId';
@@ -32,21 +30,6 @@ const appRoleId = 'mockAppRoleId';
 const syncJobId = 'mockSyncJobId';
 const databricksPat = 'mockDatabricksPat';
 const graphAuthCode = 'mockGraphAuthCode';
-const sharedParams = {
-    galleryAppTemplateId,
-    syncJobTemplateId,
-    graphAccessToken,
-    graphRefreshAccessToken,
-    databricksAccessToken,
-    databricksRefreshAccessToken,
-};
-const params = {
-    hasFailed: false,
-    ...sharedParams,
-    databricksUrl,
-    filterAadGroupDisplayName,
-    galleryAppName,
-};
 
 describe('Validate AccessToken', () => {
     const spy = chai.spy();
