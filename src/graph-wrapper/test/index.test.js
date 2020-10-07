@@ -1,13 +1,13 @@
+const rewire = require('rewire');
+
+const graph = rewire('../index.js');
 const { assert } = require('chai');
 const { expect } = require('chai');
 const chai = require('chai');
 const spies = require('chai-spies');
 const chaiHttp = require('chai-http');
-const rewire = require('rewire');
 const get = require('lodash.get');
 const index = require('../index.js');
-
-const graph = rewire('../index.js');
 
 chai.use(chaiHttp);
 chai.use(spies);
