@@ -35,17 +35,13 @@ jobs:
     - name: Install npm packages
       run: |
         # Weirdly it has to be an ordered install: graph-wrapper --> signin --> app
-        rm  {graph-wrapper,signin,app}/package-lock.json
-        for i in {graph-wrapper,signin,app}; do c="npm install $i --prefix $i";echo "CMD: $c";$c ;done
-    - name: Run Lint on 'graph-wrapper/'
-      run: npm run lint --prefix ./graph-wrapper
-    - name: Run Lint on 'signin/'
-      run: npm run lint --prefix ./signin
+        rm  {./app/graph-wrapper,./app/signin,app}/package-lock.json
+        for i in {./app/graph-wrapper,./app/signin,app}; do c="npm install $i --prefix $i";echo "CMD: $c";$c ;done
     - name: Run Lint on 'app/'
       run : npm run lint --prefix ./app
-    - name: Run tests in 'signin/'
-      run: npm run test --prefix ./signin
-    - name: Run tests in 'graph-wrapper/'
-      run: npm run test --prefix ./graph-wrapper
+    - name: Run tests in 'app/signin/'
+      run: npm run test --prefix ./app/signin
+    - name: Run tests in 'app/graph-wrapper/'
+      run: npm run test --prefix ./app/graph-wrapper
     # - name: Run tests in 'app/'
     #   run: npm run test --prefix ./app
