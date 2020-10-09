@@ -132,8 +132,8 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCo
             databricksRefreshAccessToken: databricksTokens.refreshToken,
         };
         const decodedGraphAccessToken = jwtDecode(graphTokens.accessToken);
-        const executorEmail = decodedGraphAccessToken.unique_name;
         const executorName = decodedGraphAccessToken.name;
+        const executorEmail = decodedGraphAccessToken.unique_name;
 
         console.log('\nCreating SCIM connector apps and running sync jobs...'); // eslint-disable-line no-console
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
