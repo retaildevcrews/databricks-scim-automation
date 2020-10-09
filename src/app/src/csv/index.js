@@ -4,6 +4,7 @@ const fs = require('fs');
 const cliProgress = require('cli-progress');
 const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
+const jwtDecode = require('jwt-decode');
 const { getKeyvaultSecrets } = require('../services/keyvault');
 const syncCallbacks = require('./syncCallbacks');
 const { keyvaultSettings, tokenSettings } = require('../../config');
@@ -130,15 +131,18 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCo
             databricksAccessToken: databricksTokens.accessToken,
             databricksRefreshAccessToken: databricksTokens.refreshToken,
         };
+        const decodedGraphAccessToken = jwtDecode(graphTokens.accessToken);
+        const executorName = decodedGraphAccessToken.name;
+        const executorEmail = decodedGraphAccessToken.unique_name;
 
         console.log('\nCreating SCIM connector apps and running sync jobs...'); // eslint-disable-line no-console
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
         console.log('\n\nCreating output file...'); // eslint-disable-line no-console
-        const initialOutputContent = `Execution Date (UTC),${csvHeader},${graphCalls.map(({ graphCall }) => graphCall.name).join(',')}`;
+        const initialOutputContent = `Execution Date (UTC),Executor Name,Executor Email,${csvHeader},${graphCalls.map(({ graphCall }) => graphCall.name).join(',')}`;
         const csvOutputPath = createFile('./outputs', csvPath, initialOutputContent);
         for (let i = 0; i < syncAllStatus.length; i += 1) {
-            fs.appendFileSync(csvOutputPath, `\r\n${new Date()},${csvRows[i]},${syncAllStatus[i].join(',')}`);
+            fs.appendFileSync(csvOutputPath, `\r\n${new Date()},${executorName},${executorEmail},${csvRows[i]},${syncAllStatus[i].join(',')}`);
         }
         console.log('Complete...'); // eslint-disable-line no-console
     } catch (error) {

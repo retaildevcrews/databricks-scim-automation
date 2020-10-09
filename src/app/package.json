@@ -35,6 +35,7 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "fs": "0.0.1-security",
+    "jwt-decode": "^3.0.0",
     "npm-force-resolutions": "0.0.3",
     "path": "^0.12.7",
     "readline": "^1.3.0"
