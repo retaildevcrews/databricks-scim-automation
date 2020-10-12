@@ -67,7 +67,8 @@ const progressMultiBar = new cliProgress.MultiBar({
 }, cliProgress.Presets.legacy);
 
 async function promisfySyncCall(csvLine, sharedParams) {
-    const [galleryAppName, filterAadGroupDisplayName, ownerEmail1, ownerEmail2, databricksUrl] = csvLine.split(',');
+    const [galleryAppName, filterAadGroupDisplayName, ownerEmail1, ownerEmail2, databricksUrl] = csvLine.split(',').map((item, index) => ((index === 4) ? item.trim().toLowerCase() : item.trim()));
+
     if (!isDatabricksUrl(databricksUrl)) {
         throw new Error(`Databricks URL (${databricksUrl}) is not an accepted value`);
     }
