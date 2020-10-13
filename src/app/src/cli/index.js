@@ -49,7 +49,7 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
         const userInputs = await prompts.getUserInputs(inputPrompts);
         // Check input fir Databricks URL
         if (!isDatabricksUrl(userInputs.databricksUrl)) {
-            throw new Error('Databricks URL needs to be formatted as https://adb-*.*.axuredatabricks.net');
+            throw new Error('Databricks URL needs to be formatted as https://adb-*.*.azuredatabricks.net');
         }
         // Save user inputs
         params = {
