@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "private": true,
   "scripts": {
-    "preinstall": "npm install npm-force-resolutions && npx npm-force-resolutions",
     "test": "nyc mocha tests/*.js -u tdd --no-timeout --colors --exit",
     "lint": "eslint ./"
   },
