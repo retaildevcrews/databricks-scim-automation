@@ -227,7 +227,7 @@ function postAddSPOwner1({ graphAccessToken, servicePrincipalId, directoryObject
  * @param {string} args.graphAccessToken Token used to authenticate request
  * @param {string} args.applicationId ObjectId of the SCIM gallery app Service Principal
  * @param {string} args.directoryObjectId1 Directory user objectId to be assigned as first owner
- * @return {external:AddOwnerPromise}
+ * @return {external:AddAppOwnerPromise}
  */
 function postAddAppOwner1({ graphAccessToken, applicationId, directoryObjectId1 }) {
     return fetch(`https://graph.microsoft.com/beta/applications/${applicationId}/owners/$ref`, {
@@ -291,7 +291,7 @@ function postAddSPOwner2({ graphAccessToken, servicePrincipalId, directoryObject
  * @param {string} args.graphAccessToken Token used to authenticate request
  * @param {string} args.applicationId ObjectId of the SCIM gallery app Service Principal
  * @param {string} args.directoryObjectId2 Directory user objectId to be assigned as second owner
- * @return {external:AddOwnerPromise}
+ * @return {external:AddAppOwnerPromise}
  */
 function postAddAppOwner2({ graphAccessToken, applicationId, directoryObjectId2 }) {
     return fetch(`https://graph.microsoft.com/beta/applications/${applicationId}/owners/$ref`, {
