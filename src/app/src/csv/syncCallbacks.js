@@ -72,7 +72,7 @@ async function getUserForOwner1(response, params) {
     });
 }
 
-// Checks if first owner was successfully added to SCIM Connector
+// Checks if first user was successfully added as SP owner of SCIM Connector
 async function postAddSPOwner1(response, params) {
     await handleResponseErrors(response, 204);
     params.progressBar.increment();
@@ -82,7 +82,7 @@ async function postAddSPOwner1(response, params) {
     });
 }
 
-// Checks if first owner was successfully added to App Registration
+// Checks if first user was successfully added as App owner of SCIM Connector
 async function postAddAppOwner1(response, params) {
     await handleResponseErrors(response, 204);
     params.progressBar.increment();
@@ -102,7 +102,7 @@ async function getUserForOwner2(response, params) {
     });
 }
 
-// Checks if second owner was successfully added to SCIM Connector
+// Checks if second user was successfully added as SP owner of SCIM Connector
 async function postAddSPOwner2(response, params) {
     await handleResponseErrors(response, 204);
     params.progressBar.increment();
@@ -112,7 +112,7 @@ async function postAddSPOwner2(response, params) {
     });
 }
 
-// Checks if second owner was successfully added to App Registration
+// Checks if first user was successfully added as App owner of SCIM Connector
 async function postAddAppOwner2(response, params) {
     await handleResponseErrors(response, 204);
     params.progressBar.increment();

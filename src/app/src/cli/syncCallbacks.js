@@ -87,23 +87,23 @@ async function getUserForOwner1(response, stepsStatus, params) {
     return Promise.resolve({ directoryObjectId1: body.value.id });
 }
 
-// Checks if first owner was successfully added to SCIM Connector
+// Checks if first user was successfully added as SP owner of SCIM Connector
 async function postAddSPOwner1(response, stepsStatus) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner1', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
         const body = await response.json();
-        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+        throw new Error(`Could not assign provided user1 as Service Principal owner!\n${JSON.stringify(body)}`);
     }
     stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner1', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
     return Promise.resolve({});
 }
 
-// Checks if first owner was successfully added to SCIM Connector
+// Checks if first user was successfully added as App owner of SCIM Connector
 async function postAddAppOwner1(response, stepsStatus) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner1', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
         const body = await response.json();
-        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+        throw new Error(`Could not assign provided user1 as application owner!\n${JSON.stringify(body)}`);
     }
     stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner1', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
     return Promise.resolve({});
@@ -121,23 +121,23 @@ async function getUserForOwner2(response, stepsStatus, params) {
     return Promise.resolve({ directoryObjectId2: body.value.id });
 }
 
-// Checks if second owner was successfully added to SCIM Connector
+// Checks if second user was successfully added as SP owner of SCIM Connector
 async function postAddSPOwner2(response, stepsStatus) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner2', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
         const body = await response.json();
-        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+        throw new Error(`Could not assign provided user2 as Service Principal owner!\n${JSON.stringify(body)}`);
     }
     stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner2', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
     return Promise.resolve({});
 }
 
-// Checks if second owner was successfully added to SCIM Connector
+// Checks if second user was successfully added as App owner of SCIM Connector
 async function postAddAppOwner2(response, stepsStatus) {
     if (response.status !== 204) {
         stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner2', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
         const body = await response.json();
-        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+        throw new Error(`Could not assign provided user2 as application owner!\n${JSON.stringify(body)}`);
     }
     stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner2', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
     return Promise.resolve({});

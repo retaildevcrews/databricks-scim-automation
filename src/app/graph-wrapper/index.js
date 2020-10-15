@@ -198,7 +198,7 @@ function getUserForOwner1({ graphAccessToken, ownerEmail1 }) {
 
 /**
  * @external AddSPOwnerPromise
- * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-post-owners?view=graph-rest-beta&tabs=http}
  *
  * Adds the provided user as the first owner of the scim connector
  * @param {Object} args
@@ -222,10 +222,10 @@ function postAddSPOwner1({ graphAccessToken, servicePrincipalId, directoryObject
  * @external AddAppOwnerPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
  *
- * Adds the provided user as the owner of the App Registration
+ * Adds the provided user as the first owner of the App Registration
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
- * @param {string} args.applicationId ObjectId of the SCIM gallery app Service Principal
+ * @param {string} args.applicationId ObjectId of the Application Registration
  * @param {string} args.directoryObjectId1 Directory user objectId to be assigned as first owner
  * @return {external:AddAppOwnerPromise}
  */
@@ -262,7 +262,7 @@ function getUserForOwner2({ graphAccessToken, ownerEmail2 }) {
 
 /**
  * @external AddSPOwnerPromise
- * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-post-owners?view=graph-rest-beta&tabs=http}
  *
  * Adds the provided user as the second owner of the scim connector
  * @param {Object} args
@@ -286,10 +286,10 @@ function postAddSPOwner2({ graphAccessToken, servicePrincipalId, directoryObject
  * @external AddAppOwnerPromise
  * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
  *
- * Adds the provided user as the owner of the App Registration
+ * Adds the provided user as the second owner of the App Registration
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
- * @param {string} args.applicationId ObjectId of the SCIM gallery app Service Principal
+ * @param {string} args.applicationId ObjectId of the Application Registration
  * @param {string} args.directoryObjectId2 Directory user objectId to be assigned as second owner
  * @return {external:AddAppOwnerPromise}
  */
