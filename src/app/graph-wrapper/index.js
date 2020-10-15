@@ -197,18 +197,40 @@ function getUserForOwner1({ graphAccessToken, ownerEmail1 }) {
 }
 
 /**
- * @external AddOwnerPromise
- * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ * @external AddSPOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-post-owners?view=graph-rest-beta&tabs=http}
  *
  * Adds the provided user as the first owner of the scim connector
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
  * @param {string} args.servicePrincipalId ObjectId of the SCIM gallery app Service Principal
  * @param {string} args.directoryObjectId1 Directory user objectId to be assigned as first owner
- * @return {external:AddOwnerPromise}
+ * @return {external:AddSPOwnerPromise}
  */
-function postAddOwner1({ graphAccessToken, servicePrincipalId, directoryObjectId1 }) {
+function postAddSPOwner1({ graphAccessToken, servicePrincipalId, directoryObjectId1 }) {
     return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${graphAccessToken}`,
+        },
+        body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId1}` }),
+    });
+}
+
+/**
+ * @external AddAppOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ *
+ * Adds the provided user as the first owner of the App Registration
+ * @param {Object} args
+ * @param {string} args.graphAccessToken Token used to authenticate request
+ * @param {string} args.applicationId ObjectId of the Application Registration
+ * @param {string} args.directoryObjectId1 Directory user objectId to be assigned as first owner
+ * @return {external:AddAppOwnerPromise}
+ */
+function postAddAppOwner1({ graphAccessToken, applicationId, directoryObjectId1 }) {
+    return fetch(`https://graph.microsoft.com/beta/applications/${applicationId}/owners/$ref`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -239,18 +261,40 @@ function getUserForOwner2({ graphAccessToken, ownerEmail2 }) {
 }
 
 /**
- * @external AddOwnerPromise
- * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ * @external AddSPOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/serviceprincipal-post-owners?view=graph-rest-beta&tabs=http}
  *
  * Adds the provided user as the second owner of the scim connector
  * @param {Object} args
  * @param {string} args.graphAccessToken Token used to authenticate request
  * @param {string} args.servicePrincipalId ObjectId of the SCIM gallery app Service Principal
  * @param {string} args.directoryObjectId2 Directory user objectId to be assigned as second owner
- * @return {external:AddOwnerPromise}
+ * @return {external:AddSPOwnerPromise}
  */
-function postAddOwner2({ graphAccessToken, servicePrincipalId, directoryObjectId2 }) {
+function postAddSPOwner2({ graphAccessToken, servicePrincipalId, directoryObjectId2 }) {
     return fetch(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${graphAccessToken}`,
+        },
+        body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId2}` }),
+    });
+}
+
+/**
+ * @external AddAppOwnerPromise
+ * @see {@link https://docs.microsoft.com/en-us/graph/api/application-post-owners?view=graph-rest-beta&tabs=http}
+ *
+ * Adds the provided user as the second owner of the App Registration
+ * @param {Object} args
+ * @param {string} args.graphAccessToken Token used to authenticate request
+ * @param {string} args.applicationId ObjectId of the Application Registration
+ * @param {string} args.directoryObjectId2 Directory user objectId to be assigned as second owner
+ * @return {external:AddAppOwnerPromise}
+ */
+function postAddAppOwner2({ graphAccessToken, applicationId, directoryObjectId2 }) {
+    return fetch(`https://graph.microsoft.com/beta/applications/${applicationId}/owners/$ref`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -445,9 +489,11 @@ module.exports = {
     getAadGroups,
     getServicePrincipal,
     getUserForOwner1,
-    postAddOwner1,
+    postAddSPOwner1,
+    postAddAppOwner1,
     getUserForOwner2,
-    postAddOwner2,
+    postAddSPOwner2,
+    postAddAppOwner2,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
     postCreateDatabricksPat,

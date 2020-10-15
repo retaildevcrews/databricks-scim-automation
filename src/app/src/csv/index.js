@@ -5,6 +5,7 @@ const cliProgress = require('cli-progress');
 const signin = require('@databricks-scim-automation/signin');
 const graph = require('@databricks-scim-automation/graph');
 const jwtDecode = require('jwt-decode');
+const { loginTypes } = require('../../config');
 const { getKeyvaultSecrets } = require('../services/keyvault');
 const syncCallbacks = require('./syncCallbacks');
 const { keyvaultSettings, tokenSettings } = require('../../config');
@@ -33,14 +34,20 @@ const graphCalls = [
         graphCall: graph.getUserForOwner1,
         callback: syncCallbacks.getUserForOwner1,
     }, {
-        graphCall: graph.postAddOwner1,
-        callback: syncCallbacks.postAddOwner1,
+        graphCall: graph.postAddSPOwner1,
+        callback: syncCallbacks.postAddSPOwner1,
+    }, {
+        graphCall: graph.postAddAppOwner1,
+        callback: syncCallbacks.postAddAppOwner1,
     }, {
         graphCall: graph.getUserForOwner2,
         callback: syncCallbacks.getUserForOwner2,
     }, {
-        graphCall: graph.postAddOwner2,
-        callback: syncCallbacks.postAddOwner2,
+        graphCall: graph.postAddSPOwner2,
+        callback: syncCallbacks.postAddSPOwner2,
+    }, {
+        graphCall: graph.postAddAppOwner2,
+        callback: syncCallbacks.postAddAppOwner2,
     }, {
         graphCall: graph.postCreateServicePrincipalSyncJob,
         callback: syncCallbacks.postCreateServicePrincipalSyncJob,
@@ -178,7 +185,7 @@ async function startCsv(csvInputPath = process.argv[2]) {
         const signinApp = new signin.SigninApp();
         signinApp.setCallback((graphCode) => {
             graphAuthCode = graphCode;
-            prompts.howToSignin(signin.redirectLoginUrl(secrets));
+            prompts.howToSignin(loginTypes.DATABRICKS_LOGIN, signin.redirectLoginUrl(secrets));
             signinApp.setCallback((databricksCode) => {
                 databricksAuthCode = databricksCode;
                 startSync(secrets, csvInput, { graphAuthCode, databricksAuthCode });
@@ -186,7 +193,7 @@ async function startCsv(csvInputPath = process.argv[2]) {
         });
         signinApp.start();
         prompts.howToQuit();
-        prompts.howToSignin(signin.redirectLoginUrl(secrets));
+        prompts.howToSignin(loginTypes.GRAPH_LOGIN, signin.redirectLoginUrl(secrets));
     } catch (err) {
         console.error(err); // eslint-disable-line no-console
     }

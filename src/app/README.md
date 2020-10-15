@@ -5,7 +5,21 @@
 * (Optional) Use `databricks-scim-automation/infra` to create infrastructure
   * Must have following KeyVault Secrets: `TenantID`, `AppClientId`, `AppClientSecret`
   * Required permissions for KeyVault included in [databricks-scim-automation/infra/README.md](../../infra/README.md#accessing-keyvault-secrets)
-* Execute `npm install`
+* Execute `npm install` from /src/app
+  * The following output is expected and safe to ignore:
+
+```bash
+
+npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@2.1.3 (node_modules/@databricks-scim-automation/graph/node_modules/fsevents):
+npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@2.1.3: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
+npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@2.1.3 (node_modules/fsevents):
+npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@2.1.3: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
+
+# This is safe to ignore as well as it does not impact the functionality of the unit tests
+npm WARN chai-fetch-mock@3.0.0 requires a peer of fetch-mock@5.1.x || 6.x but none is installed. You must install peer dependencies yourself.
+
+```
+
 * Copy `.env-sample` and rename `.env`
   * Update required variables  `GALLERY_APP_TEMPLATE_ID`, `SCIM_TEMPLATE_ID`, and `KEYVAULT_URL`
     * If created infrastructure via `databricks-scim-automation/infra`, `KEYVAULT_URL` is `https://{​​​​​scim_Name}​​​​​-kv.vault.azure.net`, otherwise find in Azure Portal

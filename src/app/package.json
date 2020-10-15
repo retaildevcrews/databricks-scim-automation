@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/retaildevcrews/databricks-scim-automation.git"
+  },
   "scripts": {
-    "preinstall": "npm install npm-force-resolutions && npx npm-force-resolutions",
-    "test": "mocha test/cli/*.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "start:gui": "nodemon src/gui/index.js",
     "dev:cli": "nodemon src/index.js",
@@ -30,7 +33,6 @@
   "dependencies": {
     "@azure/identity": "^1.1.0",
     "@azure/keyvault-secrets": "^4.1.0",
-    "@azure/ms-rest-nodeauth": "^3.0.5",
     "@databricks-scim-automation/graph": "file:./graph-wrapper",
     "@databricks-scim-automation/signin": "file:./signin",
     "bluebird": "^3.7.2",

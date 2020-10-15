@@ -10,4 +10,9 @@ const tokenSettings = {
     DATABRICKS_SCOPE: '2ff814a6-3304-4ab8-85cb-cd0e6f879c1d/user_impersonation',
 };
 
-module.exports = { keyvaultSettings, tokenSettings };
+const loginTypes = {
+    GRAPH_LOGIN: 'Graph authcode',
+    DATABRICKS_LOGIN: 'Databricks authcode',
+};
+
+module.exports = { keyvaultSettings, tokenSettings, loginTypes };
