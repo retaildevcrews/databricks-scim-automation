@@ -20,6 +20,7 @@ async function postScimConnectorGalleryApp(response, stepsStatus, params) {
         throw new Error(`Could not add instance of SCIM connector app from AAD app gallery to directory!\n${JSON.stringify(body)}`);
     }
     params.servicePrincipalId = body.servicePrincipal.objectId; // eslint-disable-line no-param-reassign
+    params.applicationId = body.application.objectId; // eslint-disable-line no-param-reassign
     stepsStatus = log.table(stepsStatus, { Action: 'postScimConnectorGalleryApp', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign
     return Promise.resolve({ servicePrincipalId: body.servicePrincipal.objectId });
 }
@@ -87,13 +88,24 @@ async function getUserForOwner1(response, stepsStatus, params) {
 }
 
 // Checks if first owner was successfully added to SCIM Connector
-async function postAddOwner1(response, stepsStatus) {
+async function postAddSPOwner1(response, stepsStatus) {
     if (response.status !== 204) {
-        stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner1', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
+        stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner1', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
         const body = await response.json();
         throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
     }
-    stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner1', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
+    stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner1', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
+    return Promise.resolve({});
+}
+
+// Checks if first owner was successfully added to SCIM Connector
+async function postAddAppOwner1(response, stepsStatus) {
+    if (response.status !== 204) {
+        stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner1', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
+        const body = await response.json();
+        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+    }
+    stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner1', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
     return Promise.resolve({});
 }
 
@@ -110,13 +122,24 @@ async function getUserForOwner2(response, stepsStatus, params) {
 }
 
 // Checks if second owner was successfully added to SCIM Connector
-async function postAddOwner2(response, stepsStatus) {
+async function postAddSPOwner2(response, stepsStatus) {
     if (response.status !== 204) {
-        stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner2', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
+        stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner2', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
         const body = await response.json();
         throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
     }
-    stepsStatus = log.table(stepsStatus, { Action: 'postAddOwner2', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
+    stepsStatus = log.table(stepsStatus, { Action: 'postAddSPOwner2', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
+    return Promise.resolve({});
+}
+
+// Checks if second owner was successfully added to SCIM Connector
+async function postAddAppOwner2(response, stepsStatus) {
+    if (response.status !== 204) {
+        stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner2', Status: 'Failed', Attempts: 1 }); // eslint-disable-line no-param-reassign
+        const body = await response.json();
+        throw new Error(`Could not assign provided user as owner!\n${JSON.stringify(body)}`);
+    }
+    stepsStatus = log.table(stepsStatus, { Action: 'postAddAppOwner2', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign, no-unused-vars
     return Promise.resolve({});
 }
 
@@ -194,9 +217,11 @@ module.exports = {
     getAadGroups,
     getServicePrincipal,
     getUserForOwner1,
-    postAddOwner1,
+    postAddSPOwner1,
+    postAddAppOwner1,
     getUserForOwner2,
-    postAddOwner2,
+    postAddSPOwner2,
+    postAddAppOwner2,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
     postCreateDatabricksPat,

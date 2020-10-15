@@ -16,7 +16,7 @@ async function postScimConnectorGalleryApp(response, params) {
     params.progressBar.increment();
     return Promise.resolve({
         status: 'SUCCESS',
-        params: { servicePrincipalId: body.servicePrincipal.objectId },
+        params: { servicePrincipalId: body.servicePrincipal.objectId, applicationId: body.application.objectId },
     });
 }
 
@@ -73,7 +73,17 @@ async function getUserForOwner1(response, params) {
 }
 
 // Checks if first owner was successfully added to SCIM Connector
-async function postAddOwner1(response, params) {
+async function postAddSPOwner1(response, params) {
+    await handleResponseErrors(response, 204);
+    params.progressBar.increment();
+    return Promise.resolve({
+        status: 'SUCCESS',
+        params: {},
+    });
+}
+
+// Checks if first owner was successfully added to App Registration
+async function postAddAppOwner1(response, params) {
     await handleResponseErrors(response, 204);
     params.progressBar.increment();
     return Promise.resolve({
@@ -93,7 +103,17 @@ async function getUserForOwner2(response, params) {
 }
 
 // Checks if second owner was successfully added to SCIM Connector
-async function postAddOwner2(response, params) {
+async function postAddSPOwner2(response, params) {
+    await handleResponseErrors(response, 204);
+    params.progressBar.increment();
+    return Promise.resolve({
+        status: 'SUCCESS',
+        params: {},
+    });
+}
+
+// Checks if second owner was successfully added to App Registration
+async function postAddAppOwner2(response, params) {
     await handleResponseErrors(response, 204);
     params.progressBar.increment();
     return Promise.resolve({
@@ -194,9 +214,11 @@ module.exports = {
     getAadGroups,
     keepGettingServicePrincipal,
     getUserForOwner1,
-    postAddOwner1,
+    postAddSPOwner1,
+    postAddAppOwner1,
     getUserForOwner2,
-    postAddOwner2,
+    postAddSPOwner2,
+    postAddAppOwner2,
     postAddAadGroupToServicePrincipal,
     postCreateServicePrincipalSyncJob,
     postCreateDatabricksPat,
