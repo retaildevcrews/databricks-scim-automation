@@ -39,7 +39,7 @@ async function getUserInputs(inputPrompts) {
         const newInputs = await inputPrompts.reduce(async (inputs, { message, key, defaultInput }) => {
             const aggInputs = await inputs;
             const currInput = await userInput(message, defaultInput).catch((err) => { throw new Error(err); });
-            return { ...aggInputs, [key]: currInput };
+            return { ...aggInputs, [key]: (key === 'databricksUrl') ? currInput.trim().toLowerCase() : currInput.trim() };
         }, {});
         closeUserInput();
         return newInputs;
