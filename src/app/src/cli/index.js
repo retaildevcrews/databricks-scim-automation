@@ -2,6 +2,7 @@ require('dotenv').config();
 const Promise = require('bluebird');
 const graph = require('@databricks-scim-automation/graph');
 const signin = require('@databricks-scim-automation/signin');
+const { loginTypes } = require('../../config');
 const { keyvaultSettings, tokenSettings } = require('../../config');
 const { getKeyvaultSecrets } = require('../services/keyvault');
 const syncCallbacks = require('./syncCallbacks');
@@ -66,9 +67,11 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
             graph.getAadGroups,
             graph.getServicePrincipal,
             graph.getUserForOwner1,
-            graph.postAddOwner1,
+            graph.postAddSPOwner1,
+            graph.postAddAppOwner1,
             graph.getUserForOwner2,
-            graph.postAddOwner2,
+            graph.postAddSPOwner2,
+            graph.postAddAppOwner2,
             graph.postAddAadGroupToServicePrincipal,
             graph.postCreateServicePrincipalSyncJob,
             graph.postCreateDatabricksPat,
@@ -130,7 +133,7 @@ async function startCli() {
     const signinApp = new signin.SigninApp();
     signinApp.setCallback((graphCode) => {
         graphAuthCode = graphCode;
-        prompts.howToSignin(signin.redirectLoginUrl(secrets));
+        prompts.howToSignin(loginTypes.DATABRICKS_LOGIN, signin.redirectLoginUrl(secrets));
         signinApp.setCallback((databricksCode) => {
             databricksAuthCode = databricksCode;
             startSync(secrets, { graphAuthCode, databricksAuthCode });
@@ -140,7 +143,7 @@ async function startCli() {
     console.log(ascii.scimSync); // eslint-disable-line no-console
     // Instruct user how to quit
     prompts.howToQuit();
-    prompts.howToSignin(signin.redirectLoginUrl(secrets));
+    prompts.howToSignin(loginTypes.GRAPH_LOGIN, signin.redirectLoginUrl(secrets));
 }
 
 module.exports = startCli;

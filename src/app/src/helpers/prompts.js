@@ -1,12 +1,13 @@
 const readline = require('readline');
 const log = require('./log');
+const { loginTypes } = require('../../config');
 
 function howToQuit() {
     log.highlight('Press ^C at any time to quit.');
 }
 
-function howToSignin(url) {
-    log.bold('\nClick on the following link to sign in: ');
+function howToSignin(loginType = loginTypes.GRAPH_LOGIN, url) {
+    log.bold(`\nClick on the following link to sign in and retrieve ${loginType}: `);
     console.log(url); // eslint-disable-line no-console
 }
 

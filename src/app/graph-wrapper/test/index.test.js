@@ -34,6 +34,7 @@ const directoryObjectId1 = 'mockDirectoryObjectId1';
 const directoryObjectId2 = 'mockDirectoryObjectId2';
 const ownerEmail1 = 'mockOwner1@Email1.com';
 const ownerEmail2 = 'mockOwner2@Email2.com';
+const applicationId = 'mockApplicationId';
 
 describe('Validate AccessToken', () => {
     const spy = chai.spy();
@@ -300,8 +301,8 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call postAddOwner1 with required parameters', (done) => {
-        graph.postAddOwner1({ graphAccessToken, servicePrincipalId, directoryObjectId1 });
+    it('should call postAddSPOwner1 with required parameters', (done) => {
+        graph.postAddSPOwner1({ graphAccessToken, servicePrincipalId, directoryObjectId1 });
 
         expect(spiedFetch).to.have.been.called();
         expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
@@ -315,11 +316,41 @@ describe('Validate Databricks & Graph API Calls', () => {
         done();
     });
 
-    it('should call postAddOwner2 with required parameters', (done) => {
-        graph.postAddOwner2({ graphAccessToken, servicePrincipalId, directoryObjectId2 });
+    it('should call postAddSPOwner2 with required parameters', (done) => {
+        graph.postAddSPOwner2({ graphAccessToken, servicePrincipalId, directoryObjectId2 });
 
         expect(spiedFetch).to.have.been.called();
         expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/servicePrincipals/${servicePrincipalId}/owners/$ref`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${graphAccessToken}`,
+            },
+            body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId2}` }),
+        });
+        done();
+    });
+
+    it('should call postAddAppOwner1 with required parameters', (done) => {
+        graph.postAddAppOwner1({ graphAccessToken, applicationId, directoryObjectId1 });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/applications/${applicationId}/owners/$ref`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${graphAccessToken}`,
+            },
+            body: JSON.stringify({ '@odata.id': `https://graph.microsoft.com/beta/directoryObjects/${directoryObjectId1}` }),
+        });
+        done();
+    });
+
+    it('should call postAddAppOwner2 with required parameters', (done) => {
+        graph.postAddAppOwner2({ graphAccessToken, applicationId, directoryObjectId2 });
+
+        expect(spiedFetch).to.have.been.called();
+        expect(spiedFetch).to.have.been.called.with(`https://graph.microsoft.com/beta/applications/${applicationId}/owners/$ref`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
