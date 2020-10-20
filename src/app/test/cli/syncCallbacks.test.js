@@ -1,7 +1,6 @@
 const rewire = require('rewire');
 
 const cliCallbacks = rewire('../../src/cli/syncCallbacks.js');
-const { assert } = require('chai');
 const { expect } = require('chai');
 const chai = require('chai');
 const sinon = require('sinon');
@@ -9,10 +8,8 @@ const spies = require('chai-spies');
 const chaiHttp = require('chai-http');
 const cliCallback = require('../../src/cli/syncCallbacks.js');
 const chaiAsPromised = require('chai-as-promised');
-const { postAccessToken } = require('@databricks-scim-automation/graph');
-const { keepFetching, log } = require('../../src/helpers');
+const {log } = require('../../src/helpers');
 const { stub } = require('sinon');
-const { response } = require('express');
 
 chai.use(chaiHttp);
 chai.use(spies);
@@ -23,8 +20,9 @@ const refreshToken = 'mockRefreshToken';
 const objectId = 'mockObjectId';
 const stepsStatus = 'mockStatus';
 const aadId = 'mockAadId';
-const params = 'something';
+const params = 'mockParams';
 const tokenValue = 'mockTokenValue';
+const userEmail = 'mockuser1@email.com'
 
 let logTable, body;
 beforeEach ( () => {
@@ -53,9 +51,9 @@ describe('validate postAccessToken Function', () => {
         mockResponse.status = 200;
         mockResponse.statusText = 'success';
 
-        const result = await cliCallbacks.postAccessToken(mockResponse);
-        expect(result.accessToken).to.equal(accessToken);
-        expect(result.refreshToken).to.equal(refreshToken);
+        const response = await cliCallbacks.postAccessToken(mockResponse);
+        expect(response.accessToken).to.equal(accessToken);
+        expect(response.refreshToken).to.equal(refreshToken);
     });
 
     it('should throw error for other status codes', () => {
@@ -66,14 +64,14 @@ describe('validate postAccessToken Function', () => {
 });
 
 describe ('validate postScimConnectorGalleryApp functions', () => {
-    body = { servicePrincipal : {objectId : objectId} };
+    body = { servicePrincipal : {objectId : objectId}, application : {objectId : objectId}};
     const mockResponse = new Response();
 
     it('should get Service Principal Id for 201 status code', async () => {
         mockResponse.status = 201;
     
-        const result = await cliCallbacks.postScimConnectorGalleryApp(mockResponse, stepsStatus, params);
-        expect(result.servicePrincipalId).to.equal(objectId);
+        const response = await cliCallbacks.postScimConnectorGalleryApp(mockResponse, stepsStatus, params);
+        expect(response.servicePrincipalId).to.equal(objectId);
         expect(logTable.callCount).to.equal(1);
     });
 
@@ -90,8 +88,8 @@ describe ('validate getAadGroups functions', () => {
     it('should get AAD Group Id for 200 status code', async () => {
         mockResponse.status = 200;
 
-        const result = await cliCallbacks.getAadGroups(mockResponse, stepsStatus, params);
-        expect(result.aadGroupId).to.equal(aadId);
+        const response = await cliCallbacks.getAadGroups(mockResponse, stepsStatus, params);
+        expect(response.aadGroupId).to.equal(aadId);
         expect(logTable.callCount).to.equal(1);
     });
 
@@ -108,8 +106,8 @@ describe ('validate postAddAadGroupToServicePrincipal function', () => {
     it('should get response for 201 status code', async () => {
         mockResponse.status = 201;
 
-        const result = await cliCallbacks.postAddAadGroupToServicePrincipal(mockResponse, stepsStatus);
-        expect(result).to.deep.equal({});
+        const response = await cliCallbacks.postAddAadGroupToServicePrincipal(mockResponse, stepsStatus);
+        expect(response).to.deep.equal({});
         expect(logTable.callCount).to.equal(1);
     });
 
@@ -126,8 +124,8 @@ describe ('validate postCreateServicePrincipalSyncJob function', () => {
     it('should get Sync Job Id for 201 status code', async () => {
         mockResponse.status = 201;
 
-        const result = await cliCallbacks.postCreateServicePrincipalSyncJob(mockResponse, stepsStatus, params);
-        expect(result.syncJobId).to.equal(objectId);
+        const response = await cliCallbacks.postCreateServicePrincipalSyncJob(mockResponse, stepsStatus, params);
+        expect(response.syncJobId).to.equal(objectId);
         expect(logTable.callCount).to.equal(1);
     });
 
@@ -144,14 +142,84 @@ describe ('validate postCreateDatabricksPat function', () => {
     it('should get Databricks token value for 200 status code', async () => {
         mockResponse.status = 200;
 
-        const result = await cliCallbacks.postCreateDatabricksPat(mockResponse, stepsStatus, params);
-        expect(result.databricksPat).to.equal(tokenValue);
+        const response = await cliCallbacks.postCreateDatabricksPat(mockResponse, stepsStatus, params);
+        expect(response.databricksPat).to.equal(tokenValue);
         expect(logTable.callCount).to.equal(1);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
         return expect(cliCallbacks.postCreateDatabricksPat(mockResponse, stepsStatus, params)).to.be.rejected;
+    });
+});
+
+describe ('validate getUserForOwner1 function', () => {
+    body = { value : [{id: userEmail}] };
+      const mockResponse = new Response();
+
+    it('should get response for 200 status code', async () => {
+        mockResponse.status = 200;
+
+        const response1 = await cliCallbacks.getUserForOwner1(mockResponse, stepsStatus, params);
+        const response2 = await cliCallbacks.getUserForOwner1(mockResponse, stepsStatus, params);
+        expect(response1.directoryObjectId1).to.equal(userEmail);
+        expect(response2.directoryObjectId1).to.equal(userEmail);
+        expect(logTable.callCount).to.equal(2);
+    });
+
+    it('should throw error for other status codes', () => {
+        mockResponse.status = 400;
+        return expect(cliCallbacks.getUserForOwner1(mockResponse, stepsStatus, params)).to.be.rejected;
+    });
+});
+
+describe ('validate postAddSPOwner function', () => {
+    body = {};
+    const mockResponse = new Response();
+
+    it('should get response for 204 status code', async () => {
+        mockResponse.status = 204;
+
+        const response1 = await cliCallbacks.postAddSPOwner1(mockResponse, stepsStatus);
+        const response2 = await cliCallbacks.postAddSPOwner2(mockResponse, stepsStatus);
+        expect(response1).to.deep.equal(body);
+        expect(response2).to.deep.equal(body);
+        expect(logTable.callCount).to.equal(2);
+    });
+
+    it('should throw error for other status codes', () => {
+        mockResponse.status = 400;
+        return expect(cliCallbacks.postAddSPOwner1(mockResponse, stepsStatus)).to.be.rejected;
+    });
+
+    it('should throw error for other status codes', () => {
+        mockResponse.status = undefined;
+        return expect(cliCallbacks.postAddSPOwner2(mockResponse, stepsStatus)).to.be.rejected;
+    });
+});
+
+describe ('validate postAddAppOwner function', () => {
+    body = {};
+    const mockResponse = new Response();
+
+    it('should get response for 204 status code', async () => {
+        mockResponse.status = 204;
+
+        const response1 = await cliCallbacks.postAddAppOwner1(mockResponse, stepsStatus);
+        const response2 = await cliCallbacks.postAddAppOwner2(mockResponse, stepsStatus);
+        expect(response1).to.deep.equal(body);
+        expect(response2).to.deep.equal(body);
+        expect(logTable.callCount).to.equal(2);
+    });
+
+    it('should throw error for other status codes', () => {
+        mockResponse.status = 400;
+        return expect(cliCallbacks.postAddSPOwner1(mockResponse, stepsStatus)).to.be.rejected;
+    });
+
+    it('should throw error for other status codes', () => {
+        mockResponse.status = undefined;
+        return expect(cliCallbacks.postAddSPOwner2(mockResponse, stepsStatus)).to.be.rejected;
     });
 });
 
@@ -162,8 +230,8 @@ describe ('validate postValidateServicePrincipalCredentials function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const result = await cliCallbacks.postValidateServicePrincipalCredentials(mockResponse, stepsStatus);
-        expect(result).to.deep.equal(body);
+        const response = await cliCallbacks.postValidateServicePrincipalCredentials(mockResponse, stepsStatus);
+        expect(response).to.deep.equal(body);
         expect(logTable.callCount).to.equal(1);
     });
 
@@ -180,8 +248,8 @@ describe ('validate putSaveServicePrincipalCredentials function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const result = await cliCallbacks.putSaveServicePrincipalCredentials(mockResponse, stepsStatus);
-        expect(result).to.deep.equal(body);
+        const response = await cliCallbacks.putSaveServicePrincipalCredentials(mockResponse, stepsStatus);
+        expect(response).to.deep.equal(body);
         expect(logTable.callCount).to.equal(1);
     });
 
@@ -198,8 +266,8 @@ describe ('validate postStartServicePrincipalSyncJob function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const result = await cliCallbacks.postStartServicePrincipalSyncJob(mockResponse, stepsStatus);
-        expect(result).to.deep.equal(body);
+        const response = await cliCallbacks.postStartServicePrincipalSyncJob(mockResponse, stepsStatus);
+        expect(response).to.deep.equal(body);
         expect(logTable.callCount).to.equal(1);
     });
 
