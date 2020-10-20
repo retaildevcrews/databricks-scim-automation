@@ -37,6 +37,7 @@
     "@databricks-scim-automation/signin": "file:./signin",
     "bluebird": "^3.7.2",
     "chai": "^4.2.0",
+    "chai-http": "^4.3.0",
     "chai-spies": "^1.0.0",
     "cli-progress": "^3.8.2",
     "dotenv": "^8.2.0",

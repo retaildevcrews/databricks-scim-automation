@@ -6,10 +6,8 @@ const chai = require('chai');
 const sinon = require('sinon');
 const spies = require('chai-spies');
 const chaiHttp = require('chai-http');
-const cliCallback = require('../../src/cli/syncCallbacks.js');
 const chaiAsPromised = require('chai-as-promised');
-const {log } = require('../../src/helpers');
-const { stub } = require('sinon');
+const { log } = require('../../src/helpers');
 
 chai.use(chaiHttp);
 chai.use(spies);
@@ -22,26 +20,28 @@ const stepsStatus = 'mockStatus';
 const aadId = 'mockAadId';
 const params = 'mockParams';
 const tokenValue = 'mockTokenValue';
-const userEmail = 'mockuser1@email.com'
+const userEmail = 'mockuser1@email.com';
 
-let logTable, body;
-beforeEach ( () => {
+let logTable;
+let body;
+beforeEach(() => {
     logTable = sinon.stub(log, 'table').returns(stepsStatus);
 });
-afterEach ( () => {
+afterEach(() => {
     logTable.restore();
 });
 
 class Response {
-    constructor() {
+    constructor(status, statusText) {
         this.body = body;
+        this.status = status;
+        this.statusText = statusText;
     }
-    status;
-    statusText;
+
     json() {
         return this.body;
     }
-};
+}
 
 describe('validate postAccessToken Function', () => {
     body = { access_token: accessToken, refresh_token: refreshToken };
@@ -63,13 +63,13 @@ describe('validate postAccessToken Function', () => {
     });
 });
 
-describe ('validate postScimConnectorGalleryApp functions', () => {
-    body = { servicePrincipal : {objectId : objectId}, application : {objectId : objectId}};
+describe('validate postScimConnectorGalleryApp functions', () => {
+    body = { servicePrincipal: { objectId }, application: { objectId } };
     const mockResponse = new Response();
 
     it('should get Service Principal Id for 201 status code', async () => {
         mockResponse.status = 201;
-    
+
         const response = await cliCallbacks.postScimConnectorGalleryApp(mockResponse, stepsStatus, params);
         expect(response.servicePrincipalId).to.equal(objectId);
         expect(logTable.callCount).to.equal(1);
@@ -81,8 +81,8 @@ describe ('validate postScimConnectorGalleryApp functions', () => {
     });
 });
 
-describe ('validate getAadGroups functions', () => {
-    body = { value : [{id: aadId}] };
+describe('validate getAadGroups functions', () => {
+    body = { value: [{ id: aadId }] };
     const mockResponse = new Response();
 
     it('should get AAD Group Id for 200 status code', async () => {
@@ -99,7 +99,7 @@ describe ('validate getAadGroups functions', () => {
     });
 });
 
-describe ('validate postAddAadGroupToServicePrincipal function', () => {
+describe('validate postAddAadGroupToServicePrincipal function', () => {
     body = {};
     const mockResponse = new Response();
 
@@ -117,8 +117,8 @@ describe ('validate postAddAadGroupToServicePrincipal function', () => {
     });
 });
 
-describe ('validate postCreateServicePrincipalSyncJob function', () => {
-    body = { id : objectId };
+describe('validate postCreateServicePrincipalSyncJob function', () => {
+    body = { id: objectId };
     const mockResponse = new Response();
 
     it('should get Sync Job Id for 201 status code', async () => {
@@ -135,8 +135,8 @@ describe ('validate postCreateServicePrincipalSyncJob function', () => {
     });
 });
 
-describe ('validate postCreateDatabricksPat function', () => {
-    body = { token_value : tokenValue };
+describe('validate postCreateDatabricksPat function', () => {
+    body = { token_value: tokenValue };
     const mockResponse = new Response();
 
     it('should get Databricks token value for 200 status code', async () => {
@@ -153,8 +153,8 @@ describe ('validate postCreateDatabricksPat function', () => {
     });
 });
 
-describe ('validate getUserForOwner1 function', () => {
-    body = { value : [{id: userEmail}] };
+describe('validate getUserForOwner1 function', () => {
+    body = { value: [{ id: userEmail }] };
       const mockResponse = new Response();
 
     it('should get response for 200 status code', async () => {
@@ -173,7 +173,7 @@ describe ('validate getUserForOwner1 function', () => {
     });
 });
 
-describe ('validate postAddSPOwner function', () => {
+describe('validate postAddSPOwner function', () => {
     body = {};
     const mockResponse = new Response();
 
@@ -198,7 +198,7 @@ describe ('validate postAddSPOwner function', () => {
     });
 });
 
-describe ('validate postAddAppOwner function', () => {
+describe('validate postAddAppOwner function', () => {
     body = {};
     const mockResponse = new Response();
 
@@ -223,7 +223,7 @@ describe ('validate postAddAppOwner function', () => {
     });
 });
 
-describe ('validate postValidateServicePrincipalCredentials function', () => {
+describe('validate postValidateServicePrincipalCredentials function', () => {
     body = {};
     const mockResponse = new Response();
 
@@ -241,7 +241,7 @@ describe ('validate postValidateServicePrincipalCredentials function', () => {
     });
 });
 
-describe ('validate putSaveServicePrincipalCredentials function', () => {
+describe('validate putSaveServicePrincipalCredentials function', () => {
     body = {};
     const mockResponse = new Response();
 
@@ -259,7 +259,7 @@ describe ('validate putSaveServicePrincipalCredentials function', () => {
     });
 });
 
-describe ('validate postStartServicePrincipalSyncJob function', () => {
+describe('validate postStartServicePrincipalSyncJob function', () => {
     body = {};
     const mockResponse = new Response();
 
