@@ -1,8 +1,10 @@
-# Databricks-SCIM-Automation for CSV
+# Databricks-SCIM-Automation
 
-## Setup App
+## Setup
 
-* (Optional) Use `databricks-scim-automation/infra` to create infrastructure
+### Terraform
+
+Use `databricks-scim-automation/infra` to create needed infrastructure
   * Must have following KeyVault Secrets: `TenantID`, `AppClientId`, `AppClientSecret`
   * Required permissions for KeyVault included in [databricks-scim-automation/infra/README.md](../../infra/README.md#accessing-keyvault-secrets)
 * Execute `npm install` from /src/app
