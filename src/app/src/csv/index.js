@@ -156,14 +156,6 @@ const startSync = async (secrets, { csvPath, csvHeader, csvRows }, { graphAuthCo
         const executorName = decodedGraphAccessToken.name;
         const executorEmail = decodedGraphAccessToken.unique_name;
 
-        console.log('\n\nValidating CSV Input File...'); // eslint-disable-line no-console
-        csvRows.map((line) => validateCSVData(line));
-        if (csvErroredLines.length > 0) {
-            log.highlight(`${csvErroredLines.length} SCIM app data validation failed for CSV Application Index(es): ${csvErroredLines}`);
-            log.highlight(validationMessage);
-            throw new Error('CSV Data validation failed...');
-        }
-
         console.log('\nCreating SCIM connector apps and running sync jobs...'); // eslint-disable-line no-console
         const syncAllStatus = await Promise.all(csvRows.map((line) => promisfySyncCall(line, sharedParams)));
 
@@ -188,6 +180,15 @@ async function startCsv(csvInputPath = process.argv[2]) {
             throw new Error('Unable to find csv file (i.e. npm start <PATH_TO_CSV>)');
         }
         const csvInput = getCsvInputs(csvInputPath);
+
+        console.log('\n\nValidating CSV Input File...'); // eslint-disable-line no-console
+        csvInput.csvRows.map((line) => validateCSVData(line));
+        if (csvErroredLines.length > 0) {
+            log.highlight(`${csvErroredLines.length} SCIM app data validation failed for CSV Application Index(es): ${csvErroredLines}`);
+            log.highlight(validationMessage);
+            throw new Error('CSV Data validation failed...');
+        }
+
         console.log('Getting key vault secrets...'); // eslint-disable-line no-console
         const keys = [
             keyvaultSettings.TENANT_ID_KEY,
