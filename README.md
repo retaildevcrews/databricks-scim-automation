@@ -133,8 +133,11 @@ Configure App Registration
 # retrieve App Registration AppId from Key Vault
 export SCIM_SP_ID='az keyvault secret show -o tsv --query value --vault-name $SCIM_Name-kv --name AppClientID'
 
+# make sure the PORT variable is set
+echo $PORT
+
 # add redirect uri and allow implicit grant flow for OAuth 2
-az ad app update --id $(eval $SCIM_SP_ID) --reply-urls http://localhost:${PORT} --oauth2-allow-implicit-flow
+az ad app update --id $(eval $SCIM_SP_ID) --reply-urls http://localhost:${PORT} --oauth2-allow-implicit-flow true
 
 ```
 
