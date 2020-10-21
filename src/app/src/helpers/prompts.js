@@ -2,6 +2,8 @@ const readline = require('readline');
 const log = require('./log');
 const { loginTypes } = require('../../config');
 
+const isValidInput = (param) => /\S/.test(param);
+
 function howToQuit() {
     log.highlight('Press ^C at any time to quit.');
 }
@@ -13,14 +15,18 @@ function howToSignin(loginType = loginTypes.GRAPH_LOGIN, url) {
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-function userInput(message, defaultInput) {
+function userInput(message, aggInputs, defaultInput) {
     const prompt = defaultInput ? `${log.boldFormat(message)}: (${defaultInput}) ` : `${log.boldFormat(message)}: `;
     return new Promise((resolve) => rl.question(prompt, (input) => {
         const answer = input || defaultInput;
-        if (answer) {
-            return resolve(answer);
+        // Enforce unique user emails for owners
+        if (answer && aggInputs && aggInputs.ownerEmail1 && answer.trim().toLowerCase() === aggInputs.ownerEmail1.trim().toLowerCase()) {
+            return resolve(userInput(`${message}!`, aggInputs));
         }
-        return resolve(userInput(`${message}!`));
+        if (answer && isValidInput(answer)) {
+            return resolve(answer.trim());
+        }
+        return resolve(userInput(`${message}!`, aggInputs));
     }));
 }
 
@@ -39,8 +45,8 @@ async function getUserInputs(inputPrompts) {
         // Get required inputs from user
         const newInputs = await inputPrompts.reduce(async (inputs, { message, key, defaultInput }) => {
             const aggInputs = await inputs;
-            const currInput = await userInput(message, defaultInput).catch((err) => { throw new Error(err); });
-            return { ...aggInputs, [key]: (key === 'databricksUrl') ? currInput.trim().toLowerCase() : currInput.trim() };
+            const currInput = await userInput(message, aggInputs, defaultInput).catch((err) => { throw new Error(err); });
+            return { ...aggInputs, [key]: (key === 'databricksUrl') ? currInput.toLowerCase() : currInput };
         }, {});
         closeUserInput();
         return newInputs;
