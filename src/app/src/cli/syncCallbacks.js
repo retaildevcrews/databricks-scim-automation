@@ -84,7 +84,7 @@ async function getUserForOwner1(response, stepsStatus, params) {
     }
     params.directoryObjectId1 = body.value[0].id; // eslint-disable-line no-param-reassign
     stepsStatus = log.table(stepsStatus, { Action: 'getUserForOwner1', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign
-    return Promise.resolve({ directoryObjectId1: body.value.id });
+    return Promise.resolve({ directoryObjectId1: body.value[0].id });
 }
 
 // Checks if first user was successfully added as SP owner of SCIM Connector
@@ -118,7 +118,7 @@ async function getUserForOwner2(response, stepsStatus, params) {
     }
     params.directoryObjectId2 = body.value[0].id; // eslint-disable-line no-param-reassign
     stepsStatus = log.table(stepsStatus, { Action: 'getUserForOwner2', Status: 'Success', Attempts: 1 }); // eslint-disable-line no-param-reassign
-    return Promise.resolve({ directoryObjectId2: body.value.id });
+    return Promise.resolve({ directoryObjectId2: body.value[0].id });
 }
 
 // Checks if second user was successfully added as SP owner of SCIM Connector

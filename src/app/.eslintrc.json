@@ -3,7 +3,8 @@
         "browser": true,
         "commonjs": true,
         "es2021": true,
-        "node": true
+        "node": true,
+        "mocha": true
     },
     "extends": [
         "airbnb-base"
@@ -14,6 +15,8 @@
     "root": true,
     "rules": {
         "indent": "off",
-        "max-len": "off"
+        "max-len": "off",
+        "no-underscore-dangle": "off",
+        "no-unused-expressions": "off"
     }
 }
