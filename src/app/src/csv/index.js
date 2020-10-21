@@ -11,12 +11,17 @@ const syncCallbacks = require('./syncCallbacks');
 const { keyvaultSettings, tokenSettings } = require('../../config');
 const {
     isDatabricksUrl,
+    isValidInput,
     isCsvFile,
     getCsvInputs,
     createFile,
     prompts,
+    log,
 } = require('../helpers');
 
+const csvErroredLines = [];
+let csvLineCount = 0;
+const validationMessage = '\n\nCSV Data Validation Failed due one of the following reasons:\n1. DatabricksURL is not an accepted value\n2. One or more values are empty\n3. Same user email is listed for SCIM APP Onwer1 and SCIM APP Owner2';
 const graphCalls = [
     {
         graphCall: graph.postScimConnectorGalleryApp,
@@ -73,6 +78,15 @@ const progressMultiBar = new cliProgress.MultiBar({
     format: '{galleryAppName}: [{bar}] | {percentage}% | {value}/{total} Steps | {duration}s Elapsed',
 }, cliProgress.Presets.legacy);
 
+function validateCSVData(csvLine) {
+    const [galleryAppName, filterAadGroupDisplayName, ownerEmail1, ownerEmail2, databricksUrl] = csvLine.split(',').map((item, index) => ((index === 4) ? item.trim().toLowerCase() : item.trim()));
+    csvLineCount += 1;
+    if (!isDatabricksUrl(databricksUrl) || ownerEmail1.toLowerCase() === ownerEmail2.toLowerCase()
+    || !isValidInput(galleryAppName) || !isValidInput(filterAadGroupDisplayName) || !isValidInput(ownerEmail1) || !isValidInput(ownerEmail2)) {
+        csvErroredLines.push(csvLineCount);
+    }
+}
+
 async function promisfySyncCall(csvLine, sharedParams) {
     const [galleryAppName, filterAadGroupDisplayName, ownerEmail1, ownerEmail2, databricksUrl] = csvLine.split(',').map((item, index) => ((index === 4) ? item.trim().toLowerCase() : item.trim()));
 
@@ -91,7 +105,6 @@ async function promisfySyncCall(csvLine, sharedParams) {
         ownerEmail1,
         ownerEmail2,
     };
-
     const syncResult = await Promise.mapSeries(graphCalls, ({ graphCall, callback }) => {
         if (params.hasFailed) {
             progressBar.stop();
@@ -167,6 +180,15 @@ async function startCsv(csvInputPath = process.argv[2]) {
             throw new Error('Unable to find csv file (i.e. npm start <PATH_TO_CSV>)');
         }
         const csvInput = getCsvInputs(csvInputPath);
+
+        console.log('\n\nValidating CSV Input File...'); // eslint-disable-line no-console
+        csvInput.csvRows.map((line) => validateCSVData(line));
+        if (csvErroredLines.length > 0) {
+            log.highlight(`${csvErroredLines.length} SCIM app data validation failed for CSV Application Index(es): ${csvErroredLines}`);
+            log.highlight(validationMessage);
+            throw new Error('CSV Data validation failed...');
+        }
+
         console.log('Getting key vault secrets...'); // eslint-disable-line no-console
         const keys = [
             keyvaultSettings.TENANT_ID_KEY,

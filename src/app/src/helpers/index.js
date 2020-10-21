@@ -3,6 +3,7 @@ const log = require('./log');
 const prompts = require('./prompts');
 
 const isDatabricksUrl = (url) => /https:\/\/.*\.azuredatabricks.net\/?/.test(url);
+const isValidInput = (param) => /\S/.test(param);
 
 function isCsvFile(path) {
     const fileExists = fs.existsSync(path);
@@ -76,6 +77,7 @@ module.exports = {
     handleResponseErrors,
     isCsvFile,
     isDatabricksUrl,
+    isValidInput,
     log,
     getCsvInputs,
     keepFetching,
