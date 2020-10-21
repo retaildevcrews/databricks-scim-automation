@@ -1,85 +1,131 @@
-# Databricks-SCIM-Automation
+# Databricks SCIM Automation App
+
+## Prerequisites
+
+- Infrastructure set up as instructed in the [main readme](../../README.md)
+- Node 12.18.4+ ([download](https://nodejs.org/en/download/))
+- At least one instance created of:
+  - Azure Databricks
+  - a non-empty AAD Group created
 
 ## Setup
 
-### Terraform
-
-Use `databricks-scim-automation/infra` to create needed infrastructure
-  * Must have following KeyVault Secrets: `TenantID`, `AppClientId`, `AppClientSecret`
-  * Required permissions for KeyVault included in [databricks-scim-automation/infra/README.md](../../infra/README.md#accessing-keyvault-secrets)
-* Execute `npm install` from /src/app
-  * The following output is expected and safe to ignore:
+Install required npm packages
 
 ```bash
 
-npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@2.1.3 (node_modules/@databricks-scim-automation/graph/node_modules/fsevents):
-npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@2.1.3: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
-npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@2.1.3 (node_modules/fsevents):
-npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@2.1.3: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
+# make sure you are in the /src/app directory
+cd ./src/app
 
-# This is safe to ignore as well as it does not impact the functionality of the unit tests
-npm WARN chai-fetch-mock@3.0.0 requires a peer of fetch-mock@5.1.x || 6.x but none is installed. You must install peer dependencies yourself.
+# install packages
+npm install
+
+# you may see the following output, it is expected and safe to ignore
+# npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@2.1.3 (node_modules/@databricks-scim-automation/graph/node_modules/fsevents)
+# npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@2.1.3: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
+# npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents@2.1.3 (node_modules/fsevents):
+# npm WARN notsup SKIPPING OPTIONAL DEPENDENCY: Unsupported platform for fsevents@2.1.3: wanted {"os":"darwin","arch":"any"} (current: {"os":"linux","arch":"x64"})
+
+# this is safe to ignore as well as it does not impact the functionality of the unit tests
+# npm WARN chai-fetch-mock@3.0.0 requires a peer of fetch-mock@5.1.x || 6.x but none is installed. You must install peer dependencies yourself.
 
 ```
 
-* Copy `.env-sample` and rename `.env`
-  * Update required variables  `GALLERY_APP_TEMPLATE_ID`, `SCIM_TEMPLATE_ID`, and `KEYVAULT_URL`
-    * If created infrastructure via `databricks-scim-automation/infra`, `KEYVAULT_URL` is `https://{​​​​​scim_Name}​​​​​-kv.vault.azure.net`, otherwise find in Azure Portal
-  * Update optional variables `PORT`
-* Update permissions of app registration (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
-  * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `Authentication`
-    * `Add a Platform` > `Web` > `Redirect URIs`: `http://localhost:{1337|.env.PORT}`
-    * Select `Implicit grant` > `Access tokens` option
-    * Click `Save`
-* Add required API permissions to App (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
-  * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `API Permissions` > `Add a permission`
-    * `@databricks-scim-automation/graph` > getAadGroups (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
-    * `@databricks-scim-automation/graph` > getServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Directory.Read.All`
-    * `@databricks-scim-automation/graph` > postAddAadGroupToServicePrincipal (Required Permission): `Microsoft Graph` > `Delegated permissions` > `AppRoleAssignment.ReadWrite.All`
-    * `@databricks-scim-automation/graph` > postAddOwner (Required Permission): `Microsoft Graph` > `Delegated permissions` > `Application.ReadWrite.All`
-    * `@databricks-scim-automation/graph` > postDatabricksAccessToken (Required Permission): `APIs my organization uses` > `AzureDatabricks` > `user_impersonation`
-* Grant admin consent for Default Directory (if created via `databricks-scim-automation/infra`, app name is `{scim_Name}-tf-sp`)
-  * `Azure Active Directory` > `App registrations` > `{Name of App Service Client}` > `API Permissions` > Click `Grant admin consent for Default Directory`
+## Required Inputs
 
-## Run CSV CLI App
+The following is a list of the required inputs for the CLI App:
 
-* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Owner Email 1`, `Owner Email 2`, `Databricks Url`
-  * The order is important
-  * Databricks Url format: https://adb-*.*.azuredatabricks.net
-* Execute `npm start <path_to_file>`
-* Find completed logs at `./outputs/<input_csv_filename>`
-  * If file already exists, logs will be appended to content
-  * Status of 'n/a' indicates that the step was not excuted because a previous step in the sync had failed
+- SCIM App Name = Display name of the SCIM Connector App to be created
+- AAD Group = Display name of the (already existing) AAD group to sync to the Azure Databricks instance
+- Owner Email 1 = Email address of user to be set as first owner of the SCIM Connector App
+- Owner Email 2 = Email address of user to be set as second owner of the SCIM Connector App (must be different than Owner 1)
+- Databricks Url = Databricks Url (format: https://adb-*.*.azuredatabricks.net)
 
-## Run CSV CLI App for Development
+> Note:
+>
+> - There is no restriction on creating multiple SCIM Connector Apps with the same display name, they will have different objectIds.
+> - If there is more than one AAD group with the same name, will use the first one returned from the API.
 
-* Create a CSV with the following headers: `SCIM App Name`, `AAD Group`, `Owner Email 1`, `Owner Email 2`, `Databricks Url`
-  * The order is important
-  * Databricks Url format: https://adb-*.*.azuredatabricks.net
-* Save the CSV file as `./mocks/syncs.csv`
-* Execute `npm run dev:csv`
-* Find completed logs at `./outputs/<input_csv_filename>`
-  * If file already exists, logs will be appended to content
-  * Status of 'n/a' indicates that the step was not excuted because a previous step in the sync had failed
+## Run the App
 
-## Run Single CLI
+### Run CLI app with single command line input
 
-* `npm start`
+```bash
 
-## Run Single CLI for Development
+# start the app
+npm start
 
-* `npm run dev:cli`
+# you will be prompted for each input
+# note that the values for the gallery app template id and sync job template id both default to values for Azure Databricks
+# just hit enter to accept the default value
 
-## Run GUI
+```
 
-* Run the GUI: `npm run start:gui`
-* Open browser: localhost:1337
-* Login must be by a user of the application in order to obtain a token with required delegated application permissions
-* Fill out inputs with `**` beside them
+#### Run CLI app with single command line input for development
+
+```bash
+
+# start the app
+npm run dev:cli
+
+```
+
+### Run CLI app with batched input (csv file)
+
+```bash
+
+# create a csv file with the following headers: SCIM App Name,AAD Group,Owner Email 1,Owner Email 2,Databricks Url
+# there is a syncs.csv file in ./csv-templates which can be used as a starting point
+
+# optionally update the name of the input file
+export SCIM_InputFile=inputs.csv
+
+cp ./csv-templates/syncs.csv ./$SCIM_InputFile
+
+# update the created input file with row entries below the header row
+# order is important and each value is required
+
+# start the app
+npm start ./$SCIM_InputFile
+
+# find completed logs at ./outputs/$SCIM_InputFile
+# a status of n/a indicates that the step was not executed because a previous step in the sync failed
+cat ./outputs/$SCIM_InputFile
+
+```
+
+#### Run CLI app with batched input (csv file) for development
+
+```bash
+
+# set up input file as described above
+
+# copy input file to ./mocks/syncs.csv
+cp ./$SCIM_InputFile ./mocks/syncscsv
+
+# start the app for development
+npm run dev:csv
+
+# find completed logs at ./outputs/syncs.csv
+
+```
+
+### Run GUI
+
+> Note: The GUI version of the app was originally used for exploratory purposes and is not guaranteed to be in a stable state.
+
+```bash
+
+# run the GUI
+npm run start:gui
+
+# navigate to localhost:1337 (or which ever port was specified in the .env file)
+
+# fill in inputs with ** beside them
+
+```
 
 ## End User Notes
 
-* <a name="scim-sync-cadence"></a>Notes on SCIM Sync Cadence: [Provisioning Tips](https://docs.microsoft.com/en-us/azure/databricks/administration-guide/users-groups/scim/aad#provisioning-tips)
-
-* There is no restriction on duplicating SCIM connector gallery app name, which may make managing difficult in the future.
-* If there is more than one AAD group with the same name, will use the first one returned from the API.
+- If the application fails to complete a sync process, there are currently no compensating actions. This means manual cleanup of resources is required.
+- Notes on SCIM Sync Cadence: [Provisioning Tips](https://docs.microsoft.com/en-us/azure/databricks/administration-guide/users-groups/scim/aad#provisioning-tips)

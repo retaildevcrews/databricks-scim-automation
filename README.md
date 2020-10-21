@@ -1,4 +1,4 @@
-# DataBricks SCIM Automation
+# Databricks SCIM Automation
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
@@ -9,9 +9,8 @@ Create a service principal from a SCIM Connector Gallery App that will sync user
 ## Features
 
 - Create a single SCIM app and execute initial sync job via CLI
-- Create multiple SCIM apps from a CSV and execute all initial sync jobs via CLI
+- Create multiple SCIM apps from a csv file and execute all initial sync jobs via CLI
 - Create a single SCIM app and execute initial sync job via GUI
-- Notes on SCIM sync cadence at [./src/app/README.md > End User Notes](./src/app/README.md#scim-sync-cadence)
 
 ## Prerequisites
 
@@ -23,16 +22,16 @@ Create a service principal from a SCIM Connector Gallery App that will sync user
 - At least one instance created of:
   - Azure Databricks
   - a non-empty AAD Group created
-- Azure CLI or Terraform for Infrastructure
+- Azure CLI ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)) or Terraform 0.13.4+ ([download](https://www.terraform.io/downloads.html)) for Infrastructure
 - Node for CLI/GUI 12.18.4+ ([download](https://nodejs.org/en/download/))
 
 ## Setup Infrastructure
 
-### Terraform
+### Using Terraform
 
 Follow the instructions in [./infraREADME.md](./infra/README.md) to create needed infrastructure.
 
-### CLI
+### Using CLI (bash)
 
 #### Login to Azure and select subscription
 
@@ -74,7 +73,6 @@ export SCIM_Location=centralus
 export SCIM_App_RG=${SCIM_Name}-rg-app
 
 # create resource group
-
 az group create -n $SCIM_App_RG -l $SCIM_Location
 
 ```
@@ -88,36 +86,12 @@ az keyvault create -g $SCIM_App_RG -n $SCIM_Name-kv
 
 ```
 
-Key Vault does a soft delete when deleting vaults. If you have gone through this setup already, you could run into errors like "Exist soft deleted vault with the same name.", and "Secret is currently in a deleted but recoverable state ...". You can check if you have deleted vaults and keys with the commands below.
-
-```bash
-
-# list deleted keyvaults that still exist
-az keyvault list-deleted -o table
-
-# list deleted secrets that still exist
-az keyvault secret list-deleted --vault-name $SCIM_Name-kv -o table
-
-```
-
-If you see the SCIM App related vaults or secrets in this state, you can purge or recover the values before moving forward. There are example commands below for deleting and purging a keyvault.
-
-```bash
-
-# Deleting a keyvault if you intend to reuse the same name.
-az keyvault delete -g $SCIM_App_RG -n $SCIM_Name-kv
-
-# Purging a key vault. This will permanently delete the keyvault and all its contents.
-az keyvault purge  -n $SCIM_Name-kv
-
-```
-
 #### Create App Registration and add Azure Key Vault secrets
 
 ```bash
 
 # create a Service Principal and add password to Key Vault
-az keyvault secret set -o table --vault-name $SCIM_Name-kv --name "AppClientSecret" --skip-assignment --value $(az ad sp create-for-rbac -n http://${SCIM_Name}-scim-app-sp --query password -o tsv)
+az keyvault secret set -o table --vault-name $SCIM_Name-kv --name "AppClientSecret" --value $(az ad sp create-for-rbac -n http://${SCIM_Name}-scim-app-sp --query password -o tsv)
 
 # add Service Principal ID to Key Vault
 az keyvault secret set -o table --vault-name $SCIM_Name-kv --name "AppClientID" --value $(az ad sp show --id http://${SCIM_Name}-scim-app-sp --query appId -o tsv)
@@ -134,7 +108,7 @@ Update required environment variables.
 ```bash
 
 # ensure you are in the /src/app directory
-cd src/app
+cd ./src/app
 
 # copy .env-sample and rename to .env
 cp .env-sample .env
@@ -157,7 +131,7 @@ Configure App Registration
 ```bash
 
 # retrieve App Registration AppId from Key Vault
-export SCIM_SP_ID='az keyvault secret show -o tsv --query value --vault-name $He_Name --name AcrUserId'
+export SCIM_SP_ID='az keyvault secret show -o tsv --query value --vault-name $SCIM_Name-kv --name AppClientID'
 
 # add redirect uri and allow implicit grant flow for OAuth 2
 az ad app update --id $(eval $SCIM_SP_ID) --reply-urls http://localhost:${PORT} --oauth2-allow-implicit-flow
@@ -166,14 +140,29 @@ az ad app update --id $(eval $SCIM_SP_ID) --reply-urls http://localhost:${PORT} 
 
 Add required permissions to the App Registration
 
+> To successfully call the required Microsoft Graph and Azure Databricks API's, the following API permissions are required:
+>
+> - Microsoft Graph:
+>   - Directory.Read.All
+>   - AppRoleAssignment.ReadWrite.All
+>   - Application.ReadWrite.All
+> - Azure Databricks:
+>   - user_impersonation
+
 ```bash
 
-az ad app permission add --id $(eval $SCIM_SP_ID) --api 00000003-0000-0000-c000-000000000000 --api-permissions bdfbf15f-ee85-4955-8675-146e8e5296b5 84bccea3-f856-4a8a-967b-dbe0a3d53a64 06da0dbc-49e2-44d2-8312-53f166ab848a
+# make sure you are in the root directory of the repo
+cd ../../
 
-az ad app permission add --id $(eval $SCIM_SP_ID) --api 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --api-permissions 739272be-e143-11e8-9f32-f2801f1b9fd1
-
+# the permissions listed above are specified in the permissions.json file located in the root directory of the repo
+# apply the API permissions
+az ad app update --id $(eval $SCIM_SP_ID) --required-resource-accesses @permissions.json
 
 ```
+
+## Run the application
+
+See instructions on running the app [here](./src/app/README.md)
 
 ## Contributing
 
