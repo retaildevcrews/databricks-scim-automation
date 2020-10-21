@@ -19,7 +19,7 @@ const {
     log,
 } = require('../helpers');
 
-const csvErroredLines = []; 
+const csvErroredLines = [];
 let csvLineCount = 0;
 const validationMessage = '\n\nCSV Data Validation Failed due one of the following reasons:\n1. DatabricksURL is not an accepted value\n2. One or more values are empty\n3. Same user email is listed for SCIM APP Onwer1 and SCIM APP Owner2';
 const graphCalls = [
