@@ -10,7 +10,13 @@ function isCsvFile(path) {
 }
 
 function getCsvInputs(path) {
-    const fileContent = fs.readFileSync(path, 'utf8').split('\r\n');
+    // always split on "\n" since this is common for both Unix and Windows
+    const fileContent = fs.readFileSync(path, 'utf8').split('\n');
+    // We remove the \r from the string for Windows(which have additional \r prefix)
+    for (let i = 0; i < fileContent.length; i += 1) {
+        // We might want to use Trim here. But it will trim all whitespaces from the end
+        fileContent[i] = fileContent[i].replace('\r', '');
+    }
     const isFirstLineHeader = !(isDatabricksUrl(fileContent[0]));
     return {
         csvPath: path,
