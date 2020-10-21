@@ -77,7 +77,7 @@ npm run dev:cli
 # create a csv file with the following headers: SCIM App Name,AAD Group,Owner Email 1,Owner Email 2,Databricks Url
 # there is a syncs.csv file in ./csv-templates which can be used as a starting point
 
-# optionally update the name of the input file
+# you can update the name of the input file if desired
 export SCIM_InputFile=inputs.csv
 
 cp ./csv-templates/syncs.csv ./$SCIM_InputFile
@@ -90,7 +90,6 @@ npm start ./$SCIM_InputFile
 
 # find completed logs at ./outputs/$SCIM_InputFile
 # a status of n/a indicates that the step was not executed because a previous step in the sync failed
-cat ./outputs/$SCIM_InputFile
 
 ```
 
@@ -100,6 +99,8 @@ cat ./outputs/$SCIM_InputFile
 
 # set up input file as described above
 
+# create mocks folder (if it does not already exist)
+mkdir mocks
 # copy input file to ./mocks/syncs.csv
 cp ./$SCIM_InputFile ./mocks/syncscsv
 
