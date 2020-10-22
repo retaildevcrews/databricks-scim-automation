@@ -4,13 +4,13 @@
 
 ## Description
 
-Create a service principal from a SCIM Connector Gallery App that will sync users in an AAD group to a specified Databricks workspace. Then create and start an initial sync job.
+This application automates the steps described in this [Azure documentation](https://docs.microsoft.com/en-us/azure/databricks/administration-guide/users-groups/scim/aad#:~:text=%20Create%20an%20enterprise%20application%20and%20connect%20to,search%20for%20and...%204%20Click%20Save.%20More%20) to configure a Databricks SCIM provisioning for AAD. The app creates a service principal from a SCIM Connector Gallery App that syncs users in an AAD group to a specified Databricks workspace. It then creates and starts an initial sync job.
 
 ## Features
 
-- Create a single SCIM app and execute initial sync job via CLI
-- Create multiple SCIM apps from a csv file and execute all initial sync jobs via CLI
-- Create a single SCIM app and execute initial sync job via GUI
+- Create a single SCIM app and execute initial sync job via CLI.
+- Create multiple SCIM apps from a csv file and execute all initial sync jobs via CLI.
+- Create a single SCIM app and execute initial sync job via GUI.
 
 ## Prerequisites
 
