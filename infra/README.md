@@ -113,3 +113,5 @@ terraform apply -auto-approve
 az keyvault set-policy -n $SCIM_Name-kv --secret-permissions get list --key-permissions get list --object-id $(az ad user show --query objectId -o tsv --id {user email address or service principal AppId})
 
 ```
+
+## Continue following steps in README to [configure environment and permissions](../README.md#configure-environment-and-permissions)
