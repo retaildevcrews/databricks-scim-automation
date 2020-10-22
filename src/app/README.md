@@ -59,6 +59,10 @@ npm start
 # note that the values for the gallery app template id and sync job template id both default to values for Azure Databricks
 # just hit enter to accept the default value
 
+# it is expected to see the following output before a success message
+# the sync status checked periodically until success is reported after sync completion
+# > Last Execution (Failed) began at 2020-10-22T16:40:01.398643Z and ended at 2020-10-22T16:40:01.398643Z
+
 ```
 
 #### Run CLI app with single command line input for development
