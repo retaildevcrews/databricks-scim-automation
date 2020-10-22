@@ -136,7 +136,7 @@ export SCIM_SP_ID='az keyvault secret show -o tsv --query value --vault-name $SC
 # make sure the PORT variable is set
 echo $PORT
 
-# add redirect uri and allow implicit grant flow for OAuth 2
+# add redirect uri and allow implicit grant flow with access tokens for OAuth 2
 az ad app update --id $(eval $SCIM_SP_ID) --reply-urls http://localhost:${PORT} --oauth2-allow-implicit-flow true
 
 ```
