@@ -1,0 +1,56 @@
+{
+  "name": "@databricks-scim-automation/csv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/retaildevcrews/databricks-scim-automation.git"
+  },
+  "scripts": {
+    "test": "mocha test/cli/*.js test/csv/*.js",
+    "start": "node src/index.js",
+    "start:gui": "nodemon src/gui/index.js",
+    "dev:cli": "nodemon src/index.js",
+    "dev:csv": "nodemon src/index.js ./mocks/syncs.csv",
+    "lint": "eslint ./"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^7.10.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "mocha": "^8.1.3",
+    "nodemon": "^2.0.4",
+    "sinon": "^9.2.0"
+  },
+  "dependencies": {
+    "@azure/identity": "^1.1.0",
+    "@azure/keyvault-secrets": "^4.1.0",
+    "@databricks-scim-automation/graph": "file:./graph-wrapper",
+    "@databricks-scim-automation/signin": "file:./signin",
+    "bluebird": "^3.7.2",
+    "chai": "^4.2.0",
+    "chai-http": "^4.3.0",
+    "chai-spies": "^1.0.0",
+    "cli-progress": "^3.8.2",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "jwt-decode": "^3.0.0",
+    "npm-force-resolutions": "0.0.3",
+    "path": "^0.12.7",
+    "readline": "^1.3.0",
+    "rewire": "^5.0.0",
+    "sinon-chai": "^3.5.0"
+  },
+  "resolutions": {
+    "node-fetch": ">=2.6.1"
+  }
+}
