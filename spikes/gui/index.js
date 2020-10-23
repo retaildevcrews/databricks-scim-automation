@@ -35,46 +35,6 @@ function getInitialHtml() {
     }
 }
 
-// Users from Databricks Workspace
-async function getDatabricksWorkspaceUsers(req) {
-    try {
-        const { query: { databricksDomainName } } = url.parse(req.url, true);
-        const scimApi = `${databricksDomainName}/api/2.0/preview/scim/v2`;
-        const token = 'dapi5b33859ef12f7039b937146175a9d313';
-        const response = await fetch(`${scimApi}/Users`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/scim+json',
-                'Content-Type': 'application/scim+json',
-            },
-        });
-        const contentType = response.headers._headers['content-type'];
-        const body = contentType.some(type => type.includes('json')) ? await response.json() : await response.text();
-        if (response.status === 200) {
-            return {
-                status: response.status,
-                contentType,
-                response: JSON.stringify(body.Resources),
-            };
-        } else {
-            return {
-                status: response.status,
-                contentType,
-                response: body,
-            };
-        }
-    } catch(err) {
-        const errorMessage = 'Error fetching databricks workspace users';
-        console.error(errorMessage + ': ', err);
-        return {
-            response: errorMessage,
-            status: 500,
-            contentType: 'text/plain',
-        }
-    }
-}
-
 // Login must be user of Application
 function getRedirectLogin(req) {
     // Sign in request URI
@@ -535,8 +495,6 @@ async function getRoute(req, res) {
     switch (pathname) {
         case '/':
             return sendResponse(res, getInitialHtml());
-        case '/databricksWorkspaceUsers':
-            return sendResponse(res, await getDatabricksWorkspaceUsers(req));
         case '/login':
             return sendResponse(res, getRedirectLogin(req));
         case '/aadGroups':
