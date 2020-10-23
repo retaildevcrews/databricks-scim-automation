@@ -1,48 +1,48 @@
 #!/bin/bash
 
-# check if scim_Name is valid
+# check if SCIM_Name is valid
 function usage(){
-  echo -e "usage: scim_Name=[unique-name] $0"
-  echo -e "   or: export scim_Name=[unique-name] && $0"
-  echo -e "Note that: 'scim_Name' can't have any special chars with length between 5-20"
+  echo -e "usage: SCIM_Name=[unique-name] $0"
+  echo -e "   or: export SCIM_Name=[unique-name] && $0"
+  echo -e "Note that: 'SCIM_Name' can't have any special chars with length between 5-20"
 }
-echo "SCIM-Name provided: '$scim_Name'"
+echo "SCIM-Name provided: '$SCIM_Name'"
 script_dir=$(dirname $(realpath $0))
 tf_file=${script_dir}/terraform.tfvars
 pat_special_chars="[!@#$%^&*()+,.?~\":{}|<> ]"
-Name_Size=${#scim_Name}
-if [[ $Name_Size -lt 5 || $Name_Size -gt 20 || "$scim_Name" =~ ${pat_special_chars} ]]; then
+Name_Size=${#SCIM_Name}
+if [[ $Name_Size -lt 5 || $Name_Size -gt 20 || "$SCIM_Name" =~ ${pat_special_chars} ]]; then
   usage
   exit 1
 fi
 #exit
 # set location to centralus if not set
-[[ -z $scim_Location || ${#scim_Location} == 0 ]] && scim_Location=southcentralus
+[[ -z $SCIM_Location || ${#SCIM_Location} == 0 ]] && SCIM_Location=southcentralus
 #  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-# set repo to databricks-scrime-automation if not set
-# if [ -z $scim_Repo ]
+# set repo to databricks-scim-automation if not set
+# if [ -z $SCIM_Repo ]
 # then
-#   export scim_Repo=databricks-scrime-automation
+#   export SCIM_Repo=databricks-scim-automation
 # fi
 
 # create terraform.tfvars and replace template values
 
 # Template from example.tfvars
-#LOCATION         = "<<scim_Location>>"
-#NAME             = "<<scim_Name>>"
-#TF_SUB_ID        = "<<scim_SUB_ID>>"
-#TF_CLIENT_ID     = "<<scim_CLIENT_ID>>"
-#TF_CLIENT_SECRET = "<<scim_CLIENT_SECRET>>"
-#TF_TENANT_ID     = "<<scim_TENANT_ID>>"
+#LOCATION         = "<<SCIM_Location>>"
+#NAME             = "<<SCIM_Name>>"
+#TF_SUB_ID        = "<<SCIM_SUB_ID>>"
+#TF_CLIENT_ID     = "<<SCIM_CLIENT_ID>>"
+#TF_CLIENT_SECRET = "<<SCIM_CLIENT_SECRET>>"
+#TF_TENANT_ID     = "<<SCIM_TENANT_ID>>"
 #COSMOS_RU        = "1000"
 
 
-LOCATION="$scim_Location"
-NAME="$scim_Name"
+LOCATION="$SCIM_Location"
+NAME="$SCIM_Name"
 TF_TENANT_ID="$(az account show -o tsv --query tenantId)"
 TF_SUB_ID="$(az account show -o tsv --query id)"
-TF_CLIENT_SECRET="$(az ad sp create-for-rbac -n http://${scim_Name}-tf-sp --query password -o tsv)"
-TF_CLIENT_ID="$(az ad sp show --id http://${scim_Name}-tf-sp --query appId -o tsv)"
+TF_CLIENT_SECRET="$(az ad sp create-for-rbac -n http://${SCIM_Name}-tf-sp --query password -o tsv)"
+TF_CLIENT_ID="$(az ad sp show --id http://${SCIM_Name}-tf-sp --query appId -o tsv)"
 COSMOS_RU=1000
 #cp example.tfvars terraform.tfvars
 # Backup previous terraform.tfvars file is present
