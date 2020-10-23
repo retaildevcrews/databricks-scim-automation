@@ -1,13 +1,14 @@
 const rewire = require('rewire');
 
-const cliCallbacks = rewire('../../src/cli/syncCallbacks.js');
+const csvCallbacks = rewire('../../src/csv/syncCallbacks.js');
+const cliProgress = require('cli-progress');
 const { expect } = require('chai');
 const chai = require('chai');
 const sinon = require('sinon');
 const spies = require('chai-spies');
 const chaiHttp = require('chai-http');
 const chaiAsPromised = require('chai-as-promised');
-const { log } = require('../../src/helpers');
+const { log, handleResponseErrors } = require('../../src/helpers');
 
 chai.use(chaiHttp);
 chai.use(spies);
@@ -18,17 +19,22 @@ const refreshToken = 'mockRefreshToken';
 const objectId = 'mockObjectId';
 const stepsStatus = 'mockStatus';
 const aadId = 'mockAadId';
-const params = 'mockParams';
+const progressMultiBar = new cliProgress.MultiBar({
+    format: '{galleryAppName}: [{bar}] | {percentage}% | {value}/{total} Steps | {duration}s Elapsed',
+}, cliProgress.Presets.legacy);
+const progressBar = progressMultiBar.create(0, 0,'something' );
+
+const params = {progressBar};
 const tokenValue = 'mockTokenValue';
 const userEmail = 'mockuser1@email.com';
 
-let logTable;
+let stubProgressBar;
 let body;
 beforeEach(() => {
-    logTable = sinon.stub(log, 'table').returns(stepsStatus);
+    stubProgressBar = sinon.stub(progressBar, 'increment');
 });
 afterEach(() => {
-    logTable.restore();
+    stubProgressBar.restore();
 });
 
 class Response {
@@ -44,13 +50,13 @@ class Response {
 
 describe('validate postAccessToken Function', () => {
     body = { access_token: accessToken, refresh_token: refreshToken };
-    const mockResponse = new Response();
+    const mockResponse = new Response();     
 
     it('should get access token and refresh access token for 200 status code', async () => {
         mockResponse.status = 200;
         mockResponse.statusText = 'success';
 
-        const response = await cliCallbacks.postAccessToken(mockResponse);
+        const response = await csvCallbacks.postAccessToken(mockResponse);
         expect(response.accessToken).to.equal(accessToken);
         expect(response.refreshToken).to.equal(refreshToken);
     });
@@ -58,7 +64,7 @@ describe('validate postAccessToken Function', () => {
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
         mockResponse.statusText = 'unauthorized';
-        return expect(cliCallbacks.postAccessToken(mockResponse)).to.be.rejected;
+        return expect(csvCallbacks.postAccessToken(mockResponse)).to.be.rejected;
     });
 });
 
@@ -69,14 +75,13 @@ describe('validate postScimConnectorGalleryApp functions', () => {
     it('should get Service Principal Id for 201 status code', async () => {
         mockResponse.status = 201;
 
-        const response = await cliCallbacks.postScimConnectorGalleryApp(mockResponse, stepsStatus, params);
-        expect(response.servicePrincipalId).to.equal(objectId);
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.postScimConnectorGalleryApp(mockResponse, params);
+        expect(response.params.servicePrincipalId).to.equal(objectId);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postScimConnectorGalleryApp(mockResponse, '', '')).to.be.rejected;
+        return expect(csvCallbacks.postScimConnectorGalleryApp(mockResponse, '', '')).to.be.rejected;
     });
 });
 
@@ -87,14 +92,13 @@ describe('validate getAadGroups functions', () => {
     it('should get AAD Group Id for 200 status code', async () => {
         mockResponse.status = 200;
 
-        const response = await cliCallbacks.getAadGroups(mockResponse, stepsStatus, params);
-        expect(response.aadGroupId).to.equal(aadId);
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.getAadGroups(mockResponse, params);
+        expect(response.params.aadGroupId).to.equal(aadId);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.getAadGroups(mockResponse, stepsStatus, params)).to.be.rejected;
+        return expect(csvCallbacks.getAadGroups(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -105,14 +109,13 @@ describe('validate postAddAadGroupToServicePrincipal function', () => {
     it('should get response for 201 status code', async () => {
         mockResponse.status = 201;
 
-        const response = await cliCallbacks.postAddAadGroupToServicePrincipal(mockResponse, stepsStatus);
-        expect(response).to.deep.equal({});
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.postAddAadGroupToServicePrincipal(mockResponse, params);
+        expect(response.params).to.deep.equal({});
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postAddAadGroupToServicePrincipal(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.postAddAadGroupToServicePrincipal(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -123,14 +126,13 @@ describe('validate postCreateServicePrincipalSyncJob function', () => {
     it('should get Sync Job Id for 201 status code', async () => {
         mockResponse.status = 201;
 
-        const response = await cliCallbacks.postCreateServicePrincipalSyncJob(mockResponse, stepsStatus, params);
-        expect(response.syncJobId).to.equal(objectId);
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.postCreateServicePrincipalSyncJob(mockResponse, params);
+        expect(response.params.syncJobId).to.equal(objectId);
     });
 
     it('should throw error for 400 status code', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postCreateServicePrincipalSyncJob(mockResponse, stepsStatus, params)).to.be.rejected;
+        return expect(csvCallbacks.postCreateServicePrincipalSyncJob(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -141,14 +143,13 @@ describe('validate postCreateDatabricksPat function', () => {
     it('should get Databricks token value for 200 status code', async () => {
         mockResponse.status = 200;
 
-        const response = await cliCallbacks.postCreateDatabricksPat(mockResponse, stepsStatus, params);
-        expect(response.databricksPat).to.equal(tokenValue);
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.postCreateDatabricksPat(mockResponse, params);
+        expect(response.params.databricksPat).to.equal(tokenValue);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postCreateDatabricksPat(mockResponse, stepsStatus, params)).to.be.rejected;
+        return expect(csvCallbacks.postCreateDatabricksPat(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -159,16 +160,15 @@ describe('validate getUserForOwner function', () => {
     it('should get response for 200 status code', async () => {
         mockResponse.status = 200;
 
-        const response1 = await cliCallbacks.getUserForOwner1(mockResponse, stepsStatus, params);
-        const response2 = await cliCallbacks.getUserForOwner2(mockResponse, stepsStatus, params);
-        expect(response1.directoryObjectId1).to.equal(userEmail);
-        expect(response2.directoryObjectId2).to.equal(userEmail);
-        expect(logTable.callCount).to.equal(2);
+        const response1 = await csvCallbacks.getUserForOwner1(mockResponse, params);
+        const response2 = await csvCallbacks.getUserForOwner2(mockResponse, params);
+        expect(response1.params.directoryObjectId1).to.equal(userEmail);
+        expect(response2.params.directoryObjectId2).to.equal(userEmail);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.getUserForOwner1(mockResponse, stepsStatus, params)).to.be.rejected;
+        return expect(csvCallbacks.getUserForOwner1(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -179,21 +179,20 @@ describe('validate postAddSPOwner function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const response1 = await cliCallbacks.postAddSPOwner1(mockResponse, stepsStatus);
-        const response2 = await cliCallbacks.postAddSPOwner2(mockResponse, stepsStatus);
-        expect(response1).to.deep.equal(body);
-        expect(response2).to.deep.equal(body);
-        expect(logTable.callCount).to.equal(2);
+        const response1 = await csvCallbacks.postAddSPOwner1(mockResponse, params);
+        const response2 = await csvCallbacks.postAddSPOwner2(mockResponse, params);
+        expect(response1.params).to.deep.equal(body);
+        expect(response2.params).to.deep.equal(body);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postAddSPOwner1(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.postAddSPOwner1(mockResponse, params)).to.be.rejected;
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = undefined;
-        return expect(cliCallbacks.postAddSPOwner2(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.postAddSPOwner2(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -204,21 +203,20 @@ describe('validate postAddAppOwner function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const response1 = await cliCallbacks.postAddAppOwner1(mockResponse, stepsStatus);
-        const response2 = await cliCallbacks.postAddAppOwner2(mockResponse, stepsStatus);
-        expect(response1).to.deep.equal(body);
-        expect(response2).to.deep.equal(body);
-        expect(logTable.callCount).to.equal(2);
+        const response1 = await csvCallbacks.postAddAppOwner1(mockResponse, params);
+        const response2 = await csvCallbacks.postAddAppOwner2(mockResponse, params);
+        expect(response1.params).to.deep.equal(body);
+        expect(response2.params).to.deep.equal(body);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postAddSPOwner1(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.postAddSPOwner1(mockResponse, params)).to.be.rejected;
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = undefined;
-        return expect(cliCallbacks.postAddSPOwner2(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.postAddSPOwner2(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -229,14 +227,13 @@ describe('validate postValidateServicePrincipalCredentials function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const response = await cliCallbacks.postValidateServicePrincipalCredentials(mockResponse, stepsStatus);
-        expect(response).to.deep.equal(body);
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.postValidateServicePrincipalCredentials(mockResponse, params);
+        expect(response.params).to.deep.equal(body);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postValidateServicePrincipalCredentials(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.postValidateServicePrincipalCredentials(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -247,14 +244,13 @@ describe('validate putSaveServicePrincipalCredentials function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const response = await cliCallbacks.putSaveServicePrincipalCredentials(mockResponse, stepsStatus);
-        expect(response).to.deep.equal(body);
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.putSaveServicePrincipalCredentials(mockResponse, params);
+        expect(response.params).to.deep.equal(body);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.putSaveServicePrincipalCredentials(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.putSaveServicePrincipalCredentials(mockResponse, params)).to.be.rejected;
     });
 });
 
@@ -265,13 +261,12 @@ describe('validate postStartServicePrincipalSyncJob function', () => {
     it('should get response for 204 status code', async () => {
         mockResponse.status = 204;
 
-        const response = await cliCallbacks.postStartServicePrincipalSyncJob(mockResponse, stepsStatus);
-        expect(response).to.deep.equal(body);
-        expect(logTable.callCount).to.equal(1);
+        const response = await csvCallbacks.postStartServicePrincipalSyncJob(mockResponse, params);
+        expect(response.params).to.deep.equal(body);
     });
 
     it('should throw error for other status codes', () => {
         mockResponse.status = 400;
-        return expect(cliCallbacks.postStartServicePrincipalSyncJob(mockResponse, stepsStatus)).to.be.rejected;
+        return expect(csvCallbacks.postStartServicePrincipalSyncJob(mockResponse, params)).to.be.rejected;
     });
 });
