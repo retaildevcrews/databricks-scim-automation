@@ -31,45 +31,6 @@
     </head>
     <body>
         <div id="gui">
-            <h3>Databricks SCIM API</h3>
-            <div id="databricks-workspace" class="outline">
-                Databricks: <a href="#" target="_blank"></a>
-                <br /><br />
-                <button>Get Databricks Workspace Users</button>
-            </div>
-            <script>
-                // Display Databricks Workspace
-                const databricksDomainName = 'https://adb-1514491097879978.18.azuredatabricks.net';
-                const databricksDomainNameElement = document.querySelector('#databricks-workspace a');
-                databricksDomainNameElement.innerHTML = databricksDomainName;
-                databricksDomainNameElement.href = databricksDomainName;
-
-                // Get Databricks Workspace Users Button
-                async function getDatabricksWorkspaceUsers() {
-                    try {
-                        addToLog(`<br />Fetching databricks workspace users from ${databricksDomainName}...`);
-                        const response = await fetch(`${document.location.origin}/databricksWorkspaceUsers?databricksDomainName=${databricksDomainName}`);
-                        const contentType = response.headers.get('content-type');
-                        const body = contentType.includes('json') ? await response.json() : await response.text();
-                        if (response.status === 200) {
-                            // Log: Databricks workspace users
-                            body.forEach(({ active, displayName, userName, entitlements, groups }) => {
-                                const formattedPermissions = entitlements.map(({ value }) => value).join(', ');
-                                const formattedGroups = groups.map(({ display }) => display).join(', ');
-                                userInfo = `<br />${displayName} (${userName})<br />Status: ${active ? 'active' : 'inactive'}<br />Permissions: ${formattedPermissions}<br />Groups: ${formattedGroups}`;
-                                addToLog(userInfo);
-                            });
-                        } else {
-                            addToLog(`<br />${response.statusText}: ${body}`);
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        addToLog('Error while fetching databricks workspace users...');
-                    }
-                }
-                const getDatabricksWorkspaceUsersElement = document.querySelector('#databricks-workspace button');
-                getDatabricksWorkspaceUsersElement.onclick = getDatabricksWorkspaceUsers;
-            </script>
             <h3>Microsoft Graph API</h3>
             <div id="auth" class="outline">
                 <button id="login">Login</button>
