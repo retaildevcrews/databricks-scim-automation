@@ -6,6 +6,8 @@
 
 This application automates the steps described in this [Azure documentation](https://docs.microsoft.com/en-us/azure/databricks/administration-guide/users-groups/scim/aad#:~:text=%20Create%20an%20enterprise%20application%20and%20connect%20to,search%20for%20and...%204%20Click%20Save.%20More%20) to configure a Databricks SCIM provisioning for AAD. The app creates a service principal from a SCIM Connector Gallery App that syncs users in an AAD group to a specified Databricks workspace. It then creates and starts an initial sync job.
 
+The app uses [beta Microsoft Graph APIs](https://documenter.getpostman.com/view/2644780/SzmiWGDE?version=latest#95ddb5a6-eb9c-472c-9d56-7da9eb98c0d2).
+
 ## Features
 
 - Create a single SCIM app and execute initial sync job via CLI.
@@ -22,18 +24,12 @@ This application automates the steps described in this [Azure documentation](htt
 - At least one instance created of:
   - Azure Databricks
   - a non-empty AAD Group created
-- Azure CLI ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)) or Terraform 0.13.4+ ([download](https://www.terraform.io/downloads.html)) for Infrastructure
+- Azure CLI ([download](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest))
 - Node for CLI/GUI 12.18.4+ ([download](https://nodejs.org/en/download/))
 
-## Setup Infrastructure
+## Setup Infrastructure with CLI (bash)
 
-### Using Terraform
-
-Follow the instructions in [./infraREADME.md](./infra/README.md) to create needed infrastructure.
-
-### Using CLI (bash)
-
-#### Login to Azure and select subscription
+### Login to Azure and select subscription
 
 ```bash
 
@@ -47,7 +43,7 @@ az account set -s {subscription name or Id}
 
 ```
 
-#### Choose a unique DNS name
+### Choose a unique DNS name (for Azure Key Vault)
 
 ```bash
 
@@ -62,7 +58,7 @@ nslookup ${SCIM_Name}.vault.azure.net
 
 ```
 
-#### Create Resource Group
+### Create Resource Group
 
 ```bash
 
@@ -77,7 +73,7 @@ az group create -n $SCIM_App_RG -l $SCIM_Location
 
 ```
 
-#### Create Azure Key Vault
+### Create Azure Key Vault
 
 ```bash
 
@@ -86,12 +82,12 @@ az keyvault create -g $SCIM_App_RG -n $SCIM_Name-kv
 
 ```
 
-#### Create App Registration and add Azure Key Vault secrets
+### Create App Registration and add Azure Key Vault secrets
 
 ```bash
 
 # create a Service Principal and add password to Key Vault
-az keyvault secret set -o table --vault-name $SCIM_Name-kv --name "AppClientSecret" --value $(az ad sp create-for-rbac -n http://${SCIM_Name}-scim-app-sp --query password -o tsv)
+az keyvault secret set -o table --vault-name $SCIM_Name-kv --name "AppClientSecret" --value $(az ad sp create-for-rbac --skip-assignment -n http://${SCIM_Name}-scim-app-sp --query password -o tsv)
 
 # add Service Principal ID to Key Vault
 az keyvault secret set -o table --vault-name $SCIM_Name-kv --name "AppClientID" --value $(az ad sp show --id http://${SCIM_Name}-scim-app-sp --query appId -o tsv)
@@ -160,6 +156,20 @@ cd ../../
 # the permissions listed above are specified in the permissions.json file located in the root directory of the repo
 # apply the API permissions
 az ad app update --id $(eval $SCIM_SP_ID) --required-resource-accesses @permissions.json
+
+```
+
+## Accessing Key Vault Secrets
+
+- To view and use the KeyVault secrets with a user or service principal, the target user or service principal needs to be added to the Access Policy of that Key Vault.
+- Only users with read and list access to the Key Vault will be able to successfully run this app.
+
+### Add users or service prinicpals to Key Vault Access Policy
+
+```bash
+
+# grant Key Vault access to a user or service principal
+az keyvault set-policy -n $SCIM_Name-kv --secret-permissions get list --key-permissions get list --object-id $(az ad user show --query objectId -o tsv --id {user email address or service principal AppId})
 
 ```
 
