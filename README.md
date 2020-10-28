@@ -145,7 +145,7 @@ Add required permissions to the App Registration
 >   - Directory.Read.All
 >   - AppRoleAssignment.ReadWrite.All
 >   - Application.ReadWrite.All
-> - Azure Databricks (API Name: AzureDatabricks):
+> - Azure Databricks (API Name: AzureDatabricks, Delegated permissions):
 >   - user_impersonation
 
 ```bash
