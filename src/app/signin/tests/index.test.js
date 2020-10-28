@@ -1,12 +1,9 @@
 const { expect } = require('chai');
-// Import the dependencies for testing
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const spies = require('chai-spies');
 const mocha = require('mocha');
 
-// Configure chai
-// const should = chai.should();
 chai.use(chaiHttp);
 chai.use(spies);
 
