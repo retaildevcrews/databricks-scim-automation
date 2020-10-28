@@ -122,11 +122,12 @@ describe('CSV: Index functions', () => {
     });
 
     describe('Validate startSync Function for CSV', () => {
-        let logs; let errorLog; let getAccessToken; let callback; let createFile; let mapSeries; let logTable;
+        let logs; let errorLog; let getAccessToken; let callback; let createFile; let mapSeries; let logTable; let processExit;
         const startSync = index.__get__('startSync');
         const secrets = { clientSecret, clientId, tenantId };
 
         beforeEach(() => {
+            processExit = sinon.stub(process, 'exit');
             getAccessToken = sinon.stub(graph, 'postAccessToken').resolves(graphAuthCode);
             logs = sinon.stub(console, 'log');
             errorLog = sinon.stub(console, 'error');
@@ -136,6 +137,7 @@ describe('CSV: Index functions', () => {
             createFile = sinon.stub(helper, 'createFile');
         });
         afterEach(() => {
+            processExit.restore();
             getAccessToken.restore();
             callback.restore();
             mapSeries.restore();

@@ -141,11 +141,11 @@ Add required permissions to the App Registration
 
 > To successfully call the required Microsoft Graph and Azure Databricks API's, the following API permissions are required:
 >
-> - Microsoft Graph:
+> - Microsoft Graph (Delegated permissions):
 >   - Directory.Read.All
 >   - AppRoleAssignment.ReadWrite.All
 >   - Application.ReadWrite.All
-> - Azure Databricks:
+> - Azure Databricks (API Name: AzureDatabricks):
 >   - user_impersonation
 
 ```bash

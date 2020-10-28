@@ -30,7 +30,7 @@ const kv = sinon.stub(keyvault, 'getKeyvaultSecrets').resolves(
         [keyvaultSettings.CLIENT_SECRET_KEY]: clientSecret,
     },
 );
-sinon.stub(process, 'exit');
+
 const keepFetch = sinon.stub(helper, 'keepFetching').returns(() => {});
 
 const startCli = rewire('../../src/cli');
@@ -70,11 +70,12 @@ describe('CLI: Index functions', () => {
 
     describe('Validate startSync Function for CLI', async () => {
         let logs; let errorLog; let getAccessToken; let callback; let userPrompts; let SPJobStatus; let mapSeries; let
-    logTable;
+    logTable; let processExit;
         const startSync = index.__get__('startSync');
         const secrets = { clientSecret, clientId, tenantId };
 
         beforeEach(() => {
+            processExit = sinon.stub(process, 'exit');
             getAccessToken = sinon.stub(graph, 'postAccessToken').resolves(graphAuthCode);
             logs = sinon.stub(console, 'log');
             errorLog = sinon.stub(console, 'error');
@@ -84,6 +85,7 @@ describe('CLI: Index functions', () => {
             mapSeries = sinon.stub(Promise, 'mapSeries');
         });
         afterEach(() => {
+            processExit.restore();
             getAccessToken.restore();
             callback.restore();
             SPJobStatus.restore();
