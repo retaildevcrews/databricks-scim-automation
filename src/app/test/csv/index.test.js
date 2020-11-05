@@ -158,6 +158,7 @@ describe('CSV: Index functions', () => {
         let mockProgressBar;
         const promisfySyncCall = index.__get__('promisfySyncCall');
         const progressMultiBar = index.__get__('progressMultiBar');
+        index.__set__('delay', sinon.stub());
         const mockProgressMultiBar = new cliProgress.MultiBar({
             format: '',
         }, cliProgress.Presets.legacy);

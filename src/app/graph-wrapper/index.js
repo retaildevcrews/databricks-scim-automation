@@ -1,7 +1,7 @@
 require('dotenv').config();
 const fetch = require('isomorphic-fetch');
 const get = require('lodash.get');
-const { tokenSettings } = require('../config');
+const { tokenSettings, databricksPATLife } = require('../config');
 
 /**
  * Returns url with appropriate http based on localhost
@@ -379,7 +379,7 @@ function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, gallery
             'X-Databricks-Org-Id': databricksOrgId,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }),
+        body: JSON.stringify({ lifetime_seconds: databricksPATLife.TIME_SEC, comment: `SCIM Connector App - ${galleryAppName}` }),
     });
 }
 

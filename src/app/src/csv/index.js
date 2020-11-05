@@ -8,7 +8,7 @@ const jwtDecode = require('jwt-decode');
 const { loginTypes } = require('../../config');
 const { getKeyvaultSecrets } = require('../services/keyvault');
 const syncCallbacks = require('./syncCallbacks');
-const { keyvaultSettings, tokenSettings } = require('../../config');
+const { keyvaultSettings, tokenSettings, csvAppSyncInterval } = require('../../config');
 const {
     isDatabricksUrl,
     isValidInput,
@@ -21,6 +21,8 @@ const {
 
 const csvErroredLines = [];
 let csvLineCount = 0;
+let appSyncCount = 0;
+const delay = (time) => new Promise((done) => setTimeout(() => done(), time));
 const validationMessage = '\n\nCSV Data Validation Failed due one of the following reasons:\n1. DatabricksURL is not an accepted value\n2. One or more values are empty\n3. Same user email is listed for SCIM APP Onwer1 and SCIM APP Owner2';
 const graphCalls = [
     {
@@ -88,8 +90,10 @@ function validateCSVData(csvLine) {
 }
 
 async function promisfySyncCall(csvLine, sharedParams) {
-    const [galleryAppName, filterAadGroupDisplayName, ownerEmail1, ownerEmail2, databricksUrl] = csvLine.split(',').map((item, index) => ((index === 4) ? item.trim().toLowerCase() : item.trim()));
+    appSyncCount += 1;
+    await delay(csvAppSyncInterval.DELAY_MS * appSyncCount);
 
+    const [galleryAppName, filterAadGroupDisplayName, ownerEmail1, ownerEmail2, databricksUrl] = csvLine.split(',').map((item, index) => ((index === 4) ? item.trim().toLowerCase() : item.trim()));
     if (!isDatabricksUrl(databricksUrl)) {
         throw new Error(`Databricks URL (${databricksUrl}) is not an accepted value`);
     }
