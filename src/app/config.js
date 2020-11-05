@@ -20,7 +20,7 @@ const csvAppSyncInterval = {
 };
 
 const databricksPATLife = {
-    TIME_SEC: 10000,
+    TIME_SEC: 31556952,
 };
 
 module.exports = {
