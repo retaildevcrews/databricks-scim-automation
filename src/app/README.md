@@ -48,13 +48,13 @@ The following is a list of the required inputs for the CLI App:
 > 
 > Default Values:
 >
-> - Databricks PAT lifetime is by default set to 1 year, manual PAT update is required once PAT is expired. Initial PAT lifetime can be updated in config.json 
+> - Databricks PAT lifetime is set to 1 year by default. Upon PAT expiration, new PAT needs to be generated and updated in SCIM Gallery App. Initial PAT lifetime can be updated in config.json. 
 >    ```bash
 >     const databricksPATLife = {
 >       TIME_SEC: 31556952,
 >     }
 >    ```
-> - CSV Application Syncs are spaced 1500ms apart to avoid failures. This duration can be updated in config.json if failures are noticed while working with large number of SCIM Gallery App creation
+> - CSV Application Syncs are spaced 1500ms apart to avoid failures. This duration can be updated in config.json if failures are noticed while working with large number of SCIM Gallery App creations.
 >    ```bash
 >     const csvAppSyncInterval = {
 >       DELAY_MS: 1500,
