@@ -8,6 +8,7 @@ const spies = require('chai-spies');
 const chaiHttp = require('chai-http');
 const get = require('lodash.get');
 const index = require('../index.js');
+const { databricksPATLife } = require('../../config');
 
 chai.use(chaiHttp);
 chai.use(spies);
@@ -122,7 +123,7 @@ describe('Validate Databricks & Graph API Calls', () => {
                 'X-Databricks-Org-Id': databricksOrgId,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ lifetime_seconds: 100, comment: `SCIM Connector App - ${galleryAppName}` }),
+            body: JSON.stringify({ lifetime_seconds: databricksPATLife.TIME_SEC, comment: `SCIM Connector App - ${galleryAppName}` }),
         });
         done();
     });

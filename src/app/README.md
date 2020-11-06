@@ -45,6 +45,21 @@ The following is a list of the required inputs for the CLI App:
 >
 > - There is no restriction on creating multiple SCIM Connector Apps with the same display name, they will have different objectIds.
 > - If there is more than one AAD group with the same name, will use the first one returned from the API.
+> 
+> Default Values:
+>
+> - Databricks PAT lifetime is set to 1 year by default. Upon PAT expiration, new PAT needs to be generated and updated in SCIM Gallery App. Initial PAT lifetime can be updated in config.json. 
+>    ```bash
+>     const databricksPATLife = {
+>       TIME_SEC: 31556952,
+>     }
+>    ```
+> - CSV Application Syncs are spaced 1500ms apart to avoid failures. This duration can be updated in config.json if failures are noticed while working with large number of SCIM Gallery App creations.
+>    ```bash
+>     const csvAppSyncInterval = {
+>       DELAY_MS: 1500,
+>     }
+>    ```
 
 ## Run the App
 

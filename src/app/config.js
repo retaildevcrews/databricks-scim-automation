@@ -15,4 +15,14 @@ const loginTypes = {
     DATABRICKS_LOGIN: 'Databricks authcode',
 };
 
-module.exports = { keyvaultSettings, tokenSettings, loginTypes };
+const csvAppSyncInterval = {
+    DELAY_MS: 1500,
+};
+
+const databricksPATLife = {
+    TIME_SEC: 31556952,
+};
+
+module.exports = {
+ keyvaultSettings, tokenSettings, loginTypes, csvAppSyncInterval, databricksPATLife,
+};
