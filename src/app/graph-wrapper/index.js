@@ -2,6 +2,13 @@ require('dotenv').config();
 const fetch = require('isomorphic-fetch');
 const get = require('lodash.get');
 const { tokenSettings, databricksPATLife } = require('../config');
+const HttpsProxyAgent = require('https-proxy-agent');
+
+//const httpProxy = require('http-proxy');
+//const proxy = httpProxy.createProxyServer({});
+
+const proxy = 'http://99.188.42.124:808';
+const agent = new HttpsProxyAgent(proxy);
 
 /**
  * Returns url with appropriate http based on localhost
@@ -355,6 +362,7 @@ function postCreateServicePrincipalSyncJob({ graphAccessToken, servicePrincipalI
     });
 }
 
+
 /**
  * @external CreateDatabricksPatPromise
  * @see {@link https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/tokens}
@@ -372,7 +380,7 @@ function postCreateDatabricksPat({ databricksAccessToken, databricksUrl, gallery
         throw new Error('Unable to derive Databricks Org Id from Databricks URL');
     }
     return fetch(`${databricksUrl.endsWith('/') ? databricksUrl : `${databricksUrl}/`}api/2.0/token/create`, {
-        agent: false,
+        agent: agent,
         method: 'POST',
         headers: {
             Authorization: `Bearer ${databricksAccessToken}`,
