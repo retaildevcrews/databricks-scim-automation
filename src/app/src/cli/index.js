@@ -18,6 +18,7 @@ const ascii = require('./ascii');
 let params = { host: signin.host };
 // Keeps track of each sync process step
 let stepsStatus = [];
+let userInputs;
 
 async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
     try {
@@ -47,7 +48,7 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
             { message: 'Databricks workspace URL (Format: https://adb-*.*.azuredatabricks.net)', key: 'databricksUrl', defaultInput: undefined },
         ];
         // Prompt user for inputs
-        const userInputs = await prompts.getUserInputs(inputPrompts);
+        userInputs = await prompts.getUserInputs(inputPrompts);
         // Check input fir Databricks URL
         if (!isDatabricksUrl(userInputs.databricksUrl)) {
             throw new Error('Databricks URL needs to be formatted as https://adb-*.*.azuredatabricks.net');
@@ -106,6 +107,7 @@ async function startSync(secrets, { graphAuthCode, databricksAuthCode }) {
         log.bold('SYNCING STEPS COMPLETED!');
         console.log(ascii.celebrate); // eslint-disable-line no-console
     } catch (err) {
+        console.log('User Inputs: ', userInputs); // eslint-disable-line no-console
         console.error(err); // eslint-disable-line no-console
     }
     process.exit(0);
