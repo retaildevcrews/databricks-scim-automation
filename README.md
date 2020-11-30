@@ -122,6 +122,11 @@ source ./.env
 
 ```
 
+Validate User Assigned Roles
+
+> To successfully run the application, user needs the following Assigned Role.
+> - Application administrator
+
 Configure App Registration
 
 ```bash
@@ -136,10 +141,6 @@ echo $PORT
 az ad app update --id $(eval $SCIM_SP_ID) --reply-urls http://localhost:${PORT} --oauth2-allow-implicit-flow true
 
 ```
-Validate User Assigned Roles
-
-> To successfully run the application, user needs the following Assigned Role.
-> - Application administrator
 
 Add required permissions to the App Registration
 
