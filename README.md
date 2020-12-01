@@ -122,6 +122,11 @@ source ./.env
 
 ```
 
+Validate User Assigned Roles
+
+> To successfully run the application, user needs the following Assigned Role.
+> - Application administrator
+
 Configure App Registration
 
 ```bash
